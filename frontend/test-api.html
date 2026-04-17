@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #6366F1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #4F46E5;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 CareerGuide API Connection Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Test Backend Connection</h2>
+        <button onclick="testConnection()">Test Connection</button>
+        <div id="connection-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Register New User</h2>
+        <input type="text" id="reg-name" placeholder="Full Name" value="Test User">
+        <input type="email" id="reg-email" placeholder="Email" value="testuser@bit.bdu.edu.et">
+        <input type="password" id="reg-password" placeholder="Password" value="test123">
+        <button onclick="testRegister()">Register</button>
+        <div id="register-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Login</h2>
+        <input type="email" id="login-email" placeholder="Email" value="test@bit.bdu.edu.et">
+        <input type="password" id="login-password" placeholder="Password" value="test123">
+        <button onclick="testLogin()">Login</button>
+        <div id="login-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Get User Profile (Requires Login)</h2>
+        <button onclick="testProfile()">Get Profile</button>
+        <div id="profile-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Generate Roadmap (Requires Login & API Key)</h2>
+        <input type="text" id="roadmap-role" placeholder="Career Role" value="Frontend Developer">
+        <button onclick="testRoadmap()">Generate Roadmap</button>
+        <div id="roadmap-result" class="result"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api';
+        let authToken = '';
+
+        async function testConnection() {
+            const result = document.getElementById('connection-result');
+            result.textContent = 'Testing connection...';
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'test', password: 'test' })
+                });
+                
+                result.className = 'result success';
+                result.textContent = '✅ Backend is reachable!\nStatus: ' + response.status;
+            } catch (error) {
+                result.className = 'result error';
+                result.textContent = '❌ Cannot connect to backend:\n' + error.message;
+            }
+        }
+
+        async function testRegister() {
+            const result = document.getElementById('register-result');
+            result.textContent = 'Registering...';
+            
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, academic_year: '3rd Year' })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    authToken = data.token;
+                    result.className = 'result success';
+                    result.textContent = '✅ Registration successful!\n' + JSON.stringify(data, null, 2);
+                } else {
+                    result.className = 'result error';
+                    result.textContent = '❌ Registration failed:\n' + JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.textContent = '❌ Error:\n' + error.message;
+            }
+        }
+
+        async function testLogin() {
+            const result = document.getElementById('login-result');
+            result.textContent = 'Logging in...';
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    authToken = data.token;
+                    result.className = 'result success';
+                    result.textContent = '✅ Login successful!\nToken saved.\n' + JSON.stringify(data.user, null, 2);
+                } else {
+                    result.className = 'result error';
+                    result.textContent = '❌ Login failed:\n' + JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.textContent = '❌ Error:\n' + error.message;
+            }
+        }
+
+        async function testProfile() {
+            const result = document.getElementById('profile-result');
+            
+            if (!authToken) {
+                result.className = 'result error';
+                result.textContent = '❌ Please login first!';
+                return;
+            }
+            
+            result.textContent = 'Fetching profile...';
+            
+            try {
+                const response = await fetch(`${API_URL}/users/profile`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    result.className = 'result success';
+                    result.textContent = '✅ Profile retrieved!\n' + JSON.stringify(data, null, 2);
+                } else {
+                    result.className = 'result error';
+                    result.textContent = '❌ Failed:\n' + JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.textContent = '❌ Error:\n' + error.message;
+            }
+        }
+
+        async function testRoadmap() {
+            const result = document.getElementById('roadmap-result');
+            
+            if (!authToken) {
+                result.className = 'result error';
+                result.textContent = '❌ Please login first!';
+                return;
+            }
+            
+            const role = document.getElementById('roadmap-role').value;
+            result.textContent = 'Generating roadmap... (this may take 10-15 seconds)';
+            
+            try {
+                const response = await fetch(`${API_URL}/roadmaps/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ role })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.title) {
+                    result.className = 'result success';
+                    result.textContent = '✅ Roadmap generated!\n' + JSON.stringify(data, null, 2);
+                } else {
+                    result.className = 'result error';
+                    result.textContent = '❌ Failed (check if Gemini API key is set):\n' + JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.textContent = '❌ Error:\n' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

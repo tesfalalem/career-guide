@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Auth Token</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        .info { background: #d1ecf1; border-color: #bee5eb; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+        }
+        button:hover { background: #0056b3; }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Auth Token Tester</h1>
+    
+    <div class="section info">
+        <h2>Current Token Status</h2>
+        <div id="tokenStatus"></div>
+    </div>
+
+    <div class="section">
+        <h2>Actions</h2>
+        <button onclick="checkToken()">Check Token</button>
+        <button onclick="testLogin()">Test Login</button>
+        <button onclick="testTeacherStats()">Test Teacher Stats API</button>
+        <button onclick="clearToken()">Clear Token</button>
+    </div>
+
+    <div class="section">
+        <h2>Results</h2>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+
+        function displayResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `section ${type}`;
+            div.innerHTML = `<pre>${message}</pre>`;
+            results.appendChild(div);
+        }
+
+        function checkToken() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            let status = '<h3>Token Information:</h3>';
+            
+            if (!token) {
+                status += '<p style="color: red;">❌ No token found in localStorage</p>';
+            } else {
+                status += '<p style="color: green;">✅ Token exists</p>';
+                status += `<p><strong>Token:</strong> ${token.substring(0, 50)}...</p>`;
+                
+                try {
+                    const parts = token.split('.');
+                    if (parts.length === 3) {
+                        const payload = JSON.parse(atob(parts[1]));
+                        status += '<p style="color: green;">✅ Token format is valid (JWT)</p>';
+                        status += `<p><strong>Payload:</strong></p><pre>${JSON.stringify(payload, null, 2)}</pre>`;
+                        
+                        if (payload.exp) {
+                            const exp = new Date(payload.exp * 1000);
+                            const now = new Date();
+                            if (exp > now) {
+                                status += `<p style="color: green;">✅ Token expires: ${exp.toLocaleString()}</p>`;
+                            } else {
+                                status += `<p style="color: red;">❌ Token expired: ${exp.toLocaleString()}</p>`;
+                            }
+                        }
+                    } else {
+                        status += '<p style="color: red;">❌ Invalid token format</p>';
+                    }
+                } catch (e) {
+                    status += `<p style="color: red;">❌ Error parsing token: ${e.message}</p>`;
+                }
+            }
+            
+            if (!user) {
+                status += '<p style="color: red;">❌ No user found in localStorage</p>';
+            } else {
+                status += '<p style="color: green;">✅ User data exists</p>';
+                status += `<pre>${user}</pre>`;
+            }
+            
+            document.getElementById('tokenStatus').innerHTML = status;
+        }
+
+        async function testLogin() {
+            try {
+                displayResult('Testing login with teacher@test.com...', 'info');
+                
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'teacher@test.com',
+                        password: 'teacher123'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.token) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    displayResult(`✅ Login successful!\n\nToken: ${data.token.substring(0, 50)}...\n\nUser: ${JSON.stringify(data.user, null, 2)}`, 'success');
+                    checkToken();
+                } else {
+                    displayResult(`❌ Login failed:\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                displayResult(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testTeacherStats() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    displayResult('❌ No token found. Please login first.', 'error');
+                    return;
+                }
+
+                displayResult('Testing /api/teacher/stats endpoint...', 'info');
+                
+                const response = await fetch(`${API_BASE}/teacher/stats`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayResult(`✅ API call successful!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    displayResult(`❌ API call failed (${response.status}):\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                displayResult(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        function clearToken() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            displayResult('✅ Token and user data cleared', 'success');
+            checkToken();
+        }
+
+        // Check token on page load
+        checkToken();
+    </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "careerguide-frontend",
+			"path": "."
+		},
+		{
+			"name": "careerguide",
+			"path": "../../Desktop/sass/careerguide"
+		}
+	],
+	"settings": {}
+}

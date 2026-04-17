@@ -1,0 +1,210 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    color: #1e293b;
+  }
+
+  h1, h2, h3, .font-serif {
+    font-family: 'Playfair Display', serif;
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: #334155; }
+}
+
+@layer utilities {
+  .glass {
+    background: rgba(255,255,255,0.03);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .glass-light {
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0,0,0,0.05);
+  }
+  .text-gradient {
+    background: linear-gradient(to right, #02436d, #14b8a6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .premium-shadow { box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+  .perspective-1000 { perspective: 1000px; }
+  .rotate-y-10 { transform: rotateY(10deg); }
+
+  /* Animation utilities */
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease forwards;
+    opacity: 0;
+  }
+  .animate-slide-left {
+    animation: slideInLeft 0.7s ease forwards;
+    opacity: 0;
+  }
+  .animate-slide-right {
+    animation: slideInRight 0.7s ease forwards;
+    opacity: 0;
+  }
+  .animate-float { animation: floatAnim 4s ease-in-out infinite; }
+  .animate-float-slow { animation: floatAnim 6s ease-in-out infinite; }
+  .animate-nav-reveal { animation: navReveal 0.5s ease forwards; }
+  .animate-progress-fill { animation: progressFill 1.4s ease forwards; }
+
+  /* Careermap specific colors & styles */
+  .bg-careermap-navy { background-color: #02436d; }
+  .text-careermap-navy { color: #02436d; }
+  .border-careermap-navy { border-color: #02436d; }
+  
+  .bg-careermap-teal { background-color: #14b8a6; }
+  .text-careermap-teal { color: #14b8a6; }
+  
+  .gradient-careermap {
+    background: linear-gradient(135deg, #02436d 0%, #0369a1 50%, #14b8a6 100%);
+  }
+
+  /* Roadmap Timeline Utilities */
+  .timeline-connector {
+    position: absolute;
+    left: 23px;
+    top: 50px;
+    bottom: -20px;
+    width: 2px;
+    background: #e2e8f0;
+  }
+  .dark .timeline-connector { background: #1e293b; }
+  
+  .timeline-dot {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid #02436d;
+    display: flex;
+    items-center: center;
+    justify-content: center;
+    font-weight: 800;
+    z-index: 10;
+  }
+}
+
+/* Keyframes */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes floatAnim {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-14px); }
+}
+@keyframes navReveal {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes progressFill {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+@keyframes dotPulse {
+  0%, 100% { transform: scale(1);   opacity: 0.35; }
+  50%       { transform: scale(1.7); opacity: 0.08; }
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Stagger delays for children */
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 100ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 200ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 300ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 400ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 500ms; }
+
+/* Feature card */
+.premium-card {
+  background: #fff;
+  border: 1px solid #f1f5f9;
+  border-radius: 1.5rem;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.dark .premium-card {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+.premium-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px -12px rgba(20,184,166,0.15);
+  border-color: #14b8a6;
+}
+.dark .premium-card:hover {
+  box-shadow: 0 20px 40px -12px rgba(20,184,166,0.25);
+  border-color: #14b8a6;
+}
+
+/* Cursor blink */
+.cursor-blink::after {
+  content: '|';
+  animation: blink 0.9s step-end infinite;
+  margin-left: 2px;
+  color: #14b8a6;
+}
+
+/* Mobile menu slide-down */
+.mobile-menu-open {
+  animation: slideDown 0.25s ease forwards;
+}
+
+/* Skeleton shimmer */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0.4) 50%,
+    transparent 100%
+  );
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+.dark .skeleton-shimmer::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0.06) 50%,
+    transparent 100%
+  );
+}
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}

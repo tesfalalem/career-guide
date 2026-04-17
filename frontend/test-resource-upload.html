@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Resource Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .section {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Resource Upload</h1>
+
+    <div class="section">
+        <h2>Step 1: Login</h2>
+        <input type="email" id="email" placeholder="Email" value="teacher@test.com">
+        <input type="password" id="password" placeholder="Password" value="teacher123">
+        <button onclick="login()">Login</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h2>Step 2: Test Auth</h2>
+        <button onclick="testAuth()">Test Authentication</button>
+        <div id="authResult" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h2>Step 3: Upload Resource</h2>
+        <input type="text" id="title" placeholder="Title" value="Test Resource">
+        <textarea id="description" placeholder="Description">This is a test resource</textarea>
+        <select id="resource_type">
+            <option value="document">Document</option>
+            <option value="video">Video</option>
+            <option value="link">Link</option>
+        </select>
+        <select id="category">
+            <option value="Frontend Development">Frontend Development</option>
+            <option value="Backend Development">Backend Development</option>
+        </select>
+        <input type="text" id="tags" placeholder="Tags (comma-separated)" value="test, debug">
+        <input type="file" id="file">
+        <button onclick="uploadResource()">Upload Resource</button>
+        <div id="uploadResult" class="result"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        let token = localStorage.getItem('token');
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('loginResult');
+
+            try {
+                const response = await fetch(`${API_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    token = data.token;
+                    localStorage.setItem('token', token);
+                    resultDiv.innerHTML = `<div class="success">✓ Login successful!<br>Token: ${token.substring(0, 50)}...<br>Role: ${data.user.role}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">✗ Login failed: ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">✗ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testAuth() {
+            const resultDiv = document.getElementById('authResult');
+
+            if (!token) {
+                resultDiv.innerHTML = '<div class="error">✗ No token found. Please login first.</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/test-auth-debug.php`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">✗ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function uploadResource() {
+            const resultDiv = document.getElementById('uploadResult');
+
+            if (!token) {
+                resultDiv.innerHTML = '<div class="error">✗ No token found. Please login first.</div>';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('title', document.getElementById('title').value);
+            formData.append('description', document.getElementById('description').value);
+            formData.append('resource_type', document.getElementById('resource_type').value);
+            formData.append('category', document.getElementById('category').value);
+            formData.append('tags', document.getElementById('tags').value);
+
+            const fileInput = document.getElementById('file');
+            if (fileInput.files.length > 0) {
+                formData.append('file', fileInput.files[0]);
+            } else {
+                formData.append('external_url', 'https://example.com/test');
+            }
+
+            try {
+                resultDiv.innerHTML = '<div>Uploading...</div>';
+                
+                const response = await fetch(`${API_URL}/api/teacher/resources`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✓ Upload successful!<br><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">✗ Upload failed: ${data.error}<br><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">✗ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-load token on page load
+        if (token) {
+            document.getElementById('loginResult').innerHTML = `<div class="success">Token found in localStorage: ${token.substring(0, 50)}...</div>`;
+        }
+    </script>
+</body>
+</html>
