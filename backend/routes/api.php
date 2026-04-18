@@ -42,6 +42,7 @@ class Router {
         $this->routes['POST']['/api/ai/career-details'] = 'AIController@generateCareerDetails';
         $this->routes['POST']['/api/ai/quiz-evaluate'] = 'AIController@evaluateQuiz';
         $this->routes['POST']['/api/ai/lesson-content'] = 'AIController@generateLessonContent';
+        $this->routes['POST']['/api/ai/generate-assessment'] = 'AIController@generateAssessment';
 
         // BiT Dashboard — Roadmap & Course Management (role: bit only)
         $this->routes['POST']['/api/bit/roadmaps'] = 'BitController@createRoadmap';

@@ -202,4 +202,27 @@ class AIController {
             ]
         ];
     }
+
+    public function generateAssessment() {
+        $data = json_decode(file_get_contents("php://input"), true);
+        
+        $courseTitle = $data['course_title'] ?? '';
+        $courseContent = $data['course_content'] ?? '';
+        $questionCount = $data['question_count'] ?? 5;
+
+        if (empty($courseTitle)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Course title is required']);
+            return;
+        }
+
+        $assessment = $this->aiService->generateAssessment($courseTitle, $courseContent, $questionCount);
+
+        if ($assessment) {
+            echo json_encode($assessment);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to generate assessment']);
+        }
+    }
 }

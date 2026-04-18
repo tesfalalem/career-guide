@@ -132,4 +132,32 @@ Requirements:
     public function generateContent($prompt) {
         return $this->aiManager->generate($prompt, ['json' => true]);
     }
+
+    public function generateAssessment($courseTitle, $courseContent, $questionCount = 5) {
+        $prompt = "Create a professional assessment for the course: \"$courseTitle\".
+        Course Content Summary: $courseContent
+        
+        Requirements:
+        1. Generate exactly $questionCount multiple-choice questions.
+        2. Each question must have 4 options.
+        3. Provide the index of the correct answer (0-3).
+        4. Include a brief explanation for each correct answer.
+        5. Return ONLY valid JSON with this exact structure:
+        {
+          \"title\": \"Assessment for $courseTitle\",
+          \"description\": \"A comprehensive quiz to test your knowledge of $courseTitle.\",
+          \"questions\": [
+            {
+              \"question\": \"Question text?\",
+              \"options\": [\"Option A\", \"Option B\", \"Option C\", \"Option D\"],
+              \"correct_answer\": 0,
+              \"explanation\": \"Brief explanation of why Option A is correct.\"
+            }
+          ]
+        }
+        
+        Output strictly raw JSON.";
+
+        return $this->aiManager->generate($prompt, ['json' => true]);
+    }
 }

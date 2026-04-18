@@ -161,7 +161,7 @@ const AssessmentView: React.FC<AssessmentViewProps> = ({ userId }) => {
           {currentQ < total - 1 ? (
             <button onClick={() => setCurrentQ(i => i + 1)}
               className="flex items-center gap-2 px-10 py-4 rounded-2xl bg-careermap-navy text-white font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-navy-500/10">
-              Advance <ArrowRight size={16} />
+              Next <ArrowRight size={16} />
             </button>
           ) : (
             <button disabled={!allAnswered || submitting} onClick={submitQuiz}
@@ -219,7 +219,7 @@ const AssessmentView: React.FC<AssessmentViewProps> = ({ userId }) => {
               </div>
               <button onClick={() => startQuiz(a.id, a.title)}
                 className="flex items-center gap-3 px-8 py-5 bg-careermap-navy text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shrink-0 shadow-xl shadow-navy-500/10">
-                {a.attempt_count > 0 ? 'Recalibrate' : 'Initiate'} <ArrowRight size={18} />
+                {a.attempt_count > 0 ? 'Restart' : 'Initiate'} <ArrowRight size={18} />
               </button>
             </div>
           ))}

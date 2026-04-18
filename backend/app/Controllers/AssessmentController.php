@@ -22,7 +22,15 @@ class AssessmentController {
     // Create assessment with questions for a course (bit/admin/teacher)
     public function create() {
         $user = $this->getUser();
-        if (!$user || !in_array($user['role'], ['bit', 'admin', 'teacher'])) {
+        if (!$user) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Unauthorized']);
+            return;
+        }
+
+        // Allow students, teachers, admins, and bit users
+        // (In a stricter system, we'd check if student is enrolled, but let's stick to the requirement)
+        if (!in_array($user['role'], ['student', 'teacher', 'admin', 'bit'])) {
             http_response_code(403);
             echo json_encode(['error' => 'Permission denied']);
             return;
@@ -270,9 +278,19 @@ class AssessmentController {
         ")->execute([$id, $user['id'], $score, $total, json_encode($answers)]);
 
         // Award XP
+        // Award XP and Update Course Progress
         if ($percentage >= 70) {
             $conn->prepare("UPDATE users SET xp = xp + ? WHERE id = ?")
                  ->execute([$score * 10, $user['id']]);
+
+            // Mark course as 100% complete if assessment passed
+            $stmt = $conn->prepare("SELECT course_id FROM assessments WHERE id = ?");
+            $stmt->execute([$id]);
+            $assessment = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($assessment) {
+                $conn->prepare("UPDATE course_enrollments SET progress = 100 WHERE course_id = ? AND user_id = ?")
+                     ->execute([$assessment['course_id'], $user['id']]);
+            }
         }
 
         echo json_encode([

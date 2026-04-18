@@ -4,7 +4,8 @@ import {
   PlayCircle, Lock, BookOpen, Clock,
   ArrowLeft, ArrowRight, Star, ChevronsLeft, Menu,
   ChevronDown, ChevronRight,
-  Link2, FileText, Image as ImageIcon, Video, Download, ExternalLink
+  Link2, FileText, Image as ImageIcon, Video, Download, ExternalLink,
+  Brain, HelpCircle, Loader2, X, CheckCircle
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { enrollInCourse } from '../../services/courseService';
@@ -183,7 +184,8 @@ const CourseView: React.FC<CourseViewProps> = ({
   const [activeModuleIndex, setActiveModuleIndex] = useState(0);
   const [activeLessonIndex, setActiveLessonIndex] = useState(0);
   const [isEnrolled, setIsEnrolled] = useState(initialEnrolled || !!initialCourseData);
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(course.progress || 0);
+  const [completedLessons, setCompletedLessons] = useState<string[]>(course.completed_lessons || []);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [materials, setMaterials] = useState<any[]>([]);
@@ -191,6 +193,9 @@ const CourseView: React.FC<CourseViewProps> = ({
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [isResizing, setIsResizing] = useState(false);
   const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set([0]));
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [numQuestions, setNumQuestions] = useState(5);
 
   const toggleModule = (idx: number) => {
     const next = new Set(expandedModules);
@@ -241,6 +246,11 @@ const CourseView: React.FC<CourseViewProps> = ({
     };
   }, [isResizing, resize, stopResizing]);
 
+  if (!course) return null;
+
+  const activeModule = course.modules[activeModuleIndex];
+  const activeLesson = activeModule?.lessons[activeLessonIndex];
+
   useEffect(() => {
     if (course?.id) {
       fetch(`${API_BASE}/resources/course/${course.id}`)
@@ -250,10 +260,38 @@ const CourseView: React.FC<CourseViewProps> = ({
     }
   }, [course?.id]);
 
-  if (!course) return null;
+  useEffect(() => {
+    if (isEnrolled && activeLesson && course) {
+      markLessonAsViewed(activeLesson.title);
+    }
+  }, [activeLesson?.title, isEnrolled, course, isEnrolled]);
 
-  const activeModule = course.modules[activeModuleIndex];
-  const activeLesson = activeModule?.lessons[activeLessonIndex];
+  const markLessonAsViewed = async (lessonTitle: string) => {
+    if (!course || completedLessons.includes(lessonTitle)) return;
+
+    const nextCompleted = [...completedLessons, lessonTitle];
+    setCompletedLessons(nextCompleted);
+
+    const totalLessons = course.modules.reduce((acc, m) => acc + m.lessons.length, 0);
+    const nextProgress = Math.round((nextCompleted.length / totalLessons) * 100);
+    setProgress(nextProgress);
+
+    try {
+      await fetch(`${API_BASE}/courses/${course.id}/progress`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({ 
+          progress: nextProgress, 
+          completed_lessons: nextCompleted 
+        })
+      });
+    } catch (err) {
+      console.error('Failed to sync progress', err);
+    }
+  };
 
   const handleEnroll = async () => {
     if (!course?.id) return;
@@ -269,7 +307,58 @@ const CourseView: React.FC<CourseViewProps> = ({
   };
 
   const handleCompleteLesson = () => {
-    setProgress(prev => Math.min(prev + 10, 100));
+    goToNext();
+  };
+
+  const generateAssessment = async () => {
+    setIsGenerating(true);
+    try {
+      // 1. Prepare course context for AI
+      const courseContext = `
+        Course: ${course.title}
+        Description: ${course.description}
+        Structure:
+        ${course.modules.map((m, i) => `Module ${i+1}: ${m.title}\n${m.lessons.map(l => `- ${l.title}`).join('\n')}`).join('\n')}
+      `;
+
+      // 2. Request AI to generate assessment
+      const aiRes = await fetch(`${API_BASE}/ai/generate-assessment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          course_title: course.title,
+          course_content: courseContext,
+          question_count: numQuestions
+        })
+      });
+      const assessmentData = await aiRes.json();
+      if (assessmentData.error) throw new Error(assessmentData.error);
+
+      // 3. Save assessment to database
+      const saveRes = await fetch(`${API_BASE}/assessments`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({
+          course_id: course.id,
+          title: assessmentData.title,
+          description: assessmentData.description,
+          questions: assessmentData.questions
+        })
+      });
+      const saveResult = await saveRes.json();
+      if (saveResult.error) throw new Error(saveResult.error);
+
+      alert('AI Assessment generated successfully! You can find it in your Assessments center.');
+      setShowAIModal(false);
+    } catch (err: any) {
+      console.error(err);
+      alert('Generation failed: ' + err.message);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const goToPrev = () => {
@@ -335,13 +424,21 @@ const CourseView: React.FC<CourseViewProps> = ({
               </span>
             </div>
             {isEnrolled ? (
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs font-bold text-slate-500">
-                  <span>Progress</span><span>{progress}%</span>
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-bold text-slate-500">
+                    <span>Progress</span><span>{progress}%</span>
+                  </div>
+                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${progress}%` }} />
+                  </div>
                 </div>
-                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${progress}%` }} />
-                </div>
+                <button
+                  onClick={() => setShowAIModal(true)}
+                  className="w-full flex items-center justify-center gap-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 py-2.5 rounded-xl font-bold text-xs hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-all border border-indigo-100 dark:border-indigo-800"
+                >
+                  <Brain size={14} /> AI Assessment
+                </button>
               </div>
             ) : (
               <button
@@ -388,6 +485,8 @@ const CourseView: React.FC<CourseViewProps> = ({
                           >
                             {isActive ? (
                               <PlayCircle size={15} className="text-indigo-500 mt-0.5 shrink-0" />
+                            ) : completedLessons.includes(lesson.title) ? (
+                              <CheckCircle size={15} className="text-emerald-500 mt-0.5 shrink-0" />
                             ) : isLocked ? (
                               <Lock size={15} className="text-slate-300 mt-0.5 shrink-0" />
                             ) : (
@@ -496,7 +595,7 @@ const CourseView: React.FC<CourseViewProps> = ({
             </button>
             <button
               disabled={isLast}
-              onClick={() => { handleCompleteLesson(); goToNext(); }}
+              onClick={handleCompleteLesson}
               className="flex items-center gap-2 px-8 py-3 rounded-xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 shadow-lg disabled:opacity-40 transition-all"
             >
               Complete & Continue <ArrowRight size={16} />
@@ -504,6 +603,56 @@ const CourseView: React.FC<CourseViewProps> = ({
           </div>
         </div>
       </main>
+
+      {/* AI Assessment Modal */}
+      {showAIModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-300">
+            <div className="p-8">
+              <div className="flex justify-between items-start mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
+                  <Brain size={24} />
+                </div>
+                <button onClick={() => setShowAIModal(false)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <h3 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">Generate Assessment</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
+                Our AI will analyze the course content and generate a custom quiz to test your knowledge.
+              </p>
+
+              <div className="space-y-4 mb-8">
+                <label className="block">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-2">Number of Questions</span>
+                  <div className="flex items-center gap-4">
+                    <input 
+                      type="range" min="3" max="15" step="1"
+                      value={numQuestions}
+                      onChange={(e) => setNumQuestions(parseInt(e.target.value))}
+                      className="flex-1 accent-indigo-600"
+                    />
+                    <span className="w-8 text-center font-bold text-slate-700 dark:text-white">{numQuestions}</span>
+                  </div>
+                </label>
+              </div>
+
+              <button
+                disabled={isGenerating}
+                onClick={generateAssessment}
+                className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-500/20 active:scale-[0.98] transition-all disabled:opacity-50"
+              >
+                {isGenerating ? (
+                  <><Loader2 size={18} className="animate-spin" /> Analyzing Content...</>
+                ) : (
+                  <><HelpCircle size={18} /> Generate Quiz Now</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

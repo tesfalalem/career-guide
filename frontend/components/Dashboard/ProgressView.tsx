@@ -58,8 +58,7 @@ const ProgressView: React.FC<ProgressViewProps> = ({ userId }) => {
                     <span className="text-sm font-black text-careermap-teal uppercase tracking-[0.2em]">{course.level}</span>
                   </div>
                   <div className="w-full bg-slate-50 dark:bg-slate-800 rounded-full h-3">
-                    {/* Placeholder progress for now, or random variance for vital effect */}
-                    <div className={`h-3 rounded-full bg-indigo-500 transition-all duration-1000 shadow-md`} style={{ width: `${Math.max(10, Math.random() * 60)}%` }} /> 
+                    <div className={`h-3 rounded-full bg-indigo-500 transition-all duration-1000 shadow-md`} style={{ width: `${course.progress || 0}%` }} /> 
                   </div>
                 </div>
               )) : (

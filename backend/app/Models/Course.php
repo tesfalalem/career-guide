@@ -39,15 +39,30 @@ class Course {
         return $stmt->fetchAll();
     }
 
-    public function findById($id) {
-        $query = "SELECT * FROM " . $this->table . " WHERE id = :id LIMIT 1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id', $id);
-        $stmt->execute();
+    public function findById($id, $userId = null) {
+        if ($userId) {
+            $query = "SELECT c.*, ce.progress, ce.completed_lessons, ce.enrolled_at 
+                      FROM " . $this->table . " c
+                      LEFT JOIN course_enrollments ce ON c.id = ce.course_id AND ce.user_id = :user_id
+                      WHERE c.id = :id LIMIT 1";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $id);
+            $stmt->bindParam(':user_id', $userId);
+        } else {
+            $query = "SELECT * FROM " . $this->table . " WHERE id = :id LIMIT 1";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $id);
+        }
 
+        $stmt->execute();
         $course = $stmt->fetch();
+        
         if ($course && isset($course['modules'])) {
-            $course['modules'] = json_decode($course['modules'], true);
+            $course['modules'] = is_string($course['modules']) ? json_decode($course['modules'], true) : $course['modules'];
+        }
+
+        if ($course && isset($course['completed_lessons']) && is_string($course['completed_lessons'])) {
+            $course['completed_lessons'] = json_decode($course['completed_lessons'], true);
         }
 
         return $course;
@@ -76,7 +91,8 @@ class Course {
     }
 
     public function getUserCourses($userId) {
-        $query = "SELECT c.* FROM " . $this->table . " c
+        $query = "SELECT c.*, ce.progress, ce.completed_lessons, ce.enrolled_at 
+                  FROM " . $this->table . " c
                   JOIN course_enrollments ce ON c.id = ce.course_id
                   WHERE ce.user_id = :user_id
                   ORDER BY ce.enrolled_at DESC";
@@ -88,7 +104,10 @@ class Course {
         $courses = $stmt->fetchAll();
         foreach ($courses as &$course) {
             if (isset($course['modules'])) {
-                $course['modules'] = json_decode($course['modules'], true);
+                $course['modules'] = is_string($course['modules']) ? json_decode($course['modules'], true) : $course['modules'];
+            }
+            if (isset($course['completed_lessons']) && is_string($course['completed_lessons'])) {
+                $course['completed_lessons'] = json_decode($course['completed_lessons'], true);
             }
         }
 

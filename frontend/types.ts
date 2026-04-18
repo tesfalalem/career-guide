@@ -49,6 +49,8 @@ export interface Course {
   duration: string;
   enrolled: number;
   rating: number;
+  progress?: number;
+  completed_lessons?: string[];
 }
 
 export interface CareerSuggestion {

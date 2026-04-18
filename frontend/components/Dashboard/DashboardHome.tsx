@@ -91,7 +91,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({
   const league = getLeague(level);
   const firstName = user.name?.split(' ')[0] ?? user.name;
   const activeCourse = recentCourses[0];
-  const activeCourseProgress = activeCourse ? Math.round(Math.random() * 60 + 20) : 0;
+  const activeCourseProgress = activeCourse?.progress || 0;
 
   const greetingTime = () => {
     const h = new Date().getHours();
