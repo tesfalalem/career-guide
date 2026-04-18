@@ -29,7 +29,7 @@ import CuratedRoadmapsView from './CuratedRoadmapsView';
 import NotificationBell from '../common/NotificationBell';
 import { StudentDashboardLayoutProps } from '../../types';
 
-export type StudentTab = 'overview' | 'roadmaps' | 'progress' | 'careers' | 'courses' | 'assessments' | 'profile' | 'settings';
+export type StudentTab = 'overview' | 'roadmaps' | 'progress' | 'careers' | 'courses' | 'assessments' | 'profile';
 
 const StudentDashboardLayout: React.FC<StudentDashboardLayoutProps> = ({ 
   user, 
@@ -110,14 +110,30 @@ const StudentDashboardLayout: React.FC<StudentDashboardLayoutProps> = ({
     { id: 'courses',     label: 'Courses',     icon: BookOpen },
     { id: 'assessments', label: 'Assessments', icon: ClipboardCheck },
     { id: 'progress',    label: 'Progress',    icon: LineChart },
-    { id: 'settings',    label: 'Settings',    icon: SettingsIcon },
     { id: 'profile',     label: 'Profile',     icon: UserCircle },
   ];
 
   const renderContent = () => {
     switch (activeTab) {
       case 'overview':
-        return <DashboardHome user={user} onNavigateToRoadmaps={() => setActiveTab('roadmaps')} onNavigateToAssessments={() => setActiveTab('assessments')} onOpenCourse={() => setActiveTab('courses')} onNavigateToCareers={() => setActiveTab('careers')} />;
+        return (
+          <DashboardHome 
+            user={user} 
+            onNavigateToRoadmaps={() => { 
+              setActiveTab('roadmaps'); 
+              setRoadmapView('curated');
+              window.scrollTo(0, 0);
+            }} 
+            onNavigateToAiGenerator={() => { 
+              setActiveTab('roadmaps'); 
+              setRoadmapView('ai');
+              window.scrollTo(0, 0);
+            }}
+            onNavigateToAssessments={() => { setActiveTab('assessments'); window.scrollTo(0, 0); }} 
+            onOpenCourse={() => { setActiveTab('courses'); window.scrollTo(0, 0); }} 
+            onNavigateToCareers={() => { setActiveTab('careers'); window.scrollTo(0, 0); }} 
+          />
+        );
       case 'roadmaps':
         return roadmapView === 'curated'
           ? <CuratedRoadmapsView onGenerateCustom={() => setRoadmapView('ai')} onOpenCourse={handleOpenCourseFromRoadmap} />
@@ -132,8 +148,6 @@ const StudentDashboardLayout: React.FC<StudentDashboardLayoutProps> = ({
         return <InspirationHub />;
       case 'profile':
         return <PortfolioView user={user} onUserUpdate={onUserUpdate} />;
-      case 'settings':
-        return <ProfileSettings user={user} onLogout={onLogout} onUserUpdate={onUserUpdate} />;
       default:
         return <DashboardHome user={user} onNavigateToRoadmaps={() => setActiveTab('roadmaps')} onNavigateToAssessments={() => setActiveTab('assessments')} onOpenCourse={() => setActiveTab('courses')} />;
     }

@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight, Check, Sparkles } from 'lucide-react';
+import { apiClient } from '../services/apiClient';
 
 const CAREERS = ['Software Engineer', 'Data Scientist', 'Full-Stack Developer', 'DevOps Engineer', 'Cybersecurity Analyst'];
 
 interface HeroProps {
   onNavigate: (view: 'home' | 'login' | 'signup' | 'onboarding' | 'dashboard') => void;
+  systemStats: { students: number; roadmaps: number; completion: number };
 }
 
 function useCountUp(target: number, duration = 1800, start = false) {
@@ -23,7 +25,7 @@ function useCountUp(target: number, duration = 1800, start = false) {
   return count;
 }
 
-const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
+const Hero: React.FC<HeroProps> = ({ onNavigate, systemStats }) => {
   const [careerIdx, setCareerIdx] = useState(0);
   const [visible, setVisible]     = useState(false);
   const [fade, setFade]           = useState(true);
@@ -47,9 +49,9 @@ const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
     return () => clearTimeout(timer);
   }, []);
 
-  const students  = useCountUp(2000, 1600, visible);
-  const roadmaps  = useCountUp(50,   1400, visible);
-  const successRate = useCountUp(98, 1200, visible);
+  const students  = useCountUp(systemStats.students, 1600, visible);
+  const roadmaps  = useCountUp(systemStats.roadmaps, 1400, visible);
+  const successRate = useCountUp(systemStats.completion, 1200, visible);
 
   return (
     <section

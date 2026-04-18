@@ -2,18 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { Menu, GraduationCap, Sun, Moon, X } from 'lucide-react';
 
 interface NavbarProps {
-  onNavigate: (view: 'home' | 'login' | 'signup') => void;
+  onNavigate: (view: 'home' | 'login' | 'signup' | 'onboarding' | 'dashboard' | 'mission' | 'faq' | 'user-guide' | 'privacy' | 'terms') => void;
+  currentView: string;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
 }
 
 const NAV_ITEMS = [
+  { label: 'Home',     href: 'home' },
   { label: 'Roadmaps', href: '#roadmaps' },
   { label: 'Careers',  href: '#careers'  },
   { label: 'Network',  href: '#network'  },
 ];
 
-const Navbar: React.FC<NavbarProps> = ({ onNavigate, theme, onToggleTheme }) => {
+const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView, theme, onToggleTheme }) => {
   const [isScrolled,    setIsScrolled]    = useState(false);
   const [mobileOpen,    setMobileOpen]    = useState(false);
   const [activeSection, setActiveSection] = useState('');
@@ -56,8 +58,18 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, theme, onToggleTheme }) => 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const scrollTo = (href: string) => {
-    document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
+  const handleNavClick = (label: string, href: string) => {
+    if (label === 'Home' || currentView !== 'home') {
+      onNavigate('home');
+      if (href.startsWith('#')) {
+        // Wait for re-render then scroll
+        setTimeout(() => {
+          document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    } else {
+      document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
+    }
     setMobileOpen(false);
   };
 
@@ -73,7 +85,7 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, theme, onToggleTheme }) => 
           {/* Brand */}
           <div
             onClick={() => onNavigate('home')}
-            className="flex items-center gap-3 group cursor-pointer"
+            className="flex items-center gap-3 group cursor-pointer pointer-events-auto"
           >
             <div className="w-10 h-10 bg-careermap-navy rounded-xl flex items-center justify-center text-white shadow-lg shadow-teal-500/25 group-hover:shadow-teal-500/40 transition-shadow">
               <GraduationCap size={22} strokeWidth={2.5} />
@@ -88,9 +100,9 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, theme, onToggleTheme }) => 
             {NAV_ITEMS.map(({ label, href }) => (
               <button
                 key={label}
-                onClick={() => scrollTo(href)}
+                onClick={() => handleNavClick(label, href)}
                 className={`px-5 py-2 text-[11px] font-bold uppercase tracking-widest rounded-full transition-all
-                  ${activeSection === href
+                  ${(activeSection === href || (label === 'Home' && currentView === 'home' && !activeSection))
                     ? 'bg-white dark:bg-slate-700 text-careermap-teal dark:text-teal-400 shadow-sm'
                     : 'text-slate-500 dark:text-slate-400 hover:text-careermap-teal dark:hover:text-teal-400 hover:bg-white/60 dark:hover:bg-slate-700/60'
                   }`}
@@ -143,9 +155,9 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, theme, onToggleTheme }) => 
               {NAV_ITEMS.map(({ label, href }) => (
                 <button
                   key={label}
-                  onClick={() => scrollTo(href)}
+                  onClick={() => handleNavClick(label, href)}
                   className={`w-full text-left px-5 py-3 rounded-xl font-bold text-sm transition-all
-                    ${activeSection === href
+                    ${(activeSection === href || (label === 'Home' && currentView === 'home' && !activeSection))
                       ? 'bg-teal-50 dark:bg-teal-900/30 text-careermap-teal dark:text-teal-400'
                       : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                     }`}

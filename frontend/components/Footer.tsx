@@ -1,7 +1,11 @@
 import React from 'react';
-import { Facebook, Twitter, Linkedin, Instagram, GraduationCap, ArrowUp, Mail, Phone, MapPin } from 'lucide-react';
+import { Facebook, Twitter, Linkedin, Send, GraduationCap, ArrowUp, Mail, Phone, MapPin, ShieldCheck, HelpCircle, Globe } from 'lucide-react';
 
-const Footer: React.FC = () => {
+interface FooterProps {
+  onNavigate: (view: 'home' | 'login' | 'signup' | 'onboarding' | 'dashboard' | 'mission' | 'faq' | 'user-guide' | 'privacy' | 'terms') => void;
+}
+
+const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -11,101 +15,139 @@ const Footer: React.FC = () => {
       <div className="max-w-[1440px] mx-auto px-6 md:px-12 pt-16 pb-10">
 
         {/* Top row */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
 
-          {/* Brand */}
+          {/* Brand & Description */}
           <div className="md:col-span-1">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-careermap-navy rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/25">
+            <div 
+              className="flex items-center gap-3 mb-4 cursor-pointer group"
+              onClick={() => onNavigate('home')}
+            >
+              <div className="w-10 h-10 bg-careermap-navy rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/25 group-hover:scale-110 transition-transform">
                 <GraduationCap size={22} strokeWidth={2.5} className="text-white" />
               </div>
               <span className="font-bold text-xl tracking-tight text-white">
                 Career<span className="text-teal-400">Guide</span>
               </span>
             </div>
-            <p className="text-slate-400 text-sm leading-relaxed mb-6">
-              Bridging the gap between BiT education and global tech careers.
+            <p className="text-slate-400 text-sm leading-relaxed mb-8">
+              AI-powered platform for career guidance and skill roadmapping
             </p>
-            {/* Social icons */}
-            <div className="flex gap-3">
+            
+            {/* Social & Institutional Links */}
+            <div className="flex flex-wrap gap-3">
               {[
-                { icon: Facebook,  href: '#' },
-                { icon: Twitter,   href: '#' },
-                { icon: Linkedin,  href: '#' },
-                { icon: Instagram, href: '#' },
-              ].map(({ icon: Icon, href }, i) => (
+                { 
+                  icon: Globe, 
+                  href: 'https://bdu.edu.et/bit',
+                  label: 'Official Website'
+                },
+                { 
+                  icon: Send, 
+                  href: 'https://t.me/bitpoly',
+                  label: 'Telegram'
+                },
+                { 
+                  icon: Facebook, 
+                  href: 'https://www.facebook.com/bitpoly',
+                  label: 'Facebook'
+                },
+                { 
+                  icon: Twitter, 
+                  href: 'https://twitter.com/BiT_BDU',
+                  label: 'Twitter'
+                },
+                { 
+                  icon: Linkedin, 
+                  href: 'https://www.linkedin.com/company/bitpoly/',
+                  label: 'LinkedIn'
+                },
+              ].map(({ icon: Icon, href, label }, i) => (
                 <a
                   key={i}
                   href={href}
-                  className="w-9 h-9 rounded-lg bg-slate-800 hover:bg-careermap-navy border border-slate-700 hover:border-teal-500 flex items-center justify-center text-slate-400 hover:text-white transition-all duration-250"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-careermap-navy border border-slate-700 hover:border-teal-500 flex items-center justify-center text-slate-400 hover:text-white transition-all duration-300 group"
                 >
-                  <Icon size={16} />
+                  <Icon size={18} className="group-hover:scale-110 transition-transform" />
                 </a>
               ))}
             </div>
           </div>
 
-          {/* Contact */}
+          {/* Mission & Help */}
           <div>
-            <h4 className="font-bold text-white mb-5 text-sm uppercase tracking-widest">Contact</h4>
-            <ul className="space-y-3">
+            <h4 className="font-bold text-white mb-6 text-sm uppercase tracking-widest flex items-center gap-2">
+              <HelpCircle size={16} className="text-teal-400" />
+              Support
+            </h4>
+            <ul className="space-y-4">
               {[
-                { icon: MapPin, text: 'Bahir Dar Institute of Technology, BDU' },
-                { icon: Mail,   text: 'polybit1955@gmail.com' },
-                { icon: Phone,  text: '(+251) 58-222-1953' },
-              ].map(({ icon: Icon, text }) => (
+                { label: 'Mission or purpose', view: 'mission' },
+                { label: 'FAQ', view: 'faq' },
+                { label: 'User Guide', view: 'user-guide' },
+              ].map(({ label, view }) => (
+                <li key={label}>
+                  <span
+                    onClick={() => onNavigate(view as any)}
+                    className="text-sm text-slate-400 hover:text-teal-400 transition-colors relative group inline-block text-left cursor-pointer"
+                  >
+                    {label}
+                    <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-teal-400 group-hover:w-full transition-all duration-300" />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Contact Information */}
+          <div>
+            <h4 className="font-bold text-white mb-6 text-sm uppercase tracking-widest flex items-center gap-2">
+              <Phone size={16} className="text-teal-400" />
+              Contact
+            </h4>
+            <ul className="space-y-4">
+              {[
+                { icon: Mail,   text: 'polybit1955@gmail.com', href: 'mailto:polybit1955@gmail.com' },
+                { icon: Phone,  text: '+251 58 222 1953', href: 'tel:+251582221953' },
+                { icon: MapPin, text: 'Bahir Dar Institute of Technology (BiT)', href: 'https://maps.app.goo.gl/4wbGiqMXaEdfGWCJ9?g_st=aw' },
+              ].map(({ icon: Icon, text, href }) => (
                 <li key={text} className="flex items-start gap-3 text-sm text-slate-400 hover:text-slate-300 transition-colors">
-                  <Icon size={15} className="text-teal-400 mt-0.5 shrink-0" />
-                  {text}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Important Links */}
-          <div>
-            <h4 className="font-bold text-white mb-5 text-sm uppercase tracking-widest">Links</h4>
-            <ul className="space-y-2.5">
-              {[
-                { label: 'BDU Website',          href: 'https://www.bdu.edu.et' },
-                { label: 'BDU Mail Service',     href: '#' },
-                { label: 'Main Registrar',        href: '#' },
-                { label: 'EiTEX',                href: '#' },
-              ].map(({ label, href }) => (
-                <li key={label}>
-                  <a
-                    href={href}
+                  <Icon size={16} className="text-teal-400 shrink-0 mt-0.5" />
+                  <a 
+                    href={href} 
                     target={href.startsWith('http') ? '_blank' : undefined}
-                    rel="noreferrer"
-                    className="text-sm text-slate-400 hover:text-teal-400 transition-colors relative group inline-block"
+                    rel={href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                    className="hover:underline"
                   >
-                    {label}
-                    <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-teal-400 group-hover:w-full transition-all duration-300" />
+                    {text}
                   </a>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Web Systems */}
+          {/* Legal Information */}
           <div>
-            <h4 className="font-bold text-white mb-5 text-sm uppercase tracking-widest">Systems</h4>
-            <ul className="space-y-2.5">
+            <h4 className="font-bold text-white mb-6 text-sm uppercase tracking-widest flex items-center gap-2">
+              <ShieldCheck size={16} className="text-teal-400" />
+              Legal
+            </h4>
+            <ul className="space-y-4">
               {[
-                'Learning Management System',
-                'SIMS',
-                'FTP Server',
-                'BDU Journals',
-                'HR Management System',
-              ].map(label => (
+                { label: 'Privacy Policy', view: 'privacy' },
+                { label: 'Terms of Service', view: 'terms' },
+              ].map(({ label, view }) => (
                 <li key={label}>
-                  <a
-                    href="#"
-                    className="text-sm text-slate-400 hover:text-teal-400 transition-colors relative group inline-block"
+                  <span
+                    onClick={() => onNavigate(view as any)}
+                    className="text-sm text-slate-400 hover:text-teal-400 transition-colors relative group inline-block text-left cursor-pointer"
                   >
                     {label}
                     <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-teal-400 group-hover:w-full transition-all duration-300" />
-                  </a>
+                  </span>
                 </li>
               ))}
             </ul>
@@ -113,13 +155,13 @@ const Footer: React.FC = () => {
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-slate-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-slate-500">
-            © 2024 Bahir Dar University — CareerGuide. All Rights Reserved.
+        <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <p className="text-sm text-slate-500 font-medium">
+            © {new Date().getFullYear()} Bahir Dar University — CareerGuide. All Rights Reserved.
           </p>
           <button
             onClick={scrollToTop}
-            className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-teal-400 border border-slate-700 hover:border-teal-500 px-4 py-2.5 rounded-xl transition-all"
+            className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-teal-400 border border-slate-700 hover:border-teal-500 px-5 py-3 rounded-xl transition-all active:scale-95 bg-slate-800/50"
           >
             <ArrowUp size={14} /> Back to Top
           </button>

@@ -159,6 +159,9 @@ class Router {
         $this->routes['DELETE']['/api/notifications/:id'] = 'NotificationController@deleteNotification';
         $this->routes['GET']['/api/notifications/preferences'] = 'NotificationController@getPreferences';
         $this->routes['PUT']['/api/notifications/preferences'] = 'NotificationController@updatePreferences';
+
+        // Public Statistics
+        $this->routes['GET']['/api/stats'] = 'PublicController@getStats';
     }
 
     public function dispatch() {

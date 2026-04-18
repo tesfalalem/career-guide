@@ -375,6 +375,11 @@ export const apiClient = {
     const data = await response.json();
     return data.content;
   },
+
+  async getPublicStats() {
+    const response = await fetch(`${API_BASE_URL}/stats`);
+    return response.json();
+  },
 };
 
 export { getToken, saveToken, removeToken };
