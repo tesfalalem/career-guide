@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { HelpCircle, ChevronDown, ChevronUp, Search, MessageSquare, BookOpen, Sparkles, UserCircle } from 'lucide-react';
 
-const FAQPage: React.FC = () => {
+interface FAQPageProps {
+  onNavigate: (view: 'home' | 'login' | 'signup' | 'onboarding' | 'dashboard' | 'mission' | 'faq' | 'user-guide' | 'privacy' | 'terms', tab?: string) => void;
+}
+
+const FAQPage: React.FC<FAQPageProps> = ({ onNavigate }) => {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -138,12 +142,12 @@ const FAQPage: React.FC = () => {
           <p className="text-teal-100/70 mb-8">
             Can't find the answer you're looking for? Our team is here to help you.
           </p>
-          <a 
-            href="mailto:tesfalemtm54@gmail.com"
+          <button 
+            onClick={() => onNavigate('chat')}
             className="inline-flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white px-8 py-3 rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-teal-500/20"
           >
             Contact Support
-          </a>
+          </button>
         </div>
 
       </div>

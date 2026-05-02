@@ -12,6 +12,7 @@ import OnboardingPage from './components/Auth/OnboardingPage';
 import DashboardRouter from './components/Dashboard/DashboardRouter';
 import MissionPage from './components/Pages/MissionPage';
 import FAQPage from './components/Pages/FAQPage';
+import PublicChatPage from './components/Pages/PublicChatPage';
 import UserGuidePage from './components/Pages/UserGuidePage';
 import PrivacyPolicyPage from './components/Pages/PrivacyPolicyPage';
 import TermsOfServicePage from './components/Pages/TermsOfServicePage';
@@ -23,6 +24,7 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [systemStats, setSystemStats] = useState({ students: 2000, roadmaps: 50, completion: 98 });
+  const [initialDashboardTab, setInitialDashboardTab] = useState<string | undefined>(undefined);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
@@ -82,8 +84,14 @@ function App() {
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
-  const navigateTo = (newView: 'home' | 'login' | 'signup' | 'onboarding' | 'dashboard' | 'mission' | 'faq' | 'user-guide' | 'privacy' | 'terms') => {
-    setView(newView);
+  const navigateTo = (newView: 'home' | 'login' | 'signup' | 'onboarding' | 'dashboard' | 'mission' | 'faq' | 'user-guide' | 'privacy' | 'terms' | 'chat', tab?: string) => {
+    if (newView === 'dashboard' && !user) {
+      setView('login');
+      setInitialDashboardTab(tab || 'overview');
+    } else {
+      setView(newView);
+      setInitialDashboardTab(tab);
+    }
     window.scrollTo(0, 0);
   };
 
@@ -92,6 +100,18 @@ function App() {
     localStorage.removeItem('user');
     setUser(null);
     navigateTo('home');
+  };
+
+  const handleLogin = (userData: any) => {
+    setUser(userData);
+    setView('dashboard');
+    window.scrollTo(0, 0);
+  };
+
+  const handleSignup = (userData: any) => {
+    setUser(userData);
+    setView('onboarding');
+    window.scrollTo(0, 0);
   };
 
   const handleUserUpdate = (updatedUser: User) => {
@@ -116,14 +136,15 @@ function App() {
     navigateTo('dashboard');
   };
 
-  if (view === 'login') return <LoginPage onNavigate={navigateTo} onLogin={(userData) => setUser(userData)} />;
-  if (view === 'signup') return <EnhancedSignUpPage onNavigate={navigateTo} onSignup={(userData) => setUser(userData)} />;
+  if (view === 'login') return <LoginPage onNavigate={navigateTo} onLogin={handleLogin} />;
+  if (view === 'signup') return <EnhancedSignUpPage onNavigate={navigateTo} onSignup={handleSignup} />;
   if (view === 'onboarding') return <OnboardingPage onComplete={handleOnboardingComplete} />;
   
   const renderContent = () => {
     switch (view) {
       case 'mission': return <MissionPage />;
-      case 'faq': return <FAQPage />;
+      case 'faq': return <FAQPage onNavigate={navigateTo} />;
+      case 'chat': return <PublicChatPage currentUser={user} onNavigate={navigateTo} />;
       case 'user-guide': return <UserGuidePage />;
       case 'privacy': return <PrivacyPolicyPage />;
       case 'terms': return <TermsOfServicePage />;
@@ -192,6 +213,7 @@ function App() {
       theme={theme} 
       onToggleTheme={toggleTheme}
       onUserUpdate={handleUserUpdate}
+      initialTab={initialDashboardTab}
     />;
   }
 

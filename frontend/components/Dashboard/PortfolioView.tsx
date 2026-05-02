@@ -43,12 +43,35 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ user, onUserUpdate }) => 
 
   const [isEditing, setIsEditing] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
+  const [isUploading, setIsUploading] = React.useState(false);
   const [editData, setEditData] = React.useState({
     name: user.name,
     academic_year: user.academic_year || ''
   });
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setError(null);
+
+    try {
+      const result = await apiClient.updateProfileImage(file);
+      const updatedUser = { ...user, profile_image: result.url };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      if (onUserUpdate) onUserUpdate(updatedUser);
+      setSuccess('Profile image updated!');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload image');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -102,11 +125,33 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ user, onUserUpdate }) => 
         <div className="px-12 pb-12">
           <div className="flex flex-col md:flex-row items-end gap-10 -mt-20 relative z-10">
             <div className="relative group">
-               <div className="w-48 h-48 rounded-[2.5rem] bg-[#FDE68A] border-[8px] border-white dark:border-slate-900 flex items-center justify-center overflow-hidden shadow-xl">
-                 <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(user.name)}`} alt="Avatar" className="w-full h-full object-cover" />
+               <div className="w-48 h-48 rounded-[2.5rem] bg-white dark:bg-slate-900 border-[8px] border-white dark:border-slate-900 flex items-center justify-center overflow-hidden shadow-xl">
+                 {(user as any).profile_image ? (
+                   <img src={(user as any).profile_image} alt="Avatar" className="w-full h-full object-cover" />
+                 ) : (
+                   <div className="w-full h-full bg-gradient-to-br from-careermap-teal to-careermap-navy flex items-center justify-center">
+                     <span className="text-6xl font-serif font-black text-white uppercase">{user.name.charAt(0)}</span>
+                   </div>
+                 )}
+                 {isUploading && (
+                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                     <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+                   </div>
+                 )}
                </div>
-               <button onClick={() => setIsEditing(true)} className="absolute -right-2 bottom-4 w-10 h-10 bg-careermap-navy text-white rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
-                 <Edit2 size={16} />
+               <input 
+                 type="file" 
+                 ref={fileInputRef} 
+                 onChange={handleImageUpload} 
+                 className="hidden" 
+                 accept="image/*" 
+               />
+               <button 
+                 onClick={() => fileInputRef.current?.click()} 
+                 className="absolute -right-2 bottom-4 w-12 h-12 bg-careermap-navy text-white rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform z-20 group-hover:bg-careermap-teal"
+                 title="Change Photo"
+               >
+                 <Edit2 size={20} />
                </button>
             </div>
             

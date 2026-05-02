@@ -36,6 +36,13 @@ const EnhancedSignUpPage: React.FC<EnhancedSignUpPageProps> = ({ onNavigate, onS
     setIsVisible(true);
   }, []);
 
+  useEffect(() => {
+    // Reset academic year if user switches from a 5-year dept to a 4-year dept
+    if (department !== 'Software Engineering' && department !== 'Other' && academicYear === '5th Year') {
+      setAcademicYear('');
+    }
+  }, [department, academicYear]);
+
   const expertiseOptions = [
     'Frontend', 'Backend', 'Full Stack', 'Mobile', 'Data Science', 'ML/AI',
     'DevOps', 'Cloud', 'Security', 'UI/UX', 'Database', 'Architecture'
@@ -66,16 +73,39 @@ const EnhancedSignUpPage: React.FC<EnhancedSignUpPageProps> = ({ onNavigate, onS
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
+  const validateName = (name: string): string | null => {
+    const trimmed = name.trim();
+    if (!trimmed) return 'Full name is required';
+    if (trimmed.length < 5) return 'Full name must be at least 5 characters long (e.g., "Abebe B.")';
+    if (trimmed.length > 50) return 'Full name is too long';
+    if (!trimmed.includes(' ')) return 'Please enter at least two names (e.g., First and Father name)';
+    
+    // Check for allowed characters (Alphabets, spaces, hyphens, and apostrophes)
+    const allowedCharsRegex = /^[a-zA-Z\s\-\']+$/;
+    if (!allowedCharsRegex.test(trimmed)) return 'Full name can only contain letters, spaces, hyphens, and apostrophes';
+    
+    // Ensure it's not just symbols
+    if (!/[a-zA-Z]/.test(trimmed)) return 'Full name must contain letters';
+    
+    // Repeated/meaningless text (aaaa, xxx)
+    if (/(.)\1{3,}/.test(trimmed)) return 'Full name contains too many repeated characters';
+    
+    // Too many spaces
+    if (trimmed.includes('  ')) return 'Full name contains excessive spaces';
+    
+    // Security patterns (HTML/SQL)
+    if (/<script|' OR |" OR |DROP TABLE|--/i.test(trimmed)) return 'Invalid name format detected';
+    
+    return null;
+  };
+
   const handleNext = () => {
     if (step === 1) {
       setError(null);
 
-      if (!fullName.trim()) {
-        setError('Please enter your full name');
-        return;
-      }
-      if (fullName.trim().split(/\s+/).length < 2) {
-        setError('Please enter at least your first name and father\'s name');
+      const nameError = validateName(fullName);
+      if (nameError) {
+        setError(nameError);
         return;
       }
       
@@ -83,8 +113,8 @@ const EnhancedSignUpPage: React.FC<EnhancedSignUpPageProps> = ({ onNavigate, onS
         setError('Email address is required');
         return;
       }
-      if (!validateEmail(email)) {
-        setError('Please enter a valid email address');
+      if (!validateEmail(email.trim())) {
+        setError('Please enter a valid email address (example@domain.com)');
         return;
       }
 
@@ -137,7 +167,6 @@ const EnhancedSignUpPage: React.FC<EnhancedSignUpPageProps> = ({ onNavigate, onS
       
       localStorage.setItem('user', JSON.stringify(data.user));
       onSignup(data.user);
-      onNavigate('dashboard');
     } catch (err: any) {
       setError(err.message || 'Registration failed');
       setLoading(false);
@@ -414,6 +443,7 @@ const EnhancedSignUpPage: React.FC<EnhancedSignUpPageProps> = ({ onNavigate, onS
                           <option value="Information Technology">Information Technology</option>
                           <option value="Software Engineering">Software Engineering</option>
                           <option value="Information System">Information System</option>
+                          <option value="Other">Other</option>
                         </select>
                       </div>
                     </div>
@@ -431,7 +461,9 @@ const EnhancedSignUpPage: React.FC<EnhancedSignUpPageProps> = ({ onNavigate, onS
                           <option value="2nd Year">2nd Year</option>
                           <option value="3rd Year">3rd Year</option>
                           <option value="4th Year">4th Year</option>
-                          <option value="5th Year">5th Year</option>
+                          {(department === 'Software Engineering' || department === 'Other') && (
+                            <option value="5th Year">5th Year</option>
+                          )}
                           <option value="Postgraduate">Postgraduate</option>
                         </select>
                       </div>

@@ -19,6 +19,7 @@ class Router {
         // User Routes
         $this->routes['GET']['/api/users/profile'] = 'UserController@getProfile';
         $this->routes['PUT']['/api/users/profile'] = 'UserController@updateProfile';
+        $this->routes['POST']['/api/users/profile/image'] = 'UserController@updateProfileImage';
         $this->routes['GET']['/api/users/stats'] = 'UserController@getStats';
         $this->routes['GET']['/api/users/activity'] = 'UserController@getActivity';
 
@@ -159,6 +160,15 @@ class Router {
         $this->routes['DELETE']['/api/notifications/:id'] = 'NotificationController@deleteNotification';
         $this->routes['GET']['/api/notifications/preferences'] = 'NotificationController@getPreferences';
         $this->routes['PUT']['/api/notifications/preferences'] = 'NotificationController@updatePreferences';
+
+        // Support Chat Routes
+        $this->routes['GET']['/api/support/messages'] = 'SupportController@getMessages';
+        $this->routes['POST']['/api/support/messages'] = 'SupportController@sendMessage';
+        $this->routes['GET']['/api/admin/support/conversations'] = 'SupportController@getAdminConversations';
+        $this->routes['GET']['/api/admin/support/messages/:userId'] = 'SupportController@getAdminMessages';
+        $this->routes['DELETE']['/api/admin/support/messages/:id'] = 'SupportController@deleteMessage';
+        $this->routes['GET']['/api/public/support/messages/:guestId'] = 'SupportController@getGuestMessages';
+        $this->routes['POST']['/api/public/support/messages'] = 'SupportController@sendGuestMessage';
 
         // Public Statistics
         $this->routes['GET']['/api/stats'] = 'PublicController@getStats';

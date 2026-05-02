@@ -97,14 +97,16 @@ class User {
                     (SELECT COUNT(*) FROM course_enrollments WHERE user_id = :user_id) as courses_enrolled,
                     (SELECT xp FROM users WHERE id = :user_id) as total_xp,
                     (SELECT streak FROM users WHERE id = :user_id) as streak,
-                    0 as completed_lessons
+                    (SELECT COALESCE(SUM(JSON_LENGTH(completed_lessons)), 0) 
+                     FROM course_enrollments 
+                     WHERE user_id = :user_id AND completed_lessons IS NOT NULL) as completed_lessons
                   FROM users WHERE id = :user_id LIMIT 1";
         
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':user_id', $userId);
         $stmt->execute();
 
-        return $stmt->fetch();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     public function getRecentActivity($userId) {

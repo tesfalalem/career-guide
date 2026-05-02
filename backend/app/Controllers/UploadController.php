@@ -84,6 +84,7 @@ class UploadController {
     // Serve a file by streaming it through PHP (bypasses Apache path issues)
     public function serve() {
         $filename = $_GET['file'] ?? '';
+        $type = $_GET['type'] ?? 'course';
 
         // Sanitize — no path traversal
         $filename = basename($filename);
@@ -94,7 +95,11 @@ class UploadController {
             return;
         }
 
-        $filepath = $this->uploadDir . $filename;
+        $dir = ($type === 'profile') 
+            ? __DIR__ . '/../../uploads/profiles/' 
+            : __DIR__ . '/../../uploads/course-content/';
+            
+        $filepath = $dir . $filename;
 
         if (!file_exists($filepath)) {
             http_response_code(404);

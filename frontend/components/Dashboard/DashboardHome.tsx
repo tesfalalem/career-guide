@@ -107,90 +107,92 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({
   return (
     <div className="space-y-8">
 
-      {/* ── HERO WELCOME HEADER ───────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-[2.5rem] gradient-careermap p-8 md:p-12 animate-fade-in-up">
-        {/* Decorative elements */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-20 -right-20 w-80 h-80 bg-white/5 rounded-full blur-2xl" />
-          <div className="absolute -bottom-16 -left-16 w-60 h-60 bg-careermap-teal/10 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 right-[15%] w-2 h-2 bg-white/20 rounded-full" />
-          <div className="absolute top-[30%] right-[25%] w-1.5 h-1.5 bg-white/15 rounded-full" />
-          <div className="absolute bottom-[35%] right-[10%] w-1 h-1 bg-white/25 rounded-full" />
+      {/* ── BRAND-CONSISTENT HERO WELCOME ────────────────────── */}
+      <div className="relative overflow-hidden rounded-[3rem] bg-careermap-navy border border-white/10 p-8 md:p-12 shadow-2xl group transition-all duration-500 hover:shadow-careermap-teal/10">
+        {/* Animated Background Gradients */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-careermap-teal/15 rounded-full blur-[120px] animate-pulse" />
+          <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-careermap-teal/5 rounded-full blur-[100px]" />
         </div>
-
-        <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-          {/* Left: Greeting */}
-          <div className="flex items-center gap-5">
+ 
+        <div className="relative z-10 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-10">
+          {/* Left: Greeting & Identity */}
+          <div className="flex items-center gap-6">
             <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 overflow-hidden shadow-lg">
-                <img
-                  src={`https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(user.name)}`}
-                  alt="avatar"
-                  className="w-full h-full object-cover"
+              <div className="w-20 h-20 rounded-[2rem] bg-white/10 p-1 shadow-2xl group-hover:scale-105 transition-transform duration-500">
+                <div className="w-full h-full rounded-[1.8rem] bg-careermap-navy overflow-hidden border border-white/10">
+                  <img
+                    src={`https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(user.name)}`}
+                    alt="avatar"
+                    className="w-full h-full object-cover scale-110"
+                  />
+                </div>
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 border-[4px] border-careermap-navy rounded-full shadow-lg" />
+            </div>
+            
+            <div>
+              <h1 className="text-4xl md:text-6xl font-serif font-black text-white tracking-tighter leading-none mb-2">
+                Welcome, <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-white/60">{firstName}</span>
+              </h1>
+              <p className="text-white/40 font-medium text-sm">Ready to master your path today?</p>
+            </div>
+          </div>
+ 
+          {/* Right: Stats & Leveling Bento */}
+          <div className="w-full xl:w-auto flex flex-col gap-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-3 bg-white/5 backdrop-blur-xl border border-white/10 px-5 py-3 rounded-2xl group/streak hover:bg-white/10 transition-colors">
+                <div className="w-8 h-8 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                  <Flame size={16} className="text-orange-400 fill-orange-400 group-hover/streak:animate-bounce" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Active Streak</span>
+                  <span className="font-black text-white text-base">{streak} Days</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 bg-white/5 backdrop-blur-xl border border-white/10 px-5 py-3 rounded-2xl group/league hover:bg-white/10 transition-colors">
+                <div className="w-8 h-8 rounded-xl bg-teal-500/20 flex items-center justify-center">
+                  <Trophy size={16} className="text-teal-400 group-hover/league:rotate-12 transition-transform" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">League</span>
+                  <span className="font-black text-white text-base">{league.name}</span>
+                </div>
+              </div>
+            </div>
+ 
+            {/* XP Progress Capsule */}
+            <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 relative overflow-hidden">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-careermap-teal/20 rounded-xl flex items-center justify-center text-careermap-teal">
+                    <Zap size={20} strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Current Level</p>
+                    <p className="text-xl font-black text-white">Level {level}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-black text-careermap-teal">{xp} <span className="text-xs text-white/30">XP</span></p>
+                </div>
+              </div>
+              
+              {/* Thinner, Neon XP Bar */}
+              <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
+                <div
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-careermap-teal to-cyan-400 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(45,212,191,0.5)]"
+                  style={{ width: `${Math.max(progress, 5)}%` }}
                 />
               </div>
-              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 border-2 border-careermap-navy rounded-full" />
-            </div>
-            <div>
-              <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-1">{greetingTime()}</p>
-              <h1 className="text-3xl md:text-5xl font-serif font-black text-white tracking-tight leading-tight">
-                Welcome, {firstName}
-              </h1>
-            </div>
-          </div>
-
-          {/* Right: Streak + League */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2.5 bg-white/10 backdrop-blur-md border border-white/20 px-5 py-3 rounded-2xl">
-              <Flame size={18} className="text-orange-400 fill-orange-400" />
-              <span className="font-bold text-white text-sm">{streak} day streak</span>
-            </div>
-            <div className="flex items-center gap-2.5 bg-white/10 backdrop-blur-md border border-white/20 px-5 py-3 rounded-2xl">
-              <Trophy size={16} className="text-teal-300" />
-              <span className="font-bold text-white text-sm">{league.name}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* XP Progress Section */}
-        <div className="relative z-10 mt-8 bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/10">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20">
-                <Zap size={22} className="text-white" strokeWidth={2.5} />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-white/70 text-xs font-semibold uppercase tracking-widest">Level {level}</span>
-                  <span className="bg-white/20 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">{xp} XP total</span>
-                </div>
-                <h2 className="text-3xl font-serif font-black text-white leading-none">{xp} <span className="text-white/40 text-sm font-bold uppercase tracking-widest">XP</span></h2>
+              <div className="flex justify-between items-center mt-3">
+                <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">Progress</span>
+                <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">{nextLevelXP} XP to Level {level + 1}</span>
               </div>
             </div>
-
-            {/* Mini Stats */}
-            <div className="flex gap-6">
-              {[
-                { value: stats.coursesEnrolled, label: 'Courses' },
-                { value: stats.completedLessons, label: 'Lessons' },
-                { value: streak, label: 'Streak' },
-              ].map(s => (
-                <div key={s.label} className="text-center">
-                  <p className="text-xl font-extrabold text-white">{s.value}</p>
-                  <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mt-0.5">{s.label}</p>
-                </div>
-              ))}
-            </div>
           </div>
-
-          {/* XP Bar */}
-          <div className="w-full bg-black/20 rounded-full h-3">
-            <div
-              className="bg-careermap-teal rounded-full h-3 transition-all duration-1000 shadow-[0_0_15px_rgba(20,184,166,0.5)]"
-              style={{ width: `${Math.max(progress, 2)}%` }}
-            />
-          </div>
-          <p className="text-white/40 text-[10px] font-black uppercase tracking-[0.2em] mt-3">{nextLevelXP} XP to Level {level + 1}</p>
         </div>
       </div>
 

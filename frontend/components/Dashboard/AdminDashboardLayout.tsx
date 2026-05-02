@@ -9,19 +9,22 @@ import AdminUsersView from './Admin/AdminUsersView';
 import AdminApprovalsView from './Admin/AdminApprovalsView';
 import AdminAnalyticsView from './Admin/AdminAnalyticsView';
 import AdminSettingsView from './Admin/AdminSettingsView';
+import AdminSupportView from './Admin/AdminSupportView';
+import { MessageSquare } from 'lucide-react';
 import NotificationBell from '../common/NotificationBell';
 import { AdminDashboardLayoutProps, PlatformAnalytics } from '../../types';
 
-export type AdminTab = 'overview' | 'users' | 'approvals' | 'analytics' | 'settings';
+export type AdminTab = 'overview' | 'users' | 'approvals' | 'analytics' | 'settings' | 'support';
 
-const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps> = ({ 
+const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps & { initialTab?: string }> = ({ 
   user, 
   onLogout, 
   theme, 
   onToggleTheme,
-  onUserUpdate 
+  onUserUpdate,
+  initialTab
 }) => {
-  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const [activeTab, setActiveTab] = useState<AdminTab>((initialTab as AdminTab) || 'overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
   const [analytics, setAnalytics] = useState<PlatformAnalytics>({
@@ -117,6 +120,7 @@ const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps> = ({
     { id: 'users', label: 'Users', icon: Users },
     { id: 'approvals', label: 'Pending Approvals', icon: CheckCircle },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'support', label: 'Support Chat', icon: MessageSquare },
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ];
 
@@ -132,6 +136,8 @@ const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps> = ({
         return <AdminAnalyticsView />;
       case 'settings':
         return <AdminSettingsView />;
+      case 'support':
+        return <AdminSupportView />;
       default:
         return <AdminOverview analytics={analytics} onNavigate={setActiveTab} />;
     }
@@ -196,12 +202,12 @@ const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps> = ({
           {sidebarOpen ? (
             <>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-careermap-teal/20 rounded-xl flex items-center justify-center shrink-0 border border-careermap-teal/30">
-                  <span className="text-careermap-teal font-serif font-bold text-lg">{user.name.charAt(0)}</span>
+                <div className="w-11 h-11 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border border-white/5 shadow-inner">
+                  <span className="text-white font-serif font-black text-lg uppercase">{user.name.charAt(0)}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-bold text-sm text-white truncate">{user.name}</div>
-                  <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{user.role}</div>
+                  <div className="font-bold text-sm text-white truncate leading-tight">{user.name}</div>
+                  <div className="text-[10px] text-white/50 font-black uppercase tracking-widest mt-0.5">{user.role}</div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">

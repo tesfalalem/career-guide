@@ -27,18 +27,21 @@ import AssessmentView from './AssessmentView';
 import PortfolioView from './PortfolioView';
 import CuratedRoadmapsView from './CuratedRoadmapsView';
 import NotificationBell from '../common/NotificationBell';
+import SupportChatView from './common/SupportChatView';
+import { HelpCircle } from 'lucide-react';
 import { StudentDashboardLayoutProps } from '../../types';
 
-export type StudentTab = 'overview' | 'roadmaps' | 'progress' | 'careers' | 'courses' | 'assessments' | 'profile';
+export type StudentTab = 'overview' | 'roadmaps' | 'progress' | 'careers' | 'courses' | 'assessments' | 'profile' | 'support';
 
-const StudentDashboardLayout: React.FC<StudentDashboardLayoutProps> = ({ 
+const StudentDashboardLayout: React.FC<StudentDashboardLayoutProps & { initialTab?: string }> = ({ 
   user, 
   onLogout, 
   theme, 
   onToggleTheme, 
-  onUserUpdate 
+  onUserUpdate,
+  initialTab
 }) => {
-  const [activeTab, setActiveTab] = useState<StudentTab>('overview');
+  const [activeTab, setActiveTab] = useState<StudentTab>((initialTab as StudentTab) || 'overview');
   const [selectedCareer, setSelectedCareer] = useState<string | undefined>(undefined);
   const [roadmapView, setRoadmapView] = useState<'curated' | 'ai'>('curated');
   const [openCourseId, setOpenCourseId] = useState<number | null>(null);
@@ -111,6 +114,7 @@ const StudentDashboardLayout: React.FC<StudentDashboardLayoutProps> = ({
     { id: 'assessments', label: 'Assessments', icon: ClipboardCheck },
     { id: 'progress',    label: 'Progress',    icon: LineChart },
     { id: 'profile',     label: 'Profile',     icon: UserCircle },
+    { id: 'support',     label: 'Support',     icon: HelpCircle },
   ];
 
   const renderContent = () => {
@@ -148,6 +152,16 @@ const StudentDashboardLayout: React.FC<StudentDashboardLayoutProps> = ({
         return <InspirationHub />;
       case 'profile':
         return <PortfolioView user={user} onUserUpdate={onUserUpdate} />;
+      case 'support':
+        return (
+          <div className="max-w-4xl">
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Help & Support</h2>
+              <p className="text-slate-500 dark:text-slate-400">Ask us anything about the platform.</p>
+            </div>
+            <SupportChatView currentUser={user} />
+          </div>
+        );
       default:
         return <DashboardHome user={user} onNavigateToRoadmaps={() => setActiveTab('roadmaps')} onNavigateToAssessments={() => setActiveTab('assessments')} onOpenCourse={() => setActiveTab('courses')} />;
     }
@@ -237,13 +251,13 @@ const StudentDashboardLayout: React.FC<StudentDashboardLayoutProps> = ({
         <div className="p-3 border-t border-slate-200 dark:border-slate-800 shrink-0">
           {sidebarOpen ? (
             <>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-careermap-navy/10 rounded-full flex items-center justify-center shrink-0">
-                  <span className="text-careermap-navy font-bold">{user.name.charAt(0)}</span>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-11 h-11 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border border-white/5 shadow-inner">
+                  <span className="text-white font-serif font-black text-lg uppercase">{user.name.charAt(0)}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm text-careermap-navy dark:text-white truncate">{user.name}</div>
-                  <div className="text-xs text-slate-500 capitalize">{user.role}</div>
+                  <div className="font-bold text-sm text-white truncate leading-tight">{user.name}</div>
+                  <div className="text-[10px] text-white/50 font-black uppercase tracking-widest mt-0.5">{user.role}</div>
                 </div>
               </div>
               <button onClick={onToggleTheme}

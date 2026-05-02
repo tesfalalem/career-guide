@@ -53,7 +53,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, onLogin }) => {
     try {
       const data = await apiClient.login(email, password);
       onLogin(data.user);
-      onNavigate('dashboard');
     } catch (err: any) {
       setError(err.message || 'Login failed');
       setLoading(false);

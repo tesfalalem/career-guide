@@ -17,6 +17,7 @@ const normalizeUser = (raw: any) => {
     enrolledPaths: raw.enrolledPaths ?? [],
     xp: Number(raw.xp ?? 0),
     streak: Number(raw.streak ?? 0),
+    profile_image: raw.profile_image ?? undefined,
     // Pass through extra fields used by specific dashboards
     account_status: raw.account_status ?? 'active',
   };
@@ -171,6 +172,26 @@ export const apiClient = {
       throw new Error(result.error || 'Failed to update profile');
     }
 
+    return result;
+  },
+
+  async updateProfileImage(file: File) {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    const response = await fetch(`${API_BASE_URL}/users/profile/image`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+    
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to update image');
+    }
     return result;
   },
 
@@ -378,6 +399,69 @@ export const apiClient = {
 
   async getPublicStats() {
     const response = await fetch(`${API_BASE_URL}/stats`);
+    return response.json();
+  },
+
+  // Support Chat
+  async getSupportMessages() {
+    const token = getToken();
+    const response = await fetch(`${API_BASE_URL}/support/messages`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    return response.json();
+  },
+
+  async sendSupportMessage(message: string, receiverId: string = '1') {
+    const token = getToken();
+    const response = await fetch(`${API_BASE_URL}/support/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ message, receiver_id: receiverId }),
+    });
+    return response.json();
+  },
+
+  async getAdminConversations() {
+    const token = getToken();
+    const response = await fetch(`${API_BASE_URL}/admin/support/conversations`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    return response.json();
+  },
+
+  async getAdminMessages(userId: string) {
+    const token = getToken();
+    const response = await fetch(`${API_BASE_URL}/admin/support/messages/${userId}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    return response.json();
+  },
+
+  async getGuestMessages(guestId: string) {
+    const response = await fetch(`${API_BASE_URL}/public/support/messages/${guestId}`);
+    return response.json();
+  },
+
+  async sendGuestMessage(message: string, guestId: string) {
+    const response = await fetch(`${API_BASE_URL}/public/support/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ message, guest_id: guestId }),
+    });
+    return response.json();
+  },
+
+  async deleteSupportMessage(messageId: number) {
+    const token = getToken();
+    const response = await fetch(`${API_BASE_URL}/admin/support/messages/${messageId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
     return response.json();
   },
 };

@@ -209,13 +209,13 @@ const TeacherDashboardLayout: React.FC<TeacherDashboardLayoutProps> = ({
         <div className="p-3 border-t border-white/10 shrink-0">
           {sidebarOpen ? (
             <>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center shrink-0">
-                  <span className="text-careermap-teal font-bold">{user.name.charAt(0)}</span>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-11 h-11 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border border-white/5 shadow-inner">
+                  <span className="text-white font-serif font-black text-lg uppercase">{user.name.charAt(0)}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm text-white truncate">{user.name}</div>
-                  <div className="text-xs text-white/50 capitalize">{user.role}</div>
+                  <div className="font-bold text-sm text-white truncate leading-tight">{user.name}</div>
+                  <div className="text-[10px] text-white/50 font-black uppercase tracking-widest mt-0.5">{user.role}</div>
                 </div>
               </div>
               <button onClick={onToggleTheme} className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/10 text-white/70 rounded-lg font-semibold text-sm hover:bg-white/10 hover:text-white transition-all mb-2">

@@ -121,12 +121,12 @@ const BiTDashboardLayout: React.FC<BiTDashboardLayoutProps> = ({
           {sidebarOpen ? (
             <>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-careermap-teal/20 rounded-xl flex items-center justify-center shrink-0 border border-careermap-teal/30">
-                  <span className="text-careermap-teal font-serif font-bold text-lg">{user.name.charAt(0)}</span>
+                <div className="w-11 h-11 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border border-white/5 shadow-inner">
+                  <span className="text-white font-serif font-black text-lg uppercase">{user.name.charAt(0)}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-bold text-sm text-white truncate">{user.name}</div>
-                  <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">BiT Academic Admin</div>
+                  <div className="font-bold text-sm text-white truncate leading-tight">{user.name}</div>
+                  <div className="text-[10px] text-white/50 font-black uppercase tracking-widest mt-0.5">BiT Academic Admin</div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">

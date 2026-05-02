@@ -83,6 +83,7 @@ export interface DashboardRouterProps {
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
   onUserUpdate?: (updatedUser: User) => void;
+  initialTab?: string;
 }
 
 // Student Dashboard Props
@@ -92,6 +93,7 @@ export interface StudentDashboardLayoutProps {
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
   onUserUpdate?: (updatedUser: User) => void;
+  initialTab?: string;
 }
 
 // Teacher Dashboard Props
@@ -101,6 +103,7 @@ export interface TeacherDashboardLayoutProps {
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
   onUserUpdate?: (updatedUser: User) => void;
+  initialTab?: string;
 }
 
 // Admin Dashboard Props
@@ -110,6 +113,7 @@ export interface AdminDashboardLayoutProps {
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
   onUserUpdate?: (updatedUser: User) => void;
+  initialTab?: string;
 }
 
 // Teacher Statistics
@@ -167,6 +171,7 @@ export interface BiTDashboardLayoutProps {
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
   onUserUpdate?: (updatedUser: User) => void;
+  initialTab?: string;
 }
 
 export function isBiT(user: User): user is User & { role: 'bit' } {

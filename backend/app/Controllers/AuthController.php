@@ -22,10 +22,87 @@ class AuthController {
             return;
         }
 
-        // Check if user exists
-        if ($this->userModel->findByEmail($data['email'])) {
+        $name = trim($data['name']);
+        $email = strtolower(trim($data['email']));
+        $password = $data['password'];
+
+        // ── Full Name Validations ──
+        
+        // 1. Empty or only spaces
+        if (empty($name)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Full name cannot be empty']);
+            return;
+        }
+
+        // 2. Length check (at least 5, max 50)
+        if (mb_strlen($name) < 5) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Full name must be at least 5 characters long']);
+            return;
+        }
+        if (mb_strlen($name) > 50) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Full name is too long']);
+            return;
+        }
+
+        // 3. Single word check
+        if (strpos($name, ' ') === false) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Please enter at least two names (e.g., First and Father name)']);
+            return;
+        }
+
+        // 4. Invalid characters (Numbers, symbols like @, #, $, etc.)
+        // Allow: alphabets, spaces, hyphens, and apostrophes
+        if (!preg_match("/^[a-zA-Z\s\-\']+$/u", $name)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Full name can only contain letters, spaces, hyphens and apostrophes']);
+            return;
+        }
+
+        // 5. Only symbols (----, '''')
+        if (!preg_match("/[a-zA-Z]/u", $name)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Full name must contain at least some letters']);
+            return;
+        }
+
+        // 6. Repeated/meaningless text (aaaa, xxx)
+        if (preg_match("/(.)\\1{3,}/u", $name)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Full name contains excessive repeated characters']);
+            return;
+        }
+
+        // 7. Too many spaces between words
+        if (strpos($name, '  ') !== false) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Full name contains too many consecutive spaces']);
+            return;
+        }
+
+        // 8. Security patterns (HTML tags, SQL injection)
+        if (preg_match("/<[^>]*>|' OR |\" OR |DROP TABLE|--/i", $name)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid name format detected']);
+            return;
+        }
+
+        // ── Email Validations ──
+
+        // 1. Format check
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Please provide a valid email address']);
+            return;
+        }
+
+        // 2. Uniqueness check
+        if ($this->userModel->findByEmail($email)) {
             http_response_code(409);
-            echo json_encode(['error' => 'Email already registered']);
+            echo json_encode(['error' => 'This email is already registered']);
             return;
         }
 
@@ -35,9 +112,9 @@ class AuthController {
         
         // Prepare user data
         $userData = [
-            'name'             => $data['name'],
-            'email'            => $data['email'],
-            'password'         => password_hash($data['password'], PASSWORD_BCRYPT),
+            'name'             => $name,
+            'email'            => $email,
+            'password'         => password_hash($password, PASSWORD_BCRYPT),
             'role'             => $needsApproval ? 'teacher' : 'student',
             'role_request'     => $requestedRole,
             'account_status'   => $needsApproval ? 'pending' : 'active',
