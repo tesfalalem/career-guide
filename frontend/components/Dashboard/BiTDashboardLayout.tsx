@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   LayoutDashboard, BookOpen, Map, LogOut, Sun, Moon, GraduationCap,
-  ChevronsLeft, Menu
+  ChevronsLeft, Menu, Briefcase
 } from 'lucide-react';
 import BiTOverview from './BiT/BiTOverview';
 import BiTRoadmapsView from './BiT/BiTRoadmapsView';
 import BiTCoursesView from './BiT/BiTCoursesView';
+import BiTCareersView from './BiT/BiTCareersView';
 import NotificationBell from '../common/NotificationBell';
+import UserAvatar from '../common/UserAvatar';
 import { BiTDashboardLayoutProps } from '../../types';
 
-type BiTTab = 'overview' | 'roadmaps' | 'courses';
+type BiTTab = 'overview' | 'roadmaps' | 'courses' | 'careers';
 
 const BiTDashboardLayout: React.FC<BiTDashboardLayoutProps> = ({
   user, onLogout, theme, onToggleTheme
@@ -55,9 +57,10 @@ const BiTDashboardLayout: React.FC<BiTDashboardLayoutProps> = ({
   }, [isResizing, resize, stopResizing]);
 
   const menuItems = [
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'roadmaps', label: 'Roadmaps', icon: Map },
-    { id: 'courses', label: 'Courses', icon: BookOpen },
+    { id: 'overview', label: 'Overview',  icon: LayoutDashboard },
+    { id: 'roadmaps', label: 'Roadmaps',  icon: Map },
+    { id: 'courses',  label: 'Courses',   icon: BookOpen },
+    { id: 'careers',  label: 'Careers',   icon: Briefcase },
   ];
 
   const renderContent = () => {
@@ -65,6 +68,7 @@ const BiTDashboardLayout: React.FC<BiTDashboardLayoutProps> = ({
       case 'overview': return <BiTOverview onNavigate={tab => setActiveTab(tab as BiTTab)} />;
       case 'roadmaps': return <BiTRoadmapsView />;
       case 'courses':  return <BiTCoursesView />;
+      case 'careers':  return <BiTCareersView />;
       default:         return <BiTOverview onNavigate={tab => setActiveTab(tab as BiTTab)} />;
     }
   };

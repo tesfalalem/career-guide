@@ -5,12 +5,14 @@ import {
   ArrowLeft, ArrowRight, Star, ChevronsLeft, Menu,
   ChevronDown, ChevronRight,
   Link2, FileText, Image as ImageIcon, Video, Download, ExternalLink,
-  Brain, HelpCircle, Loader2, X, CheckCircle
+  Brain, HelpCircle, Loader2, X, CheckCircle, User, GraduationCap
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { enrollInCourse } from '../../services/courseService';
+import StudentMaterialsTab from './StudentMaterialsTab';
+import TeacherMaterialsTab from './Teacher/TeacherMaterialsTab';
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = 'http://localhost/careerguide/backend/api';
 
 interface CourseViewProps {
   initialCourseData?: Course;
@@ -20,7 +22,7 @@ interface CourseViewProps {
 }
 
 // ── Block Renderer ────────────────────────────────────────────────────────────
-const SERVE_BASE = 'http://localhost:8000';
+const SERVE_BASE = 'http://localhost/careerguide/backend';
 
 // Resolve any URL — handles real URLs and legacy [UPLOADED:filename] format
 const resolveUrl = (raw: string | undefined): string | null => {
@@ -40,6 +42,9 @@ const getYouTubeId = (url: string) => {
 const BlockRenderer: React.FC<{ content: string }> = ({ content }) => {
   if (!content) return null;
 
+  // Helper: detect if a string contains HTML tags
+  const isHtml = (s: string) => /<[a-z][\s\S]*>/i.test(s);
+
   // Try to parse as JSON block array
   let blocks: any[] = [];
   try {
@@ -47,11 +52,15 @@ const BlockRenderer: React.FC<{ content: string }> = ({ content }) => {
     if (Array.isArray(parsed)) {
       blocks = parsed;
     } else if (typeof parsed === 'object' && parsed !== null) {
-      // Single block or wrapped object
-      return <ReactMarkdown>{parsed.text || parsed.content || content}</ReactMarkdown>;
+      const text = parsed.text || parsed.content || content;
+      if (isHtml(text)) return <div dangerouslySetInnerHTML={{ __html: text }} className="prose prose-slate dark:prose-invert max-w-none rich-content" />;
+      return <ReactMarkdown>{text}</ReactMarkdown>;
     }
   } catch {
-    // Plain text or markdown — render directly
+    // Plain text, markdown, or raw HTML
+    if (isHtml(content)) {
+      return <div dangerouslySetInnerHTML={{ __html: content }} className="prose prose-slate dark:prose-invert max-w-none rich-content" />;
+    }
     return <ReactMarkdown>{content}</ReactMarkdown>;
   }
 
@@ -62,7 +71,11 @@ const BlockRenderer: React.FC<{ content: string }> = ({ content }) => {
           case 'text':
             return (
               <div key={i} className="prose prose-slate dark:prose-invert max-w-none">
-                <ReactMarkdown>{block.text || ''}</ReactMarkdown>
+                {isHtml(block.text || '') ? (
+                  <div dangerouslySetInnerHTML={{ __html: block.text || '' }} className="rich-content" />
+                ) : (
+                  <ReactMarkdown>{block.text || ''}</ReactMarkdown>
+                )}
               </div>
             );
 
@@ -196,6 +209,18 @@ const CourseView: React.FC<CourseViewProps> = ({
   const [showAIModal, setShowAIModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [numQuestions, setNumQuestions] = useState(5);
+
+  // Tab: 'lesson' | 'materials' | 'teacher-manage'
+  const [activeTab, setActiveTab] = useState<'lesson' | 'materials' | 'teacher-manage'>('lesson');
+
+  // Detect current user role for teacher management tab
+  const userRole = (() => {
+    try {
+      const saved = localStorage.getItem('user');
+      if (saved) return JSON.parse(saved)?.role || 'student';
+    } catch {}
+    return 'student';
+  })();
 
   const toggleModule = (idx: number) => {
     const next = new Set(expandedModules);
@@ -575,7 +600,44 @@ const CourseView: React.FC<CourseViewProps> = ({
           </div>
         )}
 
-        {/* Lesson Content */}
+        {/* ── Tab Bar ── */}
+        <div className="flex border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 shrink-0">
+          <button
+            onClick={() => setActiveTab('lesson')}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all ${
+              activeTab === 'lesson'
+                ? 'border-careermap-teal text-careermap-teal'
+                : 'border-transparent text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <BookOpen size={15} /> Lesson
+          </button>
+          <button
+            onClick={() => setActiveTab('materials')}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all ${
+              activeTab === 'materials'
+                ? 'border-careermap-teal text-careermap-teal'
+                : 'border-transparent text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <User size={15} /> Teacher Materials
+          </button>
+          {(userRole === 'teacher' || userRole === 'admin') && (
+            <button
+              onClick={() => setActiveTab('teacher-manage')}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all ${
+                activeTab === 'teacher-manage'
+                  ? 'border-careermap-teal text-careermap-teal'
+                  : 'border-transparent text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              <GraduationCap size={15} /> Manage Materials
+            </button>
+          )}
+        </div>
+
+        {/* ── Tab Content ── */}
+        {activeTab === 'lesson' && (
         <div className="flex-1 overflow-y-auto p-8 md:p-12 max-w-4xl mx-auto w-full">
           <div className="prose prose-slate dark:prose-invert max-w-none">
             <h1 className="font-bold text-3xl mb-6">{activeLesson?.title}</h1>
@@ -602,6 +664,25 @@ const CourseView: React.FC<CourseViewProps> = ({
             </button>
           </div>
         </div>
+        )}
+
+        {activeTab === 'materials' && (
+          <div className="flex-1 overflow-y-auto p-8 max-w-4xl mx-auto w-full">
+            <StudentMaterialsTab courseId={String(course.id)} />
+          </div>
+        )}
+
+        {activeTab === 'teacher-manage' && (userRole === 'teacher' || userRole === 'admin') && (
+          <div className="flex-1 overflow-y-auto p-8 max-w-4xl mx-auto w-full">
+            <TeacherMaterialsTab
+              courseId={String(course.id)}
+              modules={course.modules.map(m => ({
+                title: m.title,
+                lessons: m.lessons.map(l => ({ title: l.title })),
+              }))}
+            />
+          </div>
+        )}
       </main>
 
       {/* AI Assessment Modal */}

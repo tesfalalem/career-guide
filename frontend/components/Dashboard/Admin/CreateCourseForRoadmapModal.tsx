@@ -5,6 +5,7 @@ import {
   Image, Video, FileText, GripVertical, ClipboardCheck
 } from 'lucide-react';
 import { adminService } from '../../../services/adminService';
+import RichTextEditor from '../../common/RichTextEditor';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type BlockType = 'text' | 'link' | 'image' | 'video' | 'file';
@@ -58,7 +59,7 @@ async function uploadFile(file: File): Promise<string> {
   const token = localStorage.getItem('auth_token');
   const form = new FormData();
   form.append('file', file);
-  const res = await fetch('http://localhost:8000/api/upload', {
+  const res = await fetch('http://localhost/careerguide/backend/api/upload', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },
     body: form
@@ -122,12 +123,11 @@ const BlockEditor: React.FC<{
 
         {/* TEXT */}
         {block.type === 'text' && (
-          <textarea
+          <RichTextEditor
             value={block.text ?? ''}
-            onChange={e => onChange({ ...block, text: e.target.value })}
-            rows={5}
-            className="w-full bg-transparent text-sm text-primary dark:text-white outline-none resize-y placeholder:text-slate-400 leading-relaxed"
-            placeholder="Write lesson content here — plain text or Markdown supported..."
+            onChange={html => onChange({ ...block, text: html })}
+            placeholder="Write lesson content here — use the toolbar for formatting..."
+            minHeight={160}
           />
         )}
 
@@ -325,7 +325,7 @@ const CreateCourseForRoadmapModal: React.FC<Props> = ({
       const validQuestions = questions.filter(q => q.question.trim() && q.options.every(o => o.trim()));
       if (validQuestions.length > 0 && result?.course_id) {
         const token = localStorage.getItem('auth_token');
-        await fetch('http://localhost:8000/api/assessments', {
+        await fetch('http://localhost/careerguide/backend/api/assessments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({

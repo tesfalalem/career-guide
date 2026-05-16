@@ -66,9 +66,12 @@ export interface User {
   email: string;
   role: 'student' | 'teacher' | 'admin' | 'bit';
   academicYear?: string;
+  academic_year?: string;
   enrolledPaths: string[];
   xp: number;
   streak: number;
+  profile_image?: string | null;
+  created_at?: string;
 }
 
 export interface QuizQuestion {

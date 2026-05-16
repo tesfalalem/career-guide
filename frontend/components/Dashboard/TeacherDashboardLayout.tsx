@@ -13,6 +13,7 @@ import TeacherAnalyticsView from './Teacher/TeacherAnalyticsView';
 import TeacherProfileView from './Teacher/TeacherProfileView';
 import TeacherSettingsView from './Teacher/TeacherSettingsView';
 import NotificationBell from '../common/NotificationBell';
+import UserAvatar from '../common/UserAvatar';
 import { TeacherDashboardLayoutProps, TeacherStats } from '../../types';
 
 export type TeacherTab = 'overview' | 'resources' | 'students' | 'analytics' | 'profile' | 'settings';
@@ -75,7 +76,7 @@ const TeacherDashboardLayout: React.FC<TeacherDashboardLayoutProps> = ({
   const checkAssignment = async () => {
     try {
       const token = localStorage.getItem('auth_token');
-      const res = await fetch('http://localhost:8000/api/course-assignments/my', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch('http://localhost/careerguide/backend/api/course-assignments/my', { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       if (!data) { setCourseSelected(false); setAssignmentStatus('none'); }
       else { setCourseSelected(true); setAssignmentStatus(data.status); }
@@ -210,9 +211,13 @@ const TeacherDashboardLayout: React.FC<TeacherDashboardLayoutProps> = ({
           {sidebarOpen ? (
             <>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-11 h-11 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border border-white/5 shadow-inner">
-                  <span className="text-white font-serif font-black text-lg uppercase">{user.name.charAt(0)}</span>
-                </div>
+                <UserAvatar
+                  name={user.name}
+                  imageUrl={(user as any).profile_image}
+                  role={user.role}
+                  size={44}
+                  className="rounded-xl border border-white/10"
+                />
                 <div className="flex-1 min-w-0">
                   <div className="font-bold text-sm text-white truncate leading-tight">{user.name}</div>
                   <div className="text-[10px] text-white/50 font-black uppercase tracking-widest mt-0.5">{user.role}</div>

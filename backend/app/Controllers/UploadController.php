@@ -27,8 +27,17 @@ class UploadController {
 
     // Build the public URL for a filename using the API serve endpoint
     private function buildUrl($filename) {
+        // Use APP_URL from .env if available, otherwise fall back to HTTP_HOST
+        $appUrl = rtrim($_ENV['APP_URL'] ?? '', '/');
+        if ($appUrl) {
+            // APP_URL is like http://localhost/careerguide/backend/public
+            // We need the /api prefix which maps via .htaccess to public/index.php
+            // Strip /public suffix if present and add /api
+            $base = preg_replace('#/public$#', '', $appUrl);
+            return $base . '/api/uploads/serve?file=' . urlencode($filename);
+        }
         $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $host   = $_SERVER['HTTP_HOST'] ?? 'localhost:8000';
+        $host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
         return $scheme . '://' . $host . '/api/uploads/serve?file=' . urlencode($filename);
     }
 

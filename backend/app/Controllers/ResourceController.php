@@ -499,4 +499,181 @@ class ResourceController {
             return ['success' => false, 'error' => 'Failed to move uploaded file'];
         }
     }
+
+    // ── TEACHER: Get materials for a specific course (teacher view) ────────────
+    public function getCourseMaterials($courseId) {
+        $user = $this->requireAuth(['teacher', 'admin']);
+        $conn = (new Database())->getConnection();
+
+        // Verify teacher is assigned to this course
+        if ($user['role'] === 'teacher') {
+            $stmt = $conn->prepare("SELECT id FROM teacher_course_assignments WHERE teacher_id=? AND course_id=? AND status='approved'");
+            $stmt->execute([$user['id'], $courseId]);
+            if (!$stmt->fetch()) {
+                http_response_code(403);
+                echo json_encode(['error' => 'You are not assigned to this course']);
+                return;
+            }
+        }
+
+        $stmt = $conn->prepare("
+            SELECT er.*, u.name as uploader_name
+            FROM educational_resources er
+            JOIN users u ON er.uploaded_by = u.id
+            WHERE er.course_id = ? AND er.uploaded_by = ?
+            ORDER BY er.module_name ASC, er.lesson_name ASC, er.created_at DESC
+        ");
+        $stmt->execute([$courseId, $user['id']]);
+        $resources = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($resources as &$r) {
+            $r['tags'] = json_decode($r['tags'] ?? '[]', true);
+            if (!empty($r['file_path'])) {
+                $r['file_url'] = ($_ENV['APP_URL'] ?? 'http://localhost:8000') . '/api/uploads/serve?file=' . urlencode(basename($r['file_path'])) . '&type=resource';
+            }
+        }
+        echo json_encode($resources);
+    }
+
+    // ── TEACHER: Create a course material ─────────────────────────────────────
+    public function createCourseMaterial($courseId) {
+        $user = $this->requireAuth(['teacher', 'admin']);
+        $conn = (new Database())->getConnection();
+
+        // Verify teacher is assigned to this course
+        if ($user['role'] === 'teacher') {
+            $stmt = $conn->prepare("SELECT id FROM teacher_course_assignments WHERE teacher_id=? AND course_id=? AND status='approved'");
+            $stmt->execute([$user['id'], $courseId]);
+            if (!$stmt->fetch()) {
+                http_response_code(403);
+                echo json_encode(['error' => 'You are not assigned to this course']);
+                return;
+            }
+        }
+
+        $title       = $_POST['title'] ?? '';
+        $description = $_POST['description'] ?? '';
+        $type        = $_POST['resource_type'] ?? 'document';
+        $moduleName  = $_POST['module_name'] ?? null;
+        $lessonName  = $_POST['lesson_name'] ?? null;
+        $notes       = $_POST['notes'] ?? null;
+        $externalUrl = $_POST['external_url'] ?? null;
+
+        if (empty($title)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Title is required']);
+            return;
+        }
+
+        $filePath = null; $fileSize = 0; $fileType = null;
+        if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
+            $result = $this->handleFileUpload($_FILES['file']);
+            if (!$result['success']) {
+                http_response_code(400);
+                echo json_encode(['error' => $result['error']]);
+                return;
+            }
+            $filePath = $result['path'];
+            $fileSize = $result['size'];
+            $fileType = $result['type'];
+        } elseif (empty($externalUrl) && $type !== 'note') {
+            http_response_code(400);
+            echo json_encode(['error' => 'Provide a file or external URL']);
+            return;
+        }
+
+        $stmt = $conn->prepare("
+            INSERT INTO educational_resources
+              (title, description, resource_type, file_path, external_url,
+               category, tags, uploaded_by, file_size, file_type, status,
+               course_id, module_name, lesson_name, notes)
+            VALUES (?,?,?,?,?,?,?,?,?,?,'approved',?,?,?,?)
+        ");
+        $stmt->execute([
+            $title, $description, $type, $filePath, $externalUrl,
+            'Course Material', '[]', $user['id'], $fileSize, $fileType,
+            $courseId, $moduleName, $lessonName, $notes
+        ]);
+        $id = $conn->lastInsertId();
+
+        http_response_code(201);
+        echo json_encode(['message' => 'Material added', 'id' => $id]);
+    }
+
+    // ── TEACHER: Update a course material ─────────────────────────────────────
+    public function updateCourseMaterial($id) {
+        $user = $this->requireAuth(['teacher', 'admin']);
+        $conn = (new Database())->getConnection();
+
+        $stmt = $conn->prepare("SELECT * FROM educational_resources WHERE id=?");
+        $stmt->execute([$id]);
+        $resource = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$resource) { http_response_code(404); echo json_encode(['error' => 'Not found']); return; }
+        if ($resource['uploaded_by'] != $user['id'] && $user['role'] !== 'admin') {
+            http_response_code(403); echo json_encode(['error' => 'Forbidden']); return;
+        }
+
+        $data = json_decode(file_get_contents('php://input'), true) ?? [];
+        $fields = []; $params = [];
+        foreach (['title','description','resource_type','external_url','module_name','lesson_name','notes'] as $f) {
+            if (isset($data[$f])) { $fields[] = "$f=?"; $params[] = $data[$f]; }
+        }
+        if (empty($fields)) { echo json_encode(['message' => 'Nothing to update']); return; }
+        $params[] = $id;
+        $conn->prepare("UPDATE educational_resources SET " . implode(',', $fields) . " WHERE id=?")->execute($params);
+        echo json_encode(['message' => 'Updated']);
+    }
+
+    // ── TEACHER: Delete a course material ─────────────────────────────────────
+    public function deleteCourseMaterial($id) {
+        $user = $this->requireAuth(['teacher', 'admin']);
+        $conn = (new Database())->getConnection();
+
+        $stmt = $conn->prepare("SELECT * FROM educational_resources WHERE id=?");
+        $stmt->execute([$id]);
+        $resource = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$resource) { http_response_code(404); echo json_encode(['error' => 'Not found']); return; }
+        if ($resource['uploaded_by'] != $user['id'] && $user['role'] !== 'admin') {
+            http_response_code(403); echo json_encode(['error' => 'Forbidden']); return;
+        }
+
+        if ($resource['file_path'] && file_exists($this->uploadDir . $resource['file_path'])) {
+            unlink($this->uploadDir . $resource['file_path']);
+        }
+        $conn->prepare("DELETE FROM educational_resources WHERE id=?")->execute([$id]);
+        echo json_encode(['message' => 'Deleted']);
+    }
+
+    // ── STUDENT: View teacher materials for a course ───────────────────────────
+    public function getStudentCourseMaterials($courseId) {
+        $conn = (new Database())->getConnection();
+
+        $stmt = $conn->prepare("
+            SELECT er.id, er.title, er.description, er.resource_type,
+                   er.external_url, er.file_path, er.module_name, er.lesson_name,
+                   er.notes, er.views, er.downloads, er.created_at,
+                   u.name as teacher_name
+            FROM educational_resources er
+            JOIN users u ON er.uploaded_by = u.id
+            JOIN teacher_course_assignments tca
+              ON tca.teacher_id = er.uploaded_by
+              AND tca.course_id = er.course_id
+              AND tca.status = 'approved'
+            WHERE er.course_id = ? AND er.status = 'approved'
+            ORDER BY er.module_name ASC, er.lesson_name ASC, er.created_at DESC
+        ");
+        $stmt->execute([$courseId]);
+        $resources = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($resources as &$r) {
+            if (!empty($r['file_path'])) {
+                $r['file_url'] = ($_ENV['APP_URL'] ?? 'http://localhost:8000') . '/api/uploads/serve?file=' . urlencode(basename($r['file_path'])) . '&type=resource';
+            }
+            // Increment views
+            $conn->prepare("UPDATE educational_resources SET views=views+1 WHERE id=?")->execute([$r['id']]);
+        }
+
+        echo json_encode($resources);
+    }
 }

@@ -104,18 +104,22 @@ function App() {
 
   const handleLogin = (userData: any) => {
     setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
     setView('dashboard');
     window.scrollTo(0, 0);
   };
 
   const handleSignup = (userData: any) => {
     setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
     setView('onboarding');
     window.scrollTo(0, 0);
   };
 
-  const handleUserUpdate = (updatedUser: User) => {
-    setUser(updatedUser);
+  const handleUserUpdate = (updatedUser: any) => {
+    // Merge with existing user to avoid losing any fields
+    setUser(prev => ({ ...prev, ...updatedUser } as User));
+    localStorage.setItem('user', JSON.stringify({ ...user, ...updatedUser }));
   };
 
   // Loading state for initial auth check
@@ -127,11 +131,13 @@ function App() {
   const handleOnboardingComplete = (selectedCareer: string) => {
     if (user) {
       // In a real app, save this selection to Supabase 'user_enrollments'
-      setUser({
+      const updatedUser = {
         ...user,
         enrolledPaths: [selectedCareer],
         xp: 50
-      });
+      };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
     }
     navigateTo('dashboard');
   };

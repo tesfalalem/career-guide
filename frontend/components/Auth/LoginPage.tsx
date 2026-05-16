@@ -159,7 +159,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, onLogin }) => {
             >
               {loading ? <Loader2 className="animate-spin" size={20} /> : (
                 <>
-                  Sign In to Dashboard
+                  Continue
                   <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                 </>
               )}

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/../Models/CuratedRoadmap.php';
 require_once __DIR__ . '/../Models/EducationalResource.php';
 require_once __DIR__ . '/../Models/User.php';
@@ -27,29 +27,95 @@ class AdminController {
     private function db() { $d = new Database(); return $d->getConnection(); }
     private function safeCount($conn, $sql) { try { return (int)$conn->query($sql)->fetchColumn(); } catch (\Exception $e) { return 0; } }
     private function ensureUserColumns($conn) {
-        $cols = ["ALTER TABLE users ADD COLUMN IF NOT EXISTS role_request ENUM('student','teacher','admin','bit') DEFAULT 'student'","ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status ENUM('pending','active','rejected') DEFAULT 'active'","ALTER TABLE users ADD COLUMN IF NOT EXISTS approval_notes TEXT NULL","ALTER TABLE users ADD COLUMN IF NOT EXISTS requested_at TIMESTAMP NULL","ALTER TABLE users ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP NULL","ALTER TABLE users ADD COLUMN IF NOT EXISTS approved_by INT NULL","ALTER TABLE users ADD COLUMN IF NOT EXISTS institution VARCHAR(255) NULL","ALTER TABLE users ADD COLUMN IF NOT EXISTS years_experience INT NULL","ALTER TABLE users ADD COLUMN IF NOT EXISTS expertise_areas JSON NULL","ALTER TABLE users ADD COLUMN IF NOT EXISTS qualifications JSON NULL","ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT NULL","ALTER TABLE users ADD COLUMN IF NOT EXISTS student_id VARCHAR(100) NULL","ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100) NULL"];
-        foreach ($cols as $sql) { try { $conn->exec($sql); } catch (\Exception $e) {} }
-        try { $conn->exec("UPDATE users SET account_status='active' WHERE account_status IS NULL OR account_status=''"); } catch (\Exception $e) {}
+        $cols = [
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS role_request ENUM('student','teacher','admin','bit') DEFAULT 'student'",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status ENUM('pending','active','rejected') DEFAULT 'active'",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS approval_notes TEXT NULL",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS requested_at TIMESTAMP NULL",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP NULL",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS approved_by INT NULL",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS institution VARCHAR(255) NULL",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS years_experience INT NULL",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS expertise_areas JSON NULL",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS qualifications JSON NULL",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT NULL",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS student_id VARCHAR(100) NULL",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100) NULL"
+        ];
+        foreach ($cols as $sql) { 
+            try { 
+                $conn->exec($sql); 
+            } catch (\Exception $e) {
+                error_log("AdminController Migration Error: " . $e->getMessage());
+            } 
+        }
+        try { 
+            $conn->exec("UPDATE users SET account_status='active' WHERE account_status IS NULL OR account_status=''"); 
+        } catch (\Exception $e) {
+            error_log("AdminController Update Status Error: " . $e->getMessage());
+        }
     }
     public function getAnalytics() {
         $this->checkPermission('admin'); $conn = $this->db();
         echo json_encode(['total_users'=>$this->safeCount($conn,"SELECT COUNT(*) FROM users"),'total_students'=>$this->safeCount($conn,"SELECT COUNT(*) FROM users WHERE role='student'"),'total_teachers'=>$this->safeCount($conn,"SELECT COUNT(*) FROM users WHERE role='teacher'"),'total_admins'=>$this->safeCount($conn,"SELECT COUNT(*) FROM users WHERE role='admin'"),'total_roadmaps'=>$this->safeCount($conn,"SELECT COUNT(*) FROM curated_roadmaps WHERE status='published'"),'total_resources'=>$this->safeCount($conn,"SELECT COUNT(*) FROM educational_resources"),'pending_resources'=>$this->safeCount($conn,"SELECT COUNT(*) FROM educational_resources WHERE status='pending'"),'approved_resources'=>$this->safeCount($conn,"SELECT COUNT(*) FROM educational_resources WHERE status='approved'"),'rejected_resources'=>$this->safeCount($conn,"SELECT COUNT(*) FROM educational_resources WHERE status='rejected'"),'pending_approvals'=>$this->safeCount($conn,"SELECT COUNT(*) FROM users WHERE account_status='pending'"),'popular_roadmaps'=>$this->roadmapModel->getPopular(5),'recent_activity'=>[]]);
     }
     public function getPendingApprovals() {
-        $this->checkPermission('admin'); $conn = $this->db(); $this->ensureUserColumns($conn);
-        try { $stmt = $conn->query("SELECT id,name,email,role,COALESCE(role_request,role) as role_request,COALESCE(account_status,'active') as account_status,institution,years_experience,expertise_areas,qualifications,bio,requested_at,created_at FROM users WHERE account_status='pending' ORDER BY requested_at DESC"); $rows = $stmt->fetchAll(PDO::FETCH_ASSOC); foreach ($rows as &$u) { if (!empty($u['expertise_areas'])) $u['expertise_areas']=json_decode($u['expertise_areas'],true); if (!empty($u['qualifications'])) $u['qualifications']=json_decode($u['qualifications'],true); } echo json_encode($rows); } catch (\Exception $e) { echo json_encode([]); }
+        $this->checkPermission('admin');
+        $conn = $this->db();
+        $this->ensureUserColumns($conn);
+        try {
+            $stmt = $conn->query("SELECT id,name,email,role,COALESCE(role_request,role) as role_request,account_status,institution,years_experience,expertise_areas,qualifications,bio,requested_at,created_at FROM users WHERE account_status='pending' ORDER BY requested_at DESC");
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($rows as &$u) {
+                if (!empty($u['expertise_areas'])) $u['expertise_areas'] = json_decode($u['expertise_areas'], true);
+                if (!empty($u['qualifications'])) $u['qualifications'] = json_decode($u['qualifications'], true);
+            }
+            echo json_encode($rows);
+        } catch (\Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
     }
     public function approveRoleRequest($userId) {
-        $admin = $this->checkPermission('admin'); $data = json_decode(file_get_contents("php://input"),true); $notes = $data['notes']??''; $conn = $this->db(); $this->ensureUserColumns($conn);
-        $stmt = $conn->prepare("SELECT COALESCE(role_request,'teacher') as role_request FROM users WHERE id=?"); $stmt->execute([$userId]); $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$row) { http_response_code(404); echo json_encode(['error'=>'User not found']); return; }
-        $stmt = $conn->prepare("UPDATE users SET role=?,account_status='active',approval_notes=?,approved_at=NOW(),approved_by=? WHERE id=?");
-        if ($stmt->execute([$row['role_request'],$notes,$admin['id'],$userId])) echo json_encode(['success'=>true,'message'=>'Approved']); else { http_response_code(500); echo json_encode(['error'=>'Failed']); }
+        $admin = $this->checkPermission('admin'); 
+        $data = json_decode(file_get_contents("php://input"), true); 
+        $notes = $data['notes'] ?? ''; 
+        $conn = $this->db(); 
+        $this->ensureUserColumns($conn);
+        
+        $stmt = $conn->prepare("SELECT id, role_request FROM users WHERE id=?");
+        $stmt->execute([$userId]); 
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$row) {
+            http_response_code(404);
+            echo json_encode(['error' => 'User not found']);
+            return;
+        }
+
+        $newRole = $row['role_request'] ?: 'teacher';
+        $stmt = $conn->prepare("UPDATE users SET role=?, account_status='active', approval_notes=?, approved_at=NOW(), approved_by=? WHERE id=?");
+        if ($stmt->execute([$newRole, $notes, $admin['id'], $userId])) {
+            echo json_encode(['success' => true, 'message' => 'Approved']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to update user']);
+        }
     }
     public function rejectRoleRequest($userId) {
-        $admin = $this->checkPermission('admin'); $data = json_decode(file_get_contents("php://input"),true); $notes = $data['notes']??''; $conn = $this->db(); $this->ensureUserColumns($conn);
-        $stmt = $conn->prepare("UPDATE users SET account_status='rejected',approval_notes=?,approved_at=NOW(),approved_by=? WHERE id=?");
-        if ($stmt->execute([$notes,$admin['id'],$userId])) echo json_encode(['success'=>true,'message'=>'Rejected']); else { http_response_code(500); echo json_encode(['error'=>'Failed']); }
+        $admin = $this->checkPermission('admin'); 
+        $data = json_decode(file_get_contents("php://input"), true); 
+        $notes = $data['notes'] ?? ''; 
+        $conn = $this->db(); 
+        $this->ensureUserColumns($conn);
+        
+        $stmt = $conn->prepare("UPDATE users SET account_status='rejected', approval_notes=?, approved_at=NOW(), approved_by=? WHERE id=?");
+        if ($stmt->execute([$notes, $admin['id'], $userId])) {
+            echo json_encode(['success' => true, 'message' => 'Rejected']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to update user']);
+        }
     }
     public function getAllUsers() { $this->checkPermission('admin'); $conn=$this->db(); echo json_encode($conn->query("SELECT id,name,email,role,academic_year,xp,streak,created_at FROM users ORDER BY created_at DESC")->fetchAll()); }
     public function updateUserRole($id) { $this->checkPermission('admin'); $data=json_decode(file_get_contents("php://input"),true); if(!isset($data['role'])||!in_array($data['role'],['student','teacher','admin','bit'])){http_response_code(400);echo json_encode(['error'=>'Valid role required']);return;} if($this->userModel->update($id,['role'=>$data['role']])) echo json_encode(['message'=>'Updated']); else{http_response_code(500);echo json_encode(['error'=>'Failed']);} }

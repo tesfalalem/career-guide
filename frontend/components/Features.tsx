@@ -34,7 +34,7 @@ const featureList = [
   },
   {
     title: 'Progress Tracking',
-    desc:  'Visual dashboards track your course completion, XP points, and learning streak — keeping you accountable.',
+    desc:  'Visual dashboards track your course completion and learning progress — keeping you accountable.',
     icon:  Activity,
     color: 'text-rose-500',
     bg:    'bg-rose-50 dark:bg-rose-500/10',

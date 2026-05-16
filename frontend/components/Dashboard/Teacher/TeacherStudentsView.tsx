@@ -48,7 +48,7 @@ const TeacherStudentsView: React.FC = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('http://localhost:8000/api/teacher/students', {
+      const response = await fetch('http://localhost/careerguide/backend/api/teacher/students', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -70,7 +70,7 @@ const TeacherStudentsView: React.FC = () => {
   const fetchStudentProgress = async (studentId: number) => {
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:8000/api/teacher/students/${studentId}/progress`, {
+      const response = await fetch(`http://localhost/careerguide/backend/api/teacher/students/${studentId}/progress`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -97,7 +97,7 @@ const TeacherStudentsView: React.FC = () => {
     setSendingFeedback(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('http://localhost:8000/api/teacher/feedback', {
+      const response = await fetch('http://localhost/careerguide/backend/api/teacher/feedback', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

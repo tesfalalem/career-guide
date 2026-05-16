@@ -12,6 +12,7 @@ import AdminSettingsView from './Admin/AdminSettingsView';
 import AdminSupportView from './Admin/AdminSupportView';
 import { MessageSquare } from 'lucide-react';
 import NotificationBell from '../common/NotificationBell';
+import UserAvatar from '../common/UserAvatar';
 import { AdminDashboardLayoutProps, PlatformAnalytics } from '../../types';
 
 export type AdminTab = 'overview' | 'users' | 'approvals' | 'analytics' | 'settings' | 'support';
@@ -84,7 +85,7 @@ const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps & { initialTab?: 
 
   const fetchPendingApprovalsCount = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/admin/approvals/pending', {
+      const response = await fetch('http://localhost/careerguide/backend/api/admin/approvals/pending', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         }
@@ -101,7 +102,7 @@ const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps & { initialTab?: 
   const fetchAnalytics = async () => {
     const token = localStorage.getItem('auth_token');
     try {
-      const response = await fetch('http://localhost:8000/api/admin/analytics', {
+      const response = await fetch('http://localhost/careerguide/backend/api/admin/analytics', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -202,9 +203,13 @@ const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps & { initialTab?: 
           {sidebarOpen ? (
             <>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-11 h-11 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border border-white/5 shadow-inner">
-                  <span className="text-white font-serif font-black text-lg uppercase">{user.name.charAt(0)}</span>
-                </div>
+                <UserAvatar
+                  name={user.name}
+                  imageUrl={(user as any).profile_image}
+                  role={user.role}
+                  size={44}
+                  className="rounded-xl border border-white/10"
+                />
                 <div className="flex-1 min-w-0">
                   <div className="font-bold text-sm text-white truncate leading-tight">{user.name}</div>
                   <div className="text-[10px] text-white/50 font-black uppercase tracking-widest mt-0.5">{user.role}</div>

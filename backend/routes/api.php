@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 class Router {
     private $routes = [];
@@ -20,6 +20,7 @@ class Router {
         $this->routes['GET']['/api/users/profile'] = 'UserController@getProfile';
         $this->routes['PUT']['/api/users/profile'] = 'UserController@updateProfile';
         $this->routes['POST']['/api/users/profile/image'] = 'UserController@updateProfileImage';
+        $this->routes['DELETE']['/api/users/profile/image'] = 'UserController@deleteProfileImage';
         $this->routes['GET']['/api/users/stats'] = 'UserController@getStats';
         $this->routes['GET']['/api/users/activity'] = 'UserController@getActivity';
 
@@ -45,7 +46,7 @@ class Router {
         $this->routes['POST']['/api/ai/lesson-content'] = 'AIController@generateLessonContent';
         $this->routes['POST']['/api/ai/generate-assessment'] = 'AIController@generateAssessment';
 
-        // BiT Dashboard — Roadmap & Course Management (role: bit only)
+        // BiT Dashboard ÔÇö Roadmap & Course Management (role: bit only)
         $this->routes['POST']['/api/bit/roadmaps'] = 'BitController@createRoadmap';
         $this->routes['GET']['/api/bit/roadmaps'] = 'BitController@getRoadmaps';
         $this->routes['GET']['/api/bit/roadmaps/:id'] = 'BitController@getRoadmap';
@@ -58,7 +59,7 @@ class Router {
         $this->routes['DELETE']['/api/bit/courses/:id'] = 'BitController@deleteCourse';
         $this->routes['GET']['/api/bit/analytics'] = 'BitController@getAnalytics';
 
-        // Admin Resource Management (moderation only — no roadmap/course creation)
+        // Admin Resource Management (moderation only ÔÇö no roadmap/course creation)
         $this->routes['POST']['/api/admin/resources'] = 'AdminController@createResource';
         $this->routes['GET']['/api/admin/resources'] = 'AdminController@getResources';
         $this->routes['PUT']['/api/admin/resources/:id'] = 'AdminController@updateResource';
@@ -137,11 +138,27 @@ class Router {
         $this->routes['POST']['/api/course-assignments/:id/reject'] = 'CourseAssignmentController@rejectAssignment';
         $this->routes['POST']['/api/course-assignments/enroll'] = 'CourseAssignmentController@studentEnroll';
         $this->routes['GET']['/api/course-assignments/available'] = 'CourseAssignmentController@getAvailableCourses';
+        $this->routes['GET']['/api/course-assignments/available-bit'] = 'CourseAssignmentController@getBitCourses';
+        $this->routes['POST']['/api/course-assignments/request-multiple'] = 'CourseAssignmentController@requestMultipleAssignments';
         $this->routes['GET']['/api/course-assignments/my-students'] = 'CourseAssignmentController@getMyStudents';
 
         // File Upload & Serve (for course content blocks)
         $this->routes['POST']['/api/upload'] = 'UploadController@upload';
         $this->routes['GET']['/api/uploads/serve'] = 'UploadController@serve';
+
+        // Careers — BiT Admin (CRUD + publish/unpublish)
+        $this->routes['GET']['/api/bit/careers']              = 'CareersController@index';
+        $this->routes['POST']['/api/bit/careers']             = 'CareersController@create';
+        $this->routes['GET']['/api/bit/careers/:id']          = 'CareersController@show';
+        $this->routes['PUT']['/api/bit/careers/:id']          = 'CareersController@update';
+        $this->routes['DELETE']['/api/bit/careers/:id']       = 'CareersController@delete';
+        $this->routes['POST']['/api/bit/careers/:id/publish']   = 'CareersController@publish';
+        $this->routes['POST']['/api/bit/careers/:id/unpublish'] = 'CareersController@unpublish';
+
+        // Careers — Public (students, published only)
+        $this->routes['GET']['/api/careers']             = 'CareersController@publicIndex';
+        $this->routes['GET']['/api/careers/categories']  = 'CareersController@publicCategories';
+        $this->routes['GET']['/api/careers/:id']         = 'CareersController@publicShow';
 
         // Assessment Routes
         $this->routes['POST']['/api/assessments'] = 'AssessmentController@create';

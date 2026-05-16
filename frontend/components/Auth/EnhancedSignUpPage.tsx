@@ -508,23 +508,14 @@ const EnhancedSignUpPage: React.FC<EnhancedSignUpPageProps> = ({ onNavigate, onS
                       </div>
                     </div>
                     <div className="space-y-3">
-                      <label className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 px-1 text-center block">Expertise Areas</label>
-                      <div className="flex flex-wrap gap-2 justify-center">
-                        {expertiseOptions.map(area => (
-                          <button
-                            key={area}
-                            type="button"
-                            onClick={() => toggleExpertise(area)}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
-                              expertiseAreas.includes(area)
-                                ? 'bg-careermap-navy border-careermap-navy text-white shadow-lg shadow-teal-500/20'
-                                : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-800 text-slate-500 hover:border-teal-300'
-                            }`}
-                          >
-                            {area}
-                          </button>
-                        ))}
-                      </div>
+                      <label className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 px-1">Bio</label>
+                      <textarea
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl py-4 px-6 font-bold text-slate-900 dark:text-white resize-none"
+                        placeholder="Brief professional bio..."
+                        rows={3}
+                      />
                     </div>
                   </>
                 )}
@@ -536,7 +527,7 @@ const EnhancedSignUpPage: React.FC<EnhancedSignUpPageProps> = ({ onNavigate, onS
                 >
                   {loading ? <Loader2 className="animate-spin" size={20} /> : (
                     <>
-                      Build My Network
+                      Continue
                       <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                     </>
                   )}

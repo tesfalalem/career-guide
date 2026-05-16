@@ -11,8 +11,6 @@ import {
   UserCircle,
   Sun,
   Moon,
-  Flame,
-  Gem,
   ShieldCheck,
   ChevronsLeft,
   Menu
@@ -20,7 +18,7 @@ import {
 import DashboardHome from './DashboardHome';
 import RoadmapGenerator from './RoadmapGenerator';
 import ProgressView from './ProgressView';
-import InspirationHub from './InspirationHub';
+import CareersView from './CareersView';
 import ProfileSettings from './ProfileSettings';
 import LibraryView from './LibraryView';
 import AssessmentView from './AssessmentView';
@@ -29,6 +27,7 @@ import CuratedRoadmapsView from './CuratedRoadmapsView';
 import NotificationBell from '../common/NotificationBell';
 import SupportChatView from './common/SupportChatView';
 import { HelpCircle } from 'lucide-react';
+import UserAvatar from '../common/UserAvatar';
 import { StudentDashboardLayoutProps } from '../../types';
 
 export type StudentTab = 'overview' | 'roadmaps' | 'progress' | 'careers' | 'courses' | 'assessments' | 'profile' | 'support';
@@ -149,7 +148,7 @@ const StudentDashboardLayout: React.FC<StudentDashboardLayoutProps & { initialTa
       case 'assessments':
         return <AssessmentView userId={user.id} />;
       case 'careers':
-        return <InspirationHub />;
+        return <CareersView />;
       case 'profile':
         return <PortfolioView user={user} onUserUpdate={onUserUpdate} />;
       case 'support':
@@ -206,28 +205,6 @@ const StudentDashboardLayout: React.FC<StudentDashboardLayoutProps & { initialTa
           )}
         </div>
 
-        {/* XP & Streak — only when expanded */}
-        {sidebarOpen && (
-          <div className="p-4 border-b border-white/5 shrink-0">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 flex-1 bg-white/5 border border-white/5 rounded-xl px-3 py-2">
-                <Gem className="text-amber-400" size={16} />
-                <div>
-                  <div className="text-[10px] text-white/40 font-bold uppercase tracking-widest">XP</div>
-                  <div className="text-sm font-black text-white">{user.xp || 0}</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 flex-1 bg-white/5 border border-white/5 rounded-xl px-3 py-2">
-                <Flame className="text-orange-400" size={16} />
-                <div>
-                  <div className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Streak</div>
-                  <div className="text-sm font-black text-white">{user.streak || 0}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Navigation */}
         <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
           {menuItems.map((item) => (
@@ -252,9 +229,13 @@ const StudentDashboardLayout: React.FC<StudentDashboardLayoutProps & { initialTa
           {sidebarOpen ? (
             <>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-11 h-11 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border border-white/5 shadow-inner">
-                  <span className="text-white font-serif font-black text-lg uppercase">{user.name.charAt(0)}</span>
-                </div>
+                <UserAvatar
+                  name={user.name}
+                  imageUrl={(user as any).profile_image}
+                  role={user.role}
+                  size={44}
+                  className="rounded-xl border border-white/10"
+                />
                 <div className="flex-1 min-w-0">
                   <div className="font-bold text-sm text-white truncate leading-tight">{user.name}</div>
                   <div className="text-[10px] text-white/50 font-black uppercase tracking-widest mt-0.5">{user.role}</div>

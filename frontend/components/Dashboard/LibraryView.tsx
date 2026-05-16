@@ -18,7 +18,7 @@ interface LibraryViewProps {
 type Tab = 'my' | 'browse';
 type EnrollState = { type: 'success' | 'already' | 'error'; courseId: string } | null;
 
-const API = 'http://localhost:8000/api';
+const API = 'http://localhost/careerguide/backend/api';
 const authToken = () => localStorage.getItem('auth_token') || '';
 
 const levelCls = (level: string) =>

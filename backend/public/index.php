@@ -9,8 +9,53 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
-// CORS headers - Allow frontend on port 3000
-header('Access-Control-Allow-Origin: http://localhost:3000');
+// Polyfill for getallheaders() if it doesn't exist
+if (!function_exists('getallheaders')) {
+    function getallheaders() {
+        $headers = [];
+        foreach ($_SERVER as $name => $value) {
+            if (substr($name, 0, 5) == 'HTTP_') {
+                $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
+            } elseif ($name == 'CONTENT_TYPE') {
+                $headers['Content-Type'] = $value;
+            } elseif ($name == 'CONTENT_LENGTH') {
+                $headers['Content-Length'] = $value;
+            }
+        }
+        // Specific check for Authorization header which is often missing in PHP CGI/FastCGI
+        if (!isset($headers['Authorization'])) {
+            if (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+                $headers['Authorization'] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+            } elseif (isset($_SERVER['PHP_AUTH_USER'])) {
+                $pw = $_SERVER['PHP_AUTH_PW'] ?? '';
+                $headers['Authorization'] = 'Basic ' . base64_encode($_SERVER['PHP_AUTH_USER'] . ':' . $pw);
+            } elseif (isset($_SERVER['PHP_AUTH_DIGEST'])) {
+                $headers['Authorization'] = $_SERVER['PHP_AUTH_DIGEST'];
+            }
+        }
+        return $headers;
+    }
+}
+
+// CORS headers - Allow frontend and mobile app
+$allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:8000',
+    'http://localhost:57264',  // Flutter web dev port
+    'http://localhost:57265',
+    'http://localhost:57266',
+];
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+// Allow any device on the BiT university network (10.187.x.x subnet)
+// Also allow any localhost port (Flutter web uses random ports)
+$isLocalhost = preg_match('/^http:\/\/localhost(:\d+)?$/', $origin);
+$isBitNetwork = str_starts_with($origin, 'http://10.187.');
+if (in_array($origin, $allowedOrigins) || $isLocalhost || $isBitNetwork) {
+    header('Access-Control-Allow-Origin: ' . ($origin ?: '*'));
+} else {
+    header('Access-Control-Allow-Origin: http://localhost:3000');
+}
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Access-Control-Allow-Credentials: true');

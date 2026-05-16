@@ -10,8 +10,9 @@ import ConfirmModal from '../../common/ConfirmModal';
 import ReactMarkdown from 'react-markdown';
 import CreateCourseForRoadmapModal from '../Admin/CreateCourseForRoadmapModal';
 import { CardGridSkeleton } from '../../common/Skeleton';
+import EditCourseModal from './EditCourseModal';
 
-const API = 'http://localhost:8000/api';
+const API = 'http://localhost/careerguide/backend/api';
 const token = () => localStorage.getItem('auth_token') || '';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -283,13 +284,76 @@ const CourseDetailView: React.FC<{ course: Course; onBack: () => void }> = ({ co
   const isLast = activeModuleIndex === course.modules.length - 1 && activeLessonIndex === activeModule.lessons.length - 1;
 
   const parseContent = (raw: string) => {
-    if (!raw || raw === '[CONTENT_PENDING]') return '*Content not yet generated.*';
+    if (!raw || raw === '[CONTENT_PENDING]') return null;
+    // Try to detect if it's a JSON block array (legacy format)
     try {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed.map((b: any) => b.text || b.content || '').join('\n\n');
-      if (typeof parsed === 'object') return parsed.text || parsed.content || raw;
+      if (Array.isArray(parsed)) {
+        // Block array — render each block
+        return parsed;
+      }
     } catch {}
+    // Plain string — could be HTML or markdown
     return raw;
+  };
+
+  const renderContent = (raw: string) => {
+    if (!raw || raw === '[CONTENT_PENDING]') {
+      return <p className="text-slate-400 italic">Content not yet generated.</p>;
+    }
+    // Try JSON block array
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return (
+          <div className="space-y-4">
+            {parsed.map((block: any, i: number) => {
+              if (block.type === 'text' || !block.type) {
+                // Could be HTML or plain text
+                const content = block.text || block.content || '';
+                if (content.includes('<') && content.includes('>')) {
+                  return <div key={i} dangerouslySetInnerHTML={{ __html: content }} className="prose prose-slate dark:prose-invert max-w-none" />;
+                }
+                return <ReactMarkdown key={i}>{content}</ReactMarkdown>;
+              }
+              if (block.type === 'link') return (
+                <a key={i} href={block.url} target="_blank" rel="noreferrer"
+                  className="flex items-center gap-2 text-careermap-teal underline font-semibold">
+                  {block.label || block.url}
+                </a>
+              );
+              if (block.type === 'image') return (
+                <figure key={i}>
+                  <img src={block.imageUrl} alt={block.imageCaption || ''} className="rounded-xl max-w-full border border-slate-200 dark:border-slate-700" />
+                  {block.imageCaption && <figcaption className="text-xs text-slate-400 mt-1 text-center">{block.imageCaption}</figcaption>}
+                </figure>
+              );
+              if (block.type === 'video') {
+                const ytId = block.videoUrl?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/)?.[1];
+                if (ytId) return (
+                  <div key={i} className="aspect-video rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
+                    <iframe src={`https://www.youtube.com/embed/${ytId}`} className="w-full h-full" allowFullScreen title="video" />
+                  </div>
+                );
+                if (block.videoUrl) return <video key={i} src={block.videoUrl} controls className="w-full rounded-xl border border-slate-200 dark:border-slate-700" />;
+              }
+              if (block.type === 'file') return (
+                <a key={i} href={block.fileUrl} target="_blank" rel="noreferrer"
+                  className="flex items-center gap-3 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl text-orange-700 dark:text-orange-400 font-semibold text-sm hover:bg-orange-100 transition-all">
+                  📄 {block.fileLabel || block.fileUrl}
+                </a>
+              );
+              return null;
+            })}
+          </div>
+        );
+      }
+    } catch {}
+    // Plain HTML or markdown string
+    if (raw.includes('<') && raw.includes('>')) {
+      return <div dangerouslySetInnerHTML={{ __html: raw }} className="prose prose-slate dark:prose-invert max-w-none" />;
+    }
+    return <ReactMarkdown>{raw}</ReactMarkdown>;
   };
 
   return (
@@ -365,7 +429,7 @@ const CourseDetailView: React.FC<{ course: Course; onBack: () => void }> = ({ co
           <div className="prose prose-slate dark:prose-invert max-w-none">
             <h1 className="font-bold text-2xl mb-5">{activeLesson?.title}</h1>
             <div className="min-h-[300px]">
-              <ReactMarkdown>{parseContent(activeLesson?.content || '')}</ReactMarkdown>
+              {renderContent(activeLesson?.content || '')}
             </div>
           </div>
           <div className="mt-12 flex justify-between pt-6 border-t border-slate-100 dark:border-slate-800">
@@ -401,6 +465,7 @@ const BiTCoursesView: React.FC = () => {
   const [assessmentCounts, setAssessmentCounts] = useState<Record<number, number>>({});
   const [detailCourse, setDetailCourse] = useState<Course | null>(null);
   const [addCourseModal, setAddCourseModal] = useState(false);
+  const [editCourseModal, setEditCourseModal] = useState<Course | null>(null);
   const [expandedCurriculumModules, setExpandedCurriculumModules] = useState<Set<string>>(new Set());
 
   const toggleCurriculumModule = (courseId: number, moduleIdx: number) => {
@@ -550,6 +615,13 @@ const BiTCoursesView: React.FC = () => {
                   <button onClick={() => setAssessmentModal(course)} className="flex items-center gap-2 px-5 py-3 bg-careermap-teal/10 text-careermap-teal rounded-xl text-xs font-bold hover:bg-careermap-teal/20 transition-all border border-careermap-teal/20 group-hover:bg-careermap-teal group-hover:text-white group-hover:border-transparent duration-300">
                     <ClipboardCheck size={14} /> Exam Manager
                   </button>
+                  <button
+                    onClick={() => setEditCourseModal(course)}
+                    className="p-3 text-careermap-teal hover:bg-careermap-teal/10 rounded-xl transition-all border border-transparent hover:border-careermap-teal/20"
+                    title="Edit Course"
+                  >
+                    <Edit2 size={18} />
+                  </button>
                   <button onClick={() => { setCourseToDelete(course.id); setDeleteConfirmOpen(true); }} className="p-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all border border-transparent hover:border-red-100">
                     <Trash2 size={18} />
                   </button>
@@ -621,7 +693,7 @@ const BiTCoursesView: React.FC = () => {
           addCourseFn={async (_roadmapId, data) => {
             // Create course without linking to a roadmap — use first available roadmap or standalone
             const token = localStorage.getItem('auth_token');
-            const res = await fetch('http://localhost:8000/api/bit/courses/standalone', {
+            const res = await fetch('http://localhost/careerguide/backend/api/bit/courses/standalone', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify(data)
@@ -629,6 +701,15 @@ const BiTCoursesView: React.FC = () => {
             if (!res.ok) throw new Error('Failed to create course');
             return res.json();
           }}
+        />
+      )}
+
+      {editCourseModal && (
+        <EditCourseModal
+          isOpen={!!editCourseModal}
+          course={editCourseModal}
+          onClose={() => setEditCourseModal(null)}
+          onSuccess={() => { setEditCourseModal(null); fetchCourses(); }}
         />
       )}
     </div>

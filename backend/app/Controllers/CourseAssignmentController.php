@@ -155,4 +155,93 @@ class CourseAssignmentController {
         $stmt = $conn->query("SELECT tca.*,u.name as teacher_name,u.email as teacher_email,c.title as course_title FROM teacher_course_assignments tca JOIN users u ON tca.teacher_id=u.id JOIN courses c ON tca.course_id=c.id ORDER BY tca.requested_at DESC");
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
+
+    // ── TEACHER: Get only BiT-created courses (not AI-generated) ──────────────
+    public function getBitCourses() {
+        $user = $this->getUser();
+        if (!$user) { http_response_code(401); echo json_encode(['error'=>'Unauthorized']); return; }
+        $conn = $this->db(); $this->ensureTables($conn);
+
+        // BiT courses: created by users with role='bit', or author != 'AI Architect'
+        // Also exclude courses where author = 'AI Architect' (AI-generated)
+        $stmt = $conn->query("
+            SELECT c.id, c.title, c.description, c.category, c.level,
+                   c.duration, c.rating, c.enrolled_count, c.modules,
+                   u.name as creator_name,
+                   GROUP_CONCAT(DISTINCT u2.name ORDER BY u2.name SEPARATOR ', ') as teachers
+            FROM courses c
+            LEFT JOIN users u ON c.created_by = u.id
+            LEFT JOIN teacher_course_assignments tca ON tca.course_id = c.id AND tca.status = 'approved'
+            LEFT JOIN users u2 ON u2.id = tca.teacher_id
+            WHERE (u.role = 'bit' OR u.role = 'admin')
+              AND (c.author != 'AI Architect' OR c.author IS NULL)
+            GROUP BY c.id
+            ORDER BY c.created_at DESC
+        ");
+
+        $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($courses as &$c) {
+            if (is_string($c['modules'])) $c['modules'] = json_decode($c['modules'], true);
+        }
+        echo json_encode($courses);
+    }
+
+    // ── TEACHER: Request assignment to multiple courses (1-3) ─────────────────
+    public function requestMultipleAssignments() {
+        $user = $this->getUser();
+        if (!$user || $user['role'] !== 'teacher') {
+            http_response_code(403); echo json_encode(['error'=>'Teacher access required']); return;
+        }
+        $data = json_decode(file_get_contents("php://input"), true);
+        $courseIds = $data['course_ids'] ?? [];
+
+        if (empty($courseIds) || !is_array($courseIds)) {
+            http_response_code(400); echo json_encode(['error'=>'course_ids array required']); return;
+        }
+        if (count($courseIds) < 1 || count($courseIds) > 3) {
+            http_response_code(400); echo json_encode(['error'=>'Select between 1 and 3 courses']); return;
+        }
+
+        $conn = $this->db(); $this->ensureTables($conn);
+        $submitted = [];
+        $errors = [];
+
+        foreach ($courseIds as $courseId) {
+            $stmt = $conn->prepare("SELECT id, title FROM courses WHERE id=?");
+            $stmt->execute([$courseId]);
+            $course = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$course) { $errors[] = "Course $courseId not found"; continue; }
+
+            $stmt = $conn->prepare("
+                INSERT INTO teacher_course_assignments (teacher_id, course_id, status, requested_at)
+                VALUES (?, ?, 'pending', NOW())
+                ON DUPLICATE KEY UPDATE status='pending', requested_at=NOW()
+            ");
+            $stmt->execute([$user['id'], $courseId]);
+
+            // Notify admins
+            $admins = $conn->query("SELECT id FROM users WHERE role='admin'")->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($admins as $a) {
+                $conn->prepare("
+                    INSERT INTO notifications (user_id, type, title, message, link)
+                    VALUES (?, 'course_request', ?, ?, '/admin/approvals')
+                ")->execute([
+                    $a['id'],
+                    'Teacher Course Request',
+                    '"' . $user['name'] . '" requested assignment to "' . $course['title'] . '"'
+                ]);
+            }
+            $submitted[] = $courseId;
+        }
+
+        // Mark teacher as having selected courses
+        $conn->prepare("UPDATE users SET course_selected=1 WHERE id=?")->execute([$user['id']]);
+
+        echo json_encode([
+            'message' => 'Assignment requests submitted',
+            'submitted' => $submitted,
+            'errors' => $errors,
+            'status' => 'pending'
+        ]);
+    }
 }

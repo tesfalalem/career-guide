@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Zap, Flame, Trophy, BookOpen, Map as MapIcon,
+  Zap, Trophy, BookOpen, Map as MapIcon,
   ClipboardCheck, ShieldCheck, ArrowRight, PlayCircle,
-  CheckCircle, Star, TrendingUp, ChevronRight, Sparkles,
+  CheckCircle, TrendingUp, ChevronRight, Sparkles,
   Target, Award, Clock, GraduationCap, BarChart3, Layers
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -18,23 +18,6 @@ interface DashboardHomeProps {
   onOpenCourse: (course: Course) => void;
   onNavigateToCareers?: () => void;
 }
-
-const XP_PER_LEVEL = 1000;
-
-const getLevelInfo = (xp: number) => {
-  const level = Math.floor(xp / XP_PER_LEVEL) + 1;
-  const currentLevelXP = xp % XP_PER_LEVEL;
-  const nextLevelXP = XP_PER_LEVEL - currentLevelXP;
-  const progress = (currentLevelXP / XP_PER_LEVEL) * 100;
-  return { level, currentLevelXP, nextLevelXP, progress };
-};
-
-const getLeague = (level: number) => {
-  if (level >= 10) return { name: 'Diamond', color: 'text-cyan-400', bg: 'bg-cyan-400/10', border: 'border-cyan-400/20', gradient: 'from-cyan-500 to-blue-500' };
-  if (level >= 7)  return { name: 'Gold',    color: 'text-yellow-500', bg: 'bg-yellow-400/10', border: 'border-yellow-400/20', gradient: 'from-yellow-500 to-amber-500' };
-  if (level >= 4)  return { name: 'Silver',  color: 'text-slate-400',  bg: 'bg-slate-400/10', border: 'border-slate-400/20', gradient: 'from-slate-400 to-slate-500' };
-  return                  { name: 'Bronze',  color: 'text-amber-600',  bg: 'bg-amber-600/10', border: 'border-amber-600/20', gradient: 'from-amber-500 to-orange-500' };
-};
 
 const getActivityIcon = (type: string) => {
   switch (type) {
@@ -62,7 +45,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({
   onNavigateToCareers,
 }) => {
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ coursesEnrolled: 0, totalXP: 0, completedLessons: 0 });
+  const [stats, setStats] = useState({ coursesEnrolled: 0, completedLessons: 0 });
   const [recentCourses, setRecentCourses] = useState<Course[]>([]);
   const [activityFeed, setActivityFeed] = useState<any[]>([]);
 
@@ -87,10 +70,6 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({
     load();
   }, [user?.id]);
 
-  const xp = stats.totalXP || user.xp || 0;
-  const streak = user.streak || 0;
-  const { level, nextLevelXP, progress } = getLevelInfo(xp);
-  const league = getLeague(level);
   const firstName = user.name?.split(' ')[0] ?? user.name;
   const activeCourse = recentCourses[0];
   const activeCourseProgress = activeCourse?.progress || 0;
@@ -116,21 +95,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({
         </div>
  
         <div className="relative z-10 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-10">
-          {/* Left: Greeting & Identity */}
           <div className="flex items-center gap-6">
-            <div className="relative">
-              <div className="w-20 h-20 rounded-[2rem] bg-white/10 p-1 shadow-2xl group-hover:scale-105 transition-transform duration-500">
-                <div className="w-full h-full rounded-[1.8rem] bg-careermap-navy overflow-hidden border border-white/10">
-                  <img
-                    src={`https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(user.name)}`}
-                    alt="avatar"
-                    className="w-full h-full object-cover scale-110"
-                  />
-                </div>
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 border-[4px] border-careermap-navy rounded-full shadow-lg" />
-            </div>
-            
             <div>
               <h1 className="text-4xl md:text-6xl font-serif font-black text-white tracking-tighter leading-none mb-2">
                 Welcome, <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-white/60">{firstName}</span>
@@ -138,58 +103,24 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({
               <p className="text-white/40 font-medium text-sm">Ready to master your path today?</p>
             </div>
           </div>
- 
-          {/* Right: Stats & Leveling Bento */}
-          <div className="w-full xl:w-auto flex flex-col gap-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-3 bg-white/5 backdrop-blur-xl border border-white/10 px-5 py-3 rounded-2xl group/streak hover:bg-white/10 transition-colors">
-                <div className="w-8 h-8 rounded-xl bg-orange-500/20 flex items-center justify-center">
-                  <Flame size={16} className="text-orange-400 fill-orange-400 group-hover/streak:animate-bounce" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Active Streak</span>
-                  <span className="font-black text-white text-base">{streak} Days</span>
-                </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 bg-white/5 backdrop-blur-xl border border-white/10 px-5 py-3 rounded-2xl">
+              <div className="w-8 h-8 rounded-xl bg-teal-500/20 flex items-center justify-center">
+                <Trophy size={16} className="text-teal-400" />
               </div>
-              
-              <div className="flex items-center gap-3 bg-white/5 backdrop-blur-xl border border-white/10 px-5 py-3 rounded-2xl group/league hover:bg-white/10 transition-colors">
-                <div className="w-8 h-8 rounded-xl bg-teal-500/20 flex items-center justify-center">
-                  <Trophy size={16} className="text-teal-400 group-hover/league:rotate-12 transition-transform" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">League</span>
-                  <span className="font-black text-white text-base">{league.name}</span>
-                </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Courses Enrolled</span>
+                <span className="font-black text-white text-base">{stats.coursesEnrolled}</span>
               </div>
             </div>
- 
-            {/* XP Progress Capsule */}
-            <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 relative overflow-hidden">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-careermap-teal/20 rounded-xl flex items-center justify-center text-careermap-teal">
-                    <Zap size={20} strokeWidth={2.5} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Current Level</p>
-                    <p className="text-xl font-black text-white">Level {level}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-black text-careermap-teal">{xp} <span className="text-xs text-white/30">XP</span></p>
-                </div>
+            <div className="flex items-center gap-3 bg-white/5 backdrop-blur-xl border border-white/10 px-5 py-3 rounded-2xl">
+              <div className="w-8 h-8 rounded-xl bg-careermap-teal/20 flex items-center justify-center">
+                <CheckCircle size={16} className="text-careermap-teal" />
               </div>
-              
-              {/* Thinner, Neon XP Bar */}
-              <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
-                <div
-                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-careermap-teal to-cyan-400 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(45,212,191,0.5)]"
-                  style={{ width: `${Math.max(progress, 5)}%` }}
-                />
-              </div>
-              <div className="flex justify-between items-center mt-3">
-                <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">Progress</span>
-                <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">{nextLevelXP} XP to Level {level + 1}</span>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Lessons Done</span>
+                <span className="font-black text-white text-base">{stats.completedLessons}</span>
               </div>
             </div>
           </div>
@@ -325,11 +256,6 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({
                       {item.date ? formatDistanceToNow(new Date(item.date), { addSuffix: true }) : 'Recently'}
                     </p>
                   </div>
-                  {item.xp && (
-                    <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 rounded-full flex-shrink-0">
-                      +{item.xp} XP
-                    </span>
-                  )}
                 </div>
               ))
             ) : (

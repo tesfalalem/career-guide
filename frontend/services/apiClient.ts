@@ -3,7 +3,7 @@
  * Replaces Supabase client for backend communication
  */
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = 'http://localhost/careerguide/backend/api';
 
 // Normalize raw DB user object to match the frontend User interface
 const normalizeUser = (raw: any) => {
@@ -14,12 +14,14 @@ const normalizeUser = (raw: any) => {
     email: raw.email ?? '',
     role: raw.role ?? 'student',
     academicYear: raw.academic_year ?? raw.academicYear ?? undefined,
+    academic_year: raw.academic_year ?? raw.academicYear ?? undefined,
     enrolledPaths: raw.enrolledPaths ?? [],
     xp: Number(raw.xp ?? 0),
     streak: Number(raw.streak ?? 0),
-    profile_image: raw.profile_image ?? undefined,
-    // Pass through extra fields used by specific dashboards
+    // Keep as null (not undefined) so components can distinguish "no photo" from "not loaded"
+    profile_image: raw.profile_image || null,
     account_status: raw.account_status ?? 'active',
+    created_at: raw.created_at ?? undefined,
   };
 };
 
@@ -191,6 +193,19 @@ export const apiClient = {
     const result = await response.json();
     if (!response.ok) {
       throw new Error(result.error || 'Failed to update image');
+    }
+    return result;
+  },
+
+  async deleteProfileImage() {
+    const token = getToken();
+    const response = await fetch(`${API_BASE_URL}/users/profile/image`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to delete image');
     }
     return result;
   },
@@ -463,6 +478,110 @@ export const apiClient = {
       headers: { 'Authorization': `Bearer ${token}` },
     });
     return response.json();
+  },
+
+  // ── Careers (BiT Admin) ───────────────────────────────────────────────────
+
+  async getBitCareers(params: { search?: string; category?: string; status?: string } = {}) {
+    const token = getToken();
+    const qs = new URLSearchParams(params as Record<string, string>).toString();
+    const response = await fetch(`${API_BASE_URL}/bit/careers${qs ? '?' + qs : ''}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to fetch careers');
+    return data;
+  },
+
+  async createCareer(payload: {
+    title: string; description: string; category: string;
+    thumbnail_url?: string; required_skills?: string[]; status?: string;
+  }) {
+    const token = getToken();
+    const response = await fetch(`${API_BASE_URL}/bit/careers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to create career');
+    return data;
+  },
+
+  async updateCareer(id: number, payload: Partial<{
+    title: string; description: string; category: string;
+    thumbnail_url: string | null; required_skills: string[]; status: string;
+  }>) {
+    const token = getToken();
+    const response = await fetch(`${API_BASE_URL}/bit/careers/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to update career');
+    return data;
+  },
+
+  async deleteCareer(id: number) {
+    const token = getToken();
+    const response = await fetch(`${API_BASE_URL}/bit/careers/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to delete career');
+    return data;
+  },
+
+  async publishCareer(id: number) {
+    const token = getToken();
+    const response = await fetch(`${API_BASE_URL}/bit/careers/${id}/publish`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to publish career');
+    return data;
+  },
+
+  async unpublishCareer(id: number) {
+    const token = getToken();
+    const response = await fetch(`${API_BASE_URL}/bit/careers/${id}/unpublish`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to unpublish career');
+    return data;
+  },
+
+  // ── Careers (Public / Students) ───────────────────────────────────────────
+
+  async getPublishedCareers(params: { search?: string; category?: string } = {}) {
+    // Filter out empty string values so they don't appear as ?search=&category=
+    const filtered: Record<string, string> = {};
+    if (params.search) filtered.search = params.search;
+    if (params.category) filtered.category = params.category;
+    const qs = new URLSearchParams(filtered).toString();
+    const response = await fetch(`${API_BASE_URL}/careers${qs ? '?' + qs : ''}`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to fetch careers');
+    // Always return an array
+    return Array.isArray(data) ? data : [];
+  },
+
+  async getCareerCategories() {
+    const response = await fetch(`${API_BASE_URL}/careers/categories`);
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  },
+
+  async getCareer(id: number) {
+    const response = await fetch(`${API_BASE_URL}/careers/${id}`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Career not found');
+    return data;
   },
 };
 

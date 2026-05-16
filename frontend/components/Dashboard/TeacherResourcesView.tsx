@@ -75,7 +75,7 @@ const TeacherResourcesView: React.FC = () => {
   const fetchResources = async () => {
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('http://localhost:8000/api/teacher/resources', {
+      const response = await fetch('http://localhost/careerguide/backend/api/teacher/resources', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -95,7 +95,7 @@ const TeacherResourcesView: React.FC = () => {
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('http://localhost:8000/api/teacher/resources/stats', {
+      const response = await fetch('http://localhost/careerguide/backend/api/teacher/resources/stats', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -150,7 +150,7 @@ const TeacherResourcesView: React.FC = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:8000/api/teacher/resources', {
+      const response = await fetch('http://localhost/careerguide/backend/api/teacher/resources', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -213,7 +213,7 @@ const TeacherResourcesView: React.FC = () => {
         formDataToSend.append('external_url', formData.external_url);
       }
 
-      const response = await fetch(`http://localhost:8000/api/teacher/resources/${editingResource.id}`, {
+      const response = await fetch(`http://localhost/careerguide/backend/api/teacher/resources/${editingResource.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -263,7 +263,7 @@ const TeacherResourcesView: React.FC = () => {
     setDeleting(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:8000/api/teacher/resources/${resourceToDelete}`, {
+      const response = await fetch(`http://localhost/careerguide/backend/api/teacher/resources/${resourceToDelete}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

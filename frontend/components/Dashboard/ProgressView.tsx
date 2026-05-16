@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Activity, Target, Award, Shield, CheckCircle2, Star, BookOpen } from 'lucide-react';
+import { Activity, Target, Award, Shield, CheckCircle2, BookOpen } from 'lucide-react';
 import { getStudentStats, getUserCourses } from '../../services/courseService';
 import { Course } from '../../types';
 
@@ -9,7 +9,7 @@ interface ProgressViewProps {
 }
 
 const ProgressView: React.FC<ProgressViewProps> = ({ userId }) => {
-  const [stats, setStats] = useState({ coursesEnrolled: 0, totalXP: 0, completedLessons: 0 });
+  const [stats, setStats] = useState({ coursesEnrolled: 0, completedLessons: 0 });
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,11 +30,6 @@ const ProgressView: React.FC<ProgressViewProps> = ({ userId }) => {
     };
     if (userId) fetchData();
   }, [userId]);
-
-  // Derived level from XP (1000 XP per level)
-  const level = Math.floor(stats.totalXP / 1000) + 1;
-  const xpForNextLevel = 1000 - (stats.totalXP % 1000);
-  const progressPercent = ((stats.totalXP % 1000) / 1000) * 100;
 
   return (
     <div className="animate-reveal max-w-7xl mx-auto pb-20">
@@ -92,19 +87,15 @@ const ProgressView: React.FC<ProgressViewProps> = ({ userId }) => {
         </div>
 
         <div className="space-y-12">
-          {/* Points/Level System */}
+          {/* Courses Summary */}
           <div className="bg-careermap-navy dark:bg-slate-900 text-white p-12 rounded-[3rem] text-center shadow-2xl relative overflow-hidden group border border-transparent dark:border-slate-800">
             <div className="absolute inset-0 bg-careermap-teal/10 opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="w-28 h-28 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-10 border border-white/20 shadow-xl group-hover:scale-110 transition-transform">
-              <Star className="text-careermap-teal" size={48} fill="currentColor" />
+              <BookOpen className="text-careermap-teal" size={48} />
             </div>
-            <p className="text-xs font-black uppercase tracking-[0.5em] text-white/40 mb-3">Overall Technical Level</p>
-            <h2 className="text-6xl font-black mb-6 tracking-tighter">Level {level}</h2>
-            <p className="text-base font-medium text-white/60 mb-10">Total XP: {stats.totalXP}</p>
-            <div className="w-full bg-white/5 rounded-full h-2.5 mb-3">
-              <div className="bg-careermap-teal h-2.5 rounded-full shadow-[0_0_15px_rgba(20,184,166,0.6)]" style={{ width: `${progressPercent}%` }} />
-            </div>
-            <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">{xpForNextLevel} XP remaining to Level {level + 1}</p>
+            <p className="text-xs font-black uppercase tracking-[0.5em] text-white/40 mb-3">Enrolled Courses</p>
+            <h2 className="text-6xl font-black mb-6 tracking-tighter">{courses.length}</h2>
+            <p className="text-base font-medium text-white/60">{stats.completedLessons} lessons completed</p>
           </div>
 
           {/* Goals Checklist - Mock for now but clearer */}

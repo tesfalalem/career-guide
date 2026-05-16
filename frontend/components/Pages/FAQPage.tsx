@@ -31,7 +31,7 @@ const FAQPage: React.FC<FAQPageProps> = ({ onNavigate }) => {
       icon: BookOpen,
       items: [
         { q: "Who provides the courses?", a: "Courses are a mix of AI-generated content based on global best practices, curated external resources from top platforms, and materials uploaded by verified BiT teachers." },
-        { q: "Do I get certificates?", a: "We track your course completion and progress (XP). Official certification integration with BDU departments is currently in our roadmap." }
+        { q: "Do I get certificates?", a: "We track your course completion and progress. Official certification integration with BDU departments is currently in our roadmap." }
       ]
     },
     {

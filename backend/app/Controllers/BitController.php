@@ -345,6 +345,111 @@ class BitController {
         ]);
     }
 
+    // ── Get single course with full modules (for editing) ─────────────────────
+    public function getCourse($id) {
+        $this->checkPermission();
+        $database = new Database();
+        $conn = $database->getConnection();
+
+        $stmt = $conn->prepare("SELECT c.*, u.name as creator_name FROM courses c LEFT JOIN users u ON c.created_by = u.id WHERE c.id = ?");
+        $stmt->execute([$id]);
+        $course = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$course) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Course not found']);
+            return;
+        }
+
+        $course['modules'] = json_decode($course['modules'] ?? '[]', true);
+        echo json_encode($course);
+    }
+
+    // ── Update existing course (preserves enrollments & progress) ─────────────
+    public function updateCourse($id) {
+        $user = $this->checkPermission();
+        $data = json_decode(file_get_contents("php://input"), true);
+
+        $database = new Database();
+        $conn = $database->getConnection();
+
+        // Verify course exists
+        $stmt = $conn->prepare("SELECT id, title FROM courses WHERE id = ?");
+        $stmt->execute([$id]);
+        $course = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$course) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Course not found']);
+            return;
+        }
+
+        // Build update fields
+        $fields = [];
+        $params = [];
+
+        if (isset($data['title'])) {
+            $fields[] = 'title = ?';
+            $params[] = $data['title'];
+        }
+        if (isset($data['description'])) {
+            $fields[] = 'description = ?';
+            $params[] = $data['description'];
+        }
+        if (isset($data['category'])) {
+            $fields[] = 'category = ?';
+            $params[] = $data['category'];
+        }
+        if (isset($data['level'])) {
+            $fields[] = 'level = ?';
+            $params[] = $data['level'];
+        }
+        if (isset($data['duration'])) {
+            $fields[] = 'duration = ?';
+            $params[] = $data['duration'];
+        }
+        if (isset($data['modules'])) {
+            $fields[] = 'modules = ?';
+            $params[] = json_encode($data['modules']);
+        }
+
+        // Always track last editor
+        $fields[] = 'updated_at = NOW()';
+
+        if (empty($fields)) {
+            echo json_encode(['message' => 'Nothing to update']);
+            return;
+        }
+
+        $params[] = $id;
+        $sql = "UPDATE courses SET " . implode(', ', $fields) . " WHERE id = ?";
+        $stmt = $conn->prepare($sql);
+
+        if ($stmt->execute($params)) {
+            // Notify enrolled students that course content was updated
+            $students = $conn->query(
+                "SELECT user_id FROM course_enrollments WHERE course_id = $id"
+            )->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($students as $s) {
+                try {
+                    $conn->prepare(
+                        "INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, 'course_update', ?, ?, '/courses')"
+                    )->execute([
+                        $s['user_id'],
+                        'Course Updated: ' . ($data['title'] ?? $course['title']),
+                        'The course "' . ($data['title'] ?? $course['title']) . '" has been updated with new content.'
+                    ]);
+                } catch (\Exception $e) {}
+            }
+
+            echo json_encode(['message' => 'Course updated successfully', 'notified' => count($students)]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to update course']);
+        }
+    }
+
     public function getCourses() {        $this->checkPermission();
 
         $database = new Database();

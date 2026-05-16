@@ -70,7 +70,7 @@ const TeacherAnalyticsView: React.FC = () => {
     setError(null);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('http://localhost:8000/api/teacher/analytics', {
+      const response = await fetch('http://localhost/careerguide/backend/api/teacher/analytics', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

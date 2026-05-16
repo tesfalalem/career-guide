@@ -22,9 +22,9 @@ const UserGuidePage: React.FC = () => {
       details: ["Track progress through visual milestones", "Enroll in courses linked to your career goal"]
     },
     {
-      title: "4. Earn XP and Track Progress",
+      title: "4. Track Your Progress",
       icon: Award,
-      content: "Complete lessons and quizzes to earn Experience Points (XP). Maintain your streak by learning daily.",
+      content: "Complete lessons and quizzes to track your learning progress. Monitor your advancement on the Dashboard.",
       details: ["Monitor your progress on the Dashboard", "Compare your standing with the BiT community"]
     }
   ];

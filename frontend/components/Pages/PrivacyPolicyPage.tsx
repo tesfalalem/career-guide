@@ -8,7 +8,7 @@ const PrivacyPolicyPage: React.FC = () => {
     {
       title: "1. Information We Collect",
       icon: Database,
-      content: "We collect information you provide directly to us when you create an account, such as your BDU email address, name, academic year, and department. We also collect data about your career interests and learning progress (XP, course completions) to power our AI roadmapping features."
+      content: "We collect information you provide directly to us when you create an account, such as your BDU email address, name, academic year, and department. We also collect data about your career interests and learning progress (course completions) to power our AI roadmapping features."
     },
     {
       title: "2. How We Use Your Information",

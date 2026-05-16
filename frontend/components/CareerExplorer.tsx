@@ -28,7 +28,7 @@ const CareerExplorer: React.FC = () => {
     
     setDetailsLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/ai/career-details', {
+      const response = await fetch('http://localhost/careerguide/backend/api/ai/career-details', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
