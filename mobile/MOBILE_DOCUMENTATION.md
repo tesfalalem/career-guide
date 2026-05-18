@@ -1,431 +1,202 @@
-# BiT CareerGuide — Mobile App Documentation
+# BiT CareerGuide — Flutter Mobile Application Documentation
 
-## Overview
-
-The BiT CareerGuide mobile app is a **Flutter-based student portal** for Bahir Dar Institute of Technology (BiT) students. It is a companion to the web platform, sharing the same PHP backend and MySQL database. The mobile app is **student-only** — all roles (student, teacher, admin, BiT) are redirected to the student portal when they log in on mobile.
+Welcome to the official developer documentation for the **BiT CareerGuide Flutter Mobile Application** (`careerguide_mobile`). This document outlines the application's design system, structural architecture, state management architecture, API synchronization pipeline, core features, and setup guides.
 
 ---
 
-## Tech Stack
+## 📱 1. Architecture Overview & Technology Stack
 
-| Technology | Version | Purpose |
-|---|---|---|
-| Flutter | 3.x | Cross-platform mobile framework |
-| Dart | 3.x | Programming language |
-| flutter_riverpod | 2.6.1 | State management |
-| go_router | 13.2.5 | Navigation & routing |
-| Dio | 5.4.3 | HTTP client |
-| flutter_secure_storage | 9.2.4 | Secure JWT token storage (mobile) |
-| shared_preferences | 2.5.3 | Token storage fallback (web) |
-| flutter_markdown | 0.6.23 | Render lesson content (Markdown) |
-| timeago | 3.6.1 | Relative timestamps in notifications |
-| intl | 0.19.0 | Date formatting |
+The `careerguide_mobile` client is built as a cross-platform Flutter application supporting iOS, Android, and Web, with a custom, highly decoupled folder structure. It leverages a modern reactive programming paradigm to deliver high performance, instant database synchronization, and premium visual aesthetics.
 
-**Platforms:** Android, iOS
+### Key Technology Stack:
+- **Core Framework**: Flutter SDK (`>=3.0.0 <4.0.0`) using Dart 3.
+- **State Management**: **Flutter Riverpod** (`^2.5.1`) with `riverpod_generator` and `riverpod_annotation`. It employs a unidirectional data-flow, ensuring widget rendering is perfectly separated from service/business logic.
+- **Declarative Navigation**: **GoRouter** (`^13.2.0`) for deep-linkable, compile-safe, and parameter-aware route declarations.
+- **HTTP Client / Networking**: **Dio** (`^5.4.3`) configured with global interceptors for JWT token propagation, custom request timeouts, and console debugging using `pretty_dio_logger`.
+- **Session & Secure Storage**: **Flutter Secure Storage** (`^9.0.0`) for keychain/keystore secured encryption of the JWT authorization tokens.
+- **UI & Markdown Engine**: `flutter_markdown` for rendering complex, interactive lesson modules and course syllabi containing headers, links, and syntax-highlighted blocks.
+- **Asset/Media Pipeline**: `image_picker` and `file_picker` for capturing student profile photos, coordinator course files, or teacher course slides and transferring them as multi-part payloads to the backend.
 
 ---
 
-## Project Structure
+## 📂 2. Project Directory Structure
+
+The project conforms to a highly structured modular layout, grouping codes by **Core Infrastructure** (global settings) and **Feature Boundaries** (role-specific features).
 
 ```
 mobile/
+├── android/                  # Android-native configuration and resources
+├── ios/                      # iOS-native configuration and runner profiles
 ├── lib/
-│   ├── main.dart                          # App entry point
-│   ├── core/
-│   │   ├── constants/
-│   │   │   └── api_constants.dart         # All API endpoint paths + base URL
-│   │   ├── models/
-│   │   │   ├── user_model.dart            # UserModel with fromJson, helpers
-│   │   │   ├── course_model.dart          # CourseModel, CourseModuleModel, LessonModel
-│   │   │   ├── roadmap_model.dart         # CuratedRoadmapModel, RoadmapPhaseModel
-│   │   │   └── notification_model.dart    # NotificationModel
-│   │   ├── network/
-│   │   │   └── api_client.dart            # Dio HTTP client + token management
-│   │   ├── providers/
-│   │   │   ├── auth_provider.dart         # Auth state (login/logout/session)
-│   │   │   └── theme_provider.dart        # Dark/light theme toggle
-│   │   ├── router/
-│   │   │   └── app_router.dart            # go_router with auth redirect
-│   │   └── theme/
-│   │       └── app_theme.dart             # AppColors, light/dark ThemeData
-│   ├── features/
-│   │   ├── auth/
-│   │   │   └── screens/
-│   │   │       ├── splash_screen.dart     # Loading screen on app start
-│   │   │       ├── login_screen.dart      # Email/password login
-│   │   │       ├── register_screen.dart   # 2-step student registration
-│   │   │       └── onboarding_screen.dart # Skips directly to dashboard
-│   │   ├── student/
-│   │   │   ├── providers/
-│   │   │   │   └── student_providers.dart # Riverpod FutureProviders for student data
-│   │   │   └── screens/
-│   │   │       ├── student_shell.dart     # Bottom nav + drawer scaffold
-│   │   │       ├── student_home_screen.dart
-│   │   │       ├── roadmaps_screen.dart
-│   │   │       ├── roadmap_detail_screen.dart
-│   │   │       ├── courses_screen.dart
-│   │   │       ├── course_detail_screen.dart
-│   │   │       ├── assessments_screen.dart
-│   │   │       ├── assessment_quiz_screen.dart
-│   │   │       ├── progress_screen.dart
-│   │   │       └── student_profile_screen.dart
-│   │   └── shared/
-│   │       └── screens/
-│   │           ├── notifications_screen.dart
-│   │           └── support_chat_screen.dart
-│   └── shared/
-│       └── widgets/
-│           ├── app_drawer.dart            # Slide-in navigation drawer
-│           ├── app_header.dart            # Reusable top AppBar
-│           ├── gradient_card.dart         # GradientCard, InfoCard, QuickActionTile
-│           ├── app_button.dart            # AppButton, AppTealButton
-│           ├── app_text_field.dart        # Styled text input
-│           ├── stat_card.dart             # Stats display card
-│           └── section_header.dart        # Section title with optional action
-├── android/                               # Android native project
-├── ios/                                   # iOS native project
-├── pubspec.yaml                           # Dependencies
-├── analysis_options.yaml                  # Linting config
-└── MOBILE_DOCUMENTATION.md               # This file
+│   ├── core/                 # Global, cross-cutting concerns & infrastructure
+│   │   ├── constants/        # API route constants and platform configurations
+│   │   ├── models/           # Shared models (User, Course, Module, Lesson)
+│   │   ├── network/          # Http client services and interceptor systems
+│   │   ├── providers/        # Global states (Auth provider, theme states)
+│   │   ├── router/           # Declarative navigation tree (GoRouter mappings)
+│   │   └── theme/            # HSL-based palettes and active style sheets
+│   │
+│   ├── features/             # Role-specific vertical modules
+│   │   ├── auth/             # Login, signup, pending approval, onboarding, splash
+│   │   ├── student/          # Student dashboard, roadmaps, quizzes, progress tracking
+│   │   ├── teacher/          # Teacher dashboard, student analytics, file uploads
+│   │   ├── bit/              # Coordinator roadmap & stage publishers, course managers
+│   │   ├── admin/            # Platform coordinator and teacher approvals screen
+│   │   └── shared/           # Role-specific shared widgets (e.g. navigation shells)
+│   │
+│   ├── shared/               # Global components shared across ALL features
+│   │   └── widgets/          # AppDrawer, AppButton, GradientCard, StatCard
+│   │
+│   └── main.dart             # Application initialization and Riverpod setup
+│
+├── assets/                   # Raw icons, illustrations, and local fonts
+└── pubspec.yaml              # Global Flutter dependencies configuration
 ```
 
 ---
 
-## Architecture
+## 🛠️ 3. Global Core Infrastructure
 
-### State Management — Riverpod
-
-The app uses **Riverpod** for all state. Key providers:
-
-| Provider | Type | Purpose |
-|---|---|---|
-| `authProvider` | `StateNotifierProvider` | Auth state — `AsyncValue<UserModel?>` |
-| `currentUserProvider` | `Provider` | Convenience — current user or null |
-| `themeModeProvider` | `StateNotifierProvider` | Dark/light theme |
-| `studentStatsProvider` | `FutureProvider` | XP, courses, streak, lessons |
-| `enrolledCoursesProvider` | `FutureProvider` | Student's enrolled courses |
-| `allCoursesProvider` | `FutureProvider` | All available courses (browse) |
-| `curatedRoadmapsProvider` | `FutureProvider.family` | Roadmaps with optional filters |
-| `roadmapDetailProvider` | `FutureProvider.family` | Single roadmap by ID |
-| `studentAssessmentsProvider` | `FutureProvider` | Assessments for enrolled courses |
-| `recentActivityProvider` | `FutureProvider` | Recent enrollment activity |
-
-### Navigation — go_router
-
-All routes are defined in `app_router.dart`. The router uses a `redirect` function to handle auth:
-
-```
-App starts → /splash
-  → No token → /login
-  → Token exists → /student (all roles)
-```
-
-**Route tree:**
-```
-/splash
-/login
-/register
-/onboarding
-/student                    (StudentShell — bottom nav + drawer)
-  /student/roadmaps
-    /student/roadmaps/:id
-  /student/courses
-    /student/courses/:id
-  /student/assessments
-    /student/assessments/:id
-  /student/progress
-  /student/profile
-/notifications              (pushed, not in shell)
-/support                    (pushed, not in shell)
-```
-
-### API Client
-
-`ApiClient` uses **Dio** with a request interceptor that automatically attaches the JWT token to every request:
+### A. HTTP Service & Authorization Layer (`lib/core/network/`)
+Network communication is encapsulated in a central `Dio` client. It registers a custom Request Interceptor that automatically reads the saved JWT token from `FlutterSecureStorage` and appends it to the HTTP `Authorization` headers:
 
 ```dart
-// Token storage — platform-aware
-// Mobile: FlutterSecureStorage (encrypted)
-// Web:    SharedPreferences (fallback)
-ApiClient.getToken()
-ApiClient.saveToken(token)
-ApiClient.removeToken()
+options.headers['Authorization'] = 'Bearer $token';
 ```
 
-**Base URL logic** (auto-detected by platform):
-- Chrome/Web: `http://localhost:8000/api`
-- Android emulator: `http://10.0.2.2:8000/api`
-- Physical device: update `api_constants.dart` with your PC's local IP
+If the API returns an `HTTP 401 Unauthorized` status (e.g., token expired), the interceptor catches the response, purges the invalid credentials, and redirects the routing controller back to the `/login` route automatically.
+
+### B. Global App Theme (`lib/core/theme/app_theme.dart`)
+The app utilizes a premium design system tailored around high-contrast HSL color palettes:
+- **Brand Colors**:
+  - `AppColors.navy` (`0xFF0A2540`): Primary color used for headers and branding.
+  - `AppColors.teal` (`0xFF635BFF` or HSL Teal `0xFF0EA5E9`): Active highlighting and accent markers.
+  - `AppColors.slate` series: Sleek neutral gradients for container borders and backgrounds.
+- **Dynamic Theming**: Both Light and Dark theme definitions are supported. Global app bars automatically respect role context, adjusting text contrasts, elevation values, and circular borders.
 
 ---
 
-## Screens
+## 👥 4. Role-Specific Feature Modules
 
-### Splash Screen
-Shown on app start while `_checkAuth()` runs. Displays the CareerGuide logo and spinner. Resolves in milliseconds (no network call on startup).
+The mobile app includes fully functional, high-fidelity user portals for four distinct roles:
 
-### Login Screen
-- Email + password fields with validation
-- Shows error banner on failed login
-- "Continue" submit button
-- Link to Register
+### 🎓 A. Student Portal (`lib/features/student/`)
+Enables Bahir Dar Institute of Technology (BiT) students to plan, train, and test their skills.
+- **Student Dashboard (`screens/student_home_screen.dart`)**: Displays a premium welcome banner, daily streak counters, dynamic XP stats, and immediate access to enrolled roadmaps.
+- **Roadmap Navigator (`screens/roadmaps_screen.dart`)**: Dynamic layout to browse official roadmaps, explore structured milestones, and immediately trigger enrollments.
+- **Course Detail Studio (`screens/course_detail_screen.dart`)**:
+  - Implements the complete lesson progression tree.
+  - Features dynamic lesson expansion tiles and green checkmarks indicating completed lessons.
+  - Interactive **Lesson Viewer** with an icon-only back arrow, markdown formatting, and clean action buttons.
+  - Real-time API synchronization: Completing a lesson triggers a request to `/api/courses/:id/progress` and dynamically invalidates Riverpod state, updating global progress history and student XP immediately.
+- **Interactive Exam / Quizzes (`screens/assessment_quiz_screen.dart`)**: Implements an interactive multi-question exam module. Includes stopwatch timers, active card transitions, real-time grading, and DB record logging.
+- **Student Profile (`screens/student_profile_screen.dart`)**: Renders user info, dynamic character initials, and uses `image_picker` to upload custom user profile photos.
+- **Careers Catalog (`screens/careers_screen.dart`)**: Lists all available published careers, supports instant text search, provides dynamic category tabs filtering, renders wrapped skill chips, and expands a rich Markdown bottom sheet with related roadmap CTAs.
 
-### Register Screen
-Two-step form:
-1. Full name, email, password, role selection (student/teacher)
-2. Student ID, academic year dropdown
+### 👩‍🏫 B. Teacher Portal (`lib/features/teacher/`)
+Gives educators analytical tools to oversee student groups and enrich curricula.
+- **Teacher Dashboard (`screens/teacher_home_screen.dart`)**: Displays overall student count, average score metrics, and shortcut cards to courses.
+- **Student Performance Matrix (`screens/teacher_students_screen.dart`)**: Allows teachers to select a student, inspect their overall progress levels, check milestones, and track assessment histories.
+- **Curriculum Manager (`screens/teacher_resources_screen.dart`)**: Supports mobile uploads of lecture notes, PDF slides, and markdown files, immediately propagating them to the students' course feeds.
 
-### Student Home Screen
-- Gradient welcome card with user initials avatar
-- 2×2 stats grid: XP, Courses, Streak, Lessons Done
-- Quick action tiles: Roadmaps, Courses, Assess, Progress
-- Explore cards linking to main sections
-- Support chat shortcut
+### 🏛️ C. BiT Coordinator Portal (`lib/features/bit/`)
+The academic core for publishing official institutional training schedules.
+- **Curated Roadmap Publisher (`screens/bit_roadmaps_screen.dart`)**: Allows coordinators to build, publish, and order institutional roadmaps, categorizing learning tracks by department.
+- **Studio Curriculum Composing (`screens/bit_courses_screen.dart`)**: Coordinators can draft new standalone courses, set difficulty tiers, write lesson markdown blocks, and organize modules directly from their mobile devices.
 
-### Roadmaps Screen
-- Search bar with clear button
-- Animated filter chips: All / Beginner / Intermediate / Advanced
-- List of `CuratedRoadmapModel` cards showing category, difficulty, duration, enrollment count
-
-### Roadmap Detail Screen
-- Hero `SliverAppBar` with gradient background
-- Meta row: duration, phases count, enrolled count
-- Description text
-- Enroll button (disabled after enrollment, shows success/error feedback)
-- Expandable phase accordion with topics list
-
-### Courses Screen
-- Tabbed: **My Courses** | **Browse All**
-- Search via `SearchDelegate` (magnifier icon in header)
-- Course cards with level badge, rating, progress bar (enrolled courses), duration, module count
-
-### Course Detail Screen
-- Hero `SliverAppBar` with gradient
-- Progress bar (if enrolled)
-- Expandable module/lesson curriculum tree
-- Tap any lesson → opens **Lesson Viewer**
-
-### Lesson Viewer (inside Course Detail)
-- Full-screen lesson content
-- Progress bar in AppBar showing lesson N of total
-- Renders: Markdown, HTML (stripped tags), JSON block arrays (text, links)
-- Previous / Next Lesson navigation
-- "Complete" button on last lesson
-
-### Assessments Screen
-- Cards per assessment: title, course name, time limit, question count, attempt count
-- Score badge (green ≥70%, red <70%)
-- "Start Assessment" / "Retake Assessment" button
-
-### Assessment Quiz Screen
-- Progress bar in AppBar (question N of total)
-- Question text + 4 option buttons with animated selection highlight
-- Previous / Next navigation
-- Submit button (enabled only when all answered)
-- Result screen: score %, pass/fail icon, per-question breakdown with explanations
-
-### Progress Screen
-- 2×2 stats grid: XP, Courses, Lessons, Streak
-- XP progress bar showing progress to next level
-- Recent activity feed (course enrollments)
-
-### Student Profile Screen
-- Gradient circle avatar with initials
-- Info tiles: Academic Year, Student ID, Department, Email
-- Theme toggle switch
-- Notifications settings tile
-- Logout button
-
-### Notifications Screen
-- List of notifications with type icons and relative timestamps
-- Swipe-to-delete
-- "Mark all read" action in header
-
-### Support Chat Screen
-- Chat UI with message bubbles (sent/received)
-- Text input with send button
-- Connects to admin support via `/api/support/messages`
+### 👑 D. Administrator Portal (`lib/features/admin/`)
+The platform gatekeeper responsible for security and institutional verification.
+- **Account Approvals Console (`screens/admin_approvals_screen.dart`)**: Fetches a live list of registration requests from newly registered Teacher and Coordinator accounts. Allows the admin to inspect university details, reject, or approve access, which immediately activates the user's login rights across the DB.
 
 ---
 
-## Shared Widgets
+## 🛠️ 5. Key State Providers (Riverpod)
 
-### `AppDrawer`
-Slide-in navigation drawer used by `StudentShell`. Contains:
-- Header with gradient background, user initials, name, role badge
-- Navigation items with active highlight
-- Notifications and Support shortcuts
-- Theme toggle
-- Logout button
+The app's reactive pipeline is bound by Riverpod providers defined inside `providers/`:
 
-**Usage:**
-```dart
-Scaffold(
-  drawer: AppDrawer(
-    items: _drawerItems,
-    currentPath: location,
-    accentColor: AppColors.teal,
-  ),
-  body: child,
-)
-```
+1. **Authentication Provider (`lib/core/providers/auth_provider.dart`)**:
+   - Manages global user sessions.
+   - Triggers logins, register actions, and handles secure storing of the JWT token.
+   - Watches `AuthState` to dynamically rebuild the routing tree when a user registers or logs out.
 
-### `AppHeader`
-Consistent top AppBar across all screens.
-```dart
-AppHeader(
-  title: 'Career Roadmaps',
-  showLogo: false,          // show CareerGuide logo instead of title
-  showDrawerButton: true,   // show hamburger menu (default true)
-  actions: [...],           // optional action buttons
-)
-```
+2. **Student Progress Provider (`student_providers.dart`)**:
+   - **`studentStatsProvider`**: Fetches active streaks, XP level thresholds, and progress histories from the backend endpoints.
+   - **`enrolledRoadmapsProvider`**: Dynamically returns the curated learning roadmaps enrolled by the student.
+   - **`courseDetailProvider(id)`**: Fetches real-time module details, lesson lists, and course progression states. Automatically updates UI components upon completion.
 
-### `GradientCard`
-Hero card with gradient background, badge, title, subtitle.
-```dart
-GradientCard(
-  badge: 'STUDENT PORTAL',
-  title: 'Hello, Abebe 👋',
-  subtitle: 'Ready to level up today?',
-  colors: [AppColors.navy, Color(0xFF0369A1)],
-  trailing: CircleAvatar(...),
-)
-```
-
-### `InfoCard`
-Stat card with icon, value, label.
-```dart
-InfoCard(
-  label: 'Credits (XP)',
-  value: '250',
-  icon: Icons.bolt_rounded,
-  color: AppColors.warning,
-  onTap: () {},
-)
-```
-
-### `QuickActionTile`
-Compact action button used in home screen quick actions row.
-```dart
-QuickActionTile(
-  icon: Icons.map_rounded,
-  label: 'Roadmaps',
-  color: AppColors.navy,
-  onTap: () => context.go('/student/roadmaps'),
-)
-```
+3. **Careers Provider (`lib/features/student/providers/careers_provider.dart`)**:
+   - **`careersProvider(filters)`**: Dynamically loads published careers from the database, automatically updating the feed on active search keyword changes or category filter chip select events.
+   - **`careerCategoriesProvider`**: Performs a database distinct fetch, extracting all categories currently in use for clean tab rendering.
+   - **`careerDetailsProvider(id)`**: Safely pulls specific career profiles by ID.
 
 ---
 
-## Color System
+## ✨ 6. Premium Polish & Solved Architectural Issues
 
-Defined in `AppColors` (matches web platform exactly):
+We recently implemented several high-impact refinements to secure premium usability:
 
-| Name | Hex | Usage |
-|---|---|---|
-| `navy` | `#02436D` | Primary brand, headers, buttons |
-| `teal` | `#0D9488` | Active states, CTAs, accents |
-| `tealLight` | `#14B8A6` | Progress bars, highlights |
-| `studentBlue` | `#2563EB` | Student role badge |
-| `success` | `#10B981` | Pass states, enrolled |
-| `warning` | `#F59E0B` | XP, streak, pending |
-| `error` | `#EF4444` | Fail states, logout |
-| `slate50–950` | — | Neutral grays for backgrounds, borders, text |
+### 1. Reverse-Index Bottom Navigation Highlight Fix
+- **The Issue**: Shell layouts loaded matches sequentially (index `0` upwards). Since the base path `/student` is a prefix of `/student/roadmaps`, `/student/courses`, etc., checking `location.startsWith('/student')` always returned true for the Home tab first, leaving the Home tab highlighted in teal no matter which tab was selected.
+- **The Solution**: Modified shell index algorithms in `StudentShell`, `TeacherShell`, `BitShell`, and `AdminShell` to traverse path lists in **reverse order** (from index length-1 down to 0). This ensures longer, highly specific child sub-paths (like `/student/roadmaps`) match first and receive the active highlighting, while `/student` acts as the graceful fallback.
+- **The Drawer Enhancement**: Updated the sliding drawers to use an exact match check for root nodes and a prefix match for leaf nodes, preventing double-highlighting.
+
+### 2. Symmetrical Icon-Only Back Buttons
+- **The Issue**: The lesson viewer displayed a bulky, repetitive, text-labeled button `[ <- Back ]` which cluttered the responsive bottom action row.
+- **The Solution**:
+  - **Mobile**: Replaced the Flutter `OutlinedButton.icon` in the `_LessonViewer` with a textless `OutlinedButton` rendering only a clean arrow icon. The shape, padding (`vertical: 13`), and border widths were kept identical to maintain perfect alignment with the other action cards.
+  - **Web Client Symmetrical Upgrade**: Similarly refactored the sidebar header back button in the React client's `CourseView.tsx`. The raw text label was replaced with a responsive, symmetrical icon button mirroring the adjacent collapse chevron button.
+
+### 3. Crisp Back Button Contrast over Banners
+- **The Issue**: Default Flutter app bars read global themes, rendering the back arrow in dark navy (`AppColors.navy`). Since header banners utilize rich dark blue-to-teal linear gradients, the back button was virtually invisible.
+- **The Solution**: Overrode the `iconTheme` explicitly on detail SliverAppBars to `Colors.white`, guaranteeing a highly readable and clean navigation arrow over any dark backdrop.
 
 ---
 
-## Setup & Running
+## 🚀 7. Step-by-Step Run & Build Guide
 
-### Prerequisites
-- Flutter SDK 3.x (`flutter --version`)
-- Android Studio with Android emulator **or** physical Android/iOS device
-- PHP backend running (`cd backend/public && php -S 0.0.0.0:8000`)
+### A. Prerequisites
+1. Install the **Flutter SDK** (Version `>=3.10.0` recommended, Dart `3.x`).
+2. Set up the Android SDK (via Android Studio) or Xcode (for macOS users building iOS).
+3. Connect an emulator, simulator, or physical test device.
 
-### Install dependencies
-```bash
-cd mobile
-flutter pub get
-```
-
-### Configure API URL
-Edit `mobile/lib/core/constants/api_constants.dart`:
-
-```dart
-static String get baseUrl {
-  if (kIsWeb) return 'http://localhost:8000/api';
-  return 'http://10.0.2.2:8000/api';  // Android emulator
-  // Physical device: use your PC's local IP, e.g. http://192.168.1.x:8000/api
-}
-```
-
-### Run on Android emulator
-```bash
-flutter run
-```
-
-### Run on physical device
-1. Enable Developer Options on phone → USB Debugging
-2. Connect via USB
-3. Update `baseUrl` to your PC's local IP (run `ipconfig` to find it)
-4. Ensure backend runs with `php -S 0.0.0.0:8000`
-5. Open Windows Firewall for port 8000:
-   ```powershell
-   netsh advfirewall firewall add rule name="PHP Dev" dir=in action=allow protocol=TCP localport=8000
+### B. Setup & Run
+1. Open your terminal in the `mobile` project directory:
+   ```bash
+   cd mobile
    ```
-6. `flutter run -d android`
+2. Pull the official package dependencies:
+   ```bash
+   flutter pub get
+   ```
+3. Run the code generation engine (for Riverpod annotations):
+   ```bash
+   dart run build_runner build --delete-conflicting-outputs
+   ```
+4. Start the application on your target device in Debug mode:
+   ```bash
+   flutter run
+   ```
 
-### Build APK
-```bash
-flutter build apk --release
-# Output: build/app/outputs/flutter-apk/app-release.apk
-```
+### C. Compile & Build for Production
+To bundle the application for production distribution, run the appropriate target command:
 
----
-
-## Authentication Flow
-
-```
-App launch
-  └── _checkAuth() [instant, no network]
-        ├── No token → /login
-        └── Token exists → /student
-
-Login
-  └── POST /api/auth/login
-        ├── Save JWT to FlutterSecureStorage (mobile) / SharedPreferences (web)
-        └── Set user state → router redirects to /student
-
-Logout
-  └── POST /api/auth/logout (fire-and-forget)
-  └── Remove token from storage
-  └── Clear user state → router redirects to /login
-```
-
-**Token storage:**
-- Mobile: `FlutterSecureStorage` (encrypted, hardware-backed on Android)
-- Web: `SharedPreferences` (fallback, since SecureStorage doesn't work in browser)
-- Both storages are written simultaneously on save for reliability
+- **Android (APK bundle)**:
+  ```bash
+  flutter build apk --release
+  ```
+- **Android (Google Play AAB)**:
+  ```bash
+  flutter build appbundle --release
+  ```
+- **iOS (Xcode Archive)**:
+  ```bash
+  flutter build ipa --release
+  ```
 
 ---
 
-## Data Flow Example — Loading Roadmaps
+## 🔮 8. Recommended Future Work
 
-```
-RoadmapsScreen mounts
-  └── ref.watch(curatedRoadmapsProvider(filters))
-        └── FutureProvider calls ApiClient.get('/curated-roadmaps?...')
-              └── Dio adds Authorization header from token
-                    └── PHP backend returns JSON array
-                          └── List<CuratedRoadmapModel>.fromJson(...)
-                                └── UI renders ListView of _RoadmapCard widgets
-```
-
----
-
-## Known Behaviors
-
-- **All roles use student portal on mobile** — teachers, admins, and BiT users who log in on mobile see the student dashboard. The web platform handles role-specific portals.
-- **Token refresh** — there is no automatic token refresh. If the token expires (24h), the user is silently logged out on the next API call that returns 401.
-- **Offline** — the app has no offline mode. All data requires an active connection to the backend.
-- **IP changes** — if your PC's IP changes (e.g. reconnecting to WiFi), update `baseUrl` in `api_constants.dart` and hot-restart.
+1. **Local Offline Synchronization Cache**: Integrate a local SQLite / Hive box repository. This allows students to download and progress through lesson modules offline, syncing XP and lesson states back to the database as soon as a connection is restored.
+2. **Push Notification Infrastructure**: Connect Firebase Cloud Messaging (FCM) to deliver coordinator updates, assessment reviews, and teacher material notifications directly to the mobile device tray.
+3. **Biometric Session Validation**: Integrate `local_auth` to support swift biometric lock checks (FaceID / Fingerprint) before entering sensitive coordinator portals or admin approval logs.

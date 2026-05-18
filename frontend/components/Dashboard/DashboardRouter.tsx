@@ -18,11 +18,11 @@ const DashboardLoadingFallback: React.FC = () => (
 const DashboardRouter: React.FC<DashboardRouterProps & { initialTab?: string }> = ({ user, initialTab, ...props }) => {
   switch (user.role) {
     case 'student':
-      return <Suspense fallback={<DashboardLoadingFallback />}><StudentDashboardLayout user={user} initialTab={initialTab} {...props} /></Suspense>;
+      return <Suspense fallback={<DashboardLoadingFallback />}><StudentDashboardLayout user={user as any} initialTab={initialTab} {...props} /></Suspense>;
     case 'teacher':
-      return <Suspense fallback={<DashboardLoadingFallback />}><TeacherDashboardLayout user={user} initialTab={initialTab} {...props} /></Suspense>;
+      return <Suspense fallback={<DashboardLoadingFallback />}><TeacherDashboardLayout user={user as any} initialTab={initialTab} {...props} /></Suspense>;
     case 'admin':
-      return <Suspense fallback={<DashboardLoadingFallback />}><AdminDashboardLayout user={user} initialTab={initialTab} {...props} /></Suspense>;
+      return <Suspense fallback={<DashboardLoadingFallback />}><AdminDashboardLayout user={user as any} initialTab={initialTab} {...props} /></Suspense>;
     case 'bit':
       return <Suspense fallback={<DashboardLoadingFallback />}><BiTDashboardLayout user={user as any} initialTab={initialTab} {...props} /></Suspense>;
     default:

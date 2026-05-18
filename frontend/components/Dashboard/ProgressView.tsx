@@ -62,28 +62,7 @@ const ProgressView: React.FC<ProgressViewProps> = ({ userId }) => {
             </div>
           </div>
 
-          {/* Achievement Grid - Still hardcoded for now as we don't have badges system yet */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-12 rounded-[3rem] shadow-sm">
-            <h3 className="text-2xl font-extrabold text-primary dark:text-white mb-12 flex items-center gap-4">
-              <Award className="text-careermap-teal" /> Institutional Credentials
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              {[
-                { title: 'Student Hub Verified', org: 'BiT Admin', date: 'Active', status: 'Verified' },
-                { title: 'Early Adopter', org: 'CareerGuide', date: '2024', status: 'Badge' },
-              ].map((c, i) => (
-                <div key={i} className="bg-slate-50 dark:bg-slate-800 p-8 rounded-3xl flex items-center gap-6 group hover:bg-careermap-navy hover:text-white transition-all shadow-sm border border-slate-100 dark:border-slate-700 hover:border-careermap-navy">
-                  <div className="w-16 h-16 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-center text-careermap-teal shadow-md shrink-0 group-hover:scale-110 transition-transform">
-                    <CheckCircle2 size={32} />
-                  </div>
-                  <div>
-                    <p className="text-lg font-black group-hover:text-white mb-1 leading-tight">{c.title}</p>
-                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] group-hover:text-white/60">{c.org} • {c.date} • {c.status}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+
         </div>
 
         <div className="space-y-12">
@@ -98,26 +77,7 @@ const ProgressView: React.FC<ProgressViewProps> = ({ userId }) => {
             <p className="text-base font-medium text-white/60">{stats.completedLessons} lessons completed</p>
           </div>
 
-          {/* Goals Checklist - Mock for now but clearer */}
-          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-12 rounded-[3rem] shadow-sm">
-            <h3 className="text-2xl font-extrabold text-primary dark:text-white mb-10 flex items-center gap-4">
-              <Target className="text-careermap-teal" /> Weekly Sprint
-            </h3>
-            <div className="space-y-6">
-              {[
-                { label: 'Complete 3 Lessons', done: stats.completedLessons > 0 },
-                { label: 'Create a Course', done: courses.length > 0 },
-                { label: 'Visit Dashboard', done: true },
-              ].map((g, i) => (
-                <div key={i} className="flex items-center gap-5 p-3 hover:bg-white dark:hover:bg-slate-800 rounded-2xl transition-all cursor-pointer">
-                  <div className={`w-7 h-7 rounded-lg border-2 transition-all flex items-center justify-center shrink-0 ${g.done ? 'bg-careermap-teal border-careermap-teal' : 'border-slate-200 dark:border-slate-700'}`}>
-                    {g.done && <CheckCircle2 size={16} className="text-white" />}
-                  </div>
-                  <span className={`text-base font-bold transition-all ${g.done ? 'text-slate-300 dark:text-slate-600 line-through' : 'text-slate-600 dark:text-slate-300'}`}>{g.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+
         </div>
       </div>
     </div>

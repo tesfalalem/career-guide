@@ -27,6 +27,30 @@ const LEVEL_META: Record<LevelKey, { label: string; color: string; bg: string; d
 };
 
 /** Returns true if phases is the new multi-level format */
+const SYSTEM_CATEGORIES = [
+  'Full-Stack Development',
+  'Frontend Web Development',
+  'Backend Development',
+  'Mobile App Development',
+  'Artificial Intelligence',
+  'Machine Learning',
+  'Cloud Computing',
+  'Cybersecurity',
+  'Data Science',
+  'UI/UX Design',
+  'DevOps Engineering',
+  'Software Engineering',
+  'Database Management',
+  'Computer Networking',
+  'API Development',
+  'Blockchain Development',
+  'Internet of Things (IoT)',
+  'Game Development',
+  'Embedded Systems',
+  'System Administration',
+  'Other'
+];
+
 function isMultiLevel(phases: any[]): boolean {
   return Array.isArray(phases) && phases.length > 0 &&
     typeof phases[0] === 'object' && 'level' in phases[0] && 'phases' in phases[0];
@@ -96,6 +120,8 @@ const CuratedRoadmapsView: React.FC<CuratedRoadmapsViewProps> = ({ onGenerateCus
   const [viewMode, setViewMode] = useState<'browse' | 'detail'>('browse');
   const [expandedPhases, setExpandedPhases] = useState<Set<number>>(new Set([0]));
   const [activeLevel, setActiveLevel] = useState<LevelKey>('beginner');
+  const [showAllRoadmaps, setShowAllRoadmaps] = useState(false);
+  const [courses, setCourses] = useState<any[]>([]);
 
   const togglePhase = (idx: number) => {
     const next = new Set(expandedPhases);
@@ -143,6 +169,16 @@ const CuratedRoadmapsView: React.FC<CuratedRoadmapsViewProps> = ({ onGenerateCus
 
       // Merge and prioritize AI roadmaps
       setRoadmaps([...aiRoadmaps, ...curatedData]);
+
+      // Fetch all courses for category/level dependency
+      try {
+        const coursesData = await apiClient.getCourses();
+        setCourses(Array.isArray(coursesData) ? coursesData : []);
+      } catch (ce) {
+        console.error('Failed to load courses database registry:', ce);
+        setCourses([]);
+      }
+
       setLoading(false);
     } catch (error) {
       console.error('Error fetching roadmaps:', error);
@@ -197,6 +233,43 @@ const CuratedRoadmapsView: React.FC<CuratedRoadmapsViewProps> = ({ onGenerateCus
 
   // Detail View
   if (viewMode === 'detail' && selectedRoadmap) {
+    const getCorrespondingCourseLevel = (lvlKey: string): string => {
+      switch (lvlKey) {
+        case 'beginner': return 'Beginner';
+        case 'medium': return 'Intermediate';
+        case 'advanced': return 'Advanced';
+        default: return '';
+      }
+    };
+
+    const matchedCourses = (() => {
+      // 1. Filter by category
+      const catFiltered = courses.filter(c => {
+        const cCat = String(c.category || '').trim().toLowerCase();
+        const rCat = String(selectedRoadmap.category || '').trim().toLowerCase();
+        return cCat === rCat;
+      });
+
+      // 2. Filter by level
+      if (isMultiLevel(selectedRoadmap.phases)) {
+        const targetLvl = getCorrespondingCourseLevel(activeLevel).toLowerCase();
+        return catFiltered.filter(c => String(c.level || '').trim().toLowerCase() === targetLvl);
+      } else {
+        const rLvl = String(selectedRoadmap.difficulty_level || '').trim().toLowerCase();
+        if (rLvl === 'all') return catFiltered;
+        if (rLvl === 'beginner') {
+          return catFiltered.filter(c => String(c.level || '').trim().toLowerCase() === 'beginner');
+        }
+        if (rLvl === 'intermediate' || rLvl === 'medium') {
+          return catFiltered.filter(c => String(c.level || '').trim().toLowerCase() === 'intermediate');
+        }
+        if (rLvl === 'advanced') {
+          return catFiltered.filter(c => String(c.level || '').trim().toLowerCase() === 'advanced');
+        }
+        return catFiltered;
+      }
+    })();
+
     return (
       <div className="space-y-10 max-w-5xl mx-auto pb-20">
         {/* Back Button */}
@@ -345,10 +418,8 @@ const CuratedRoadmapsView: React.FC<CuratedRoadmapsViewProps> = ({ onGenerateCus
                                     </div>
                                   )}
                                 </div>
-                                <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed line-clamp-1">
-                                  {stripHtml(phase.description)}
-                                </p>
                               </div>
+
                               <div className={`p-2 rounded-xl transition-all ${isExpanded ? 'bg-careermap-teal text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 group-hover/header:text-careermap-teal'}`}>
                                 {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
                               </div>
@@ -415,6 +486,85 @@ const CuratedRoadmapsView: React.FC<CuratedRoadmapsViewProps> = ({ onGenerateCus
             })()}
           </div>
         </div>
+
+        {/* Dynamic Connected Courses Section */}
+        <div className="border-t border-slate-200 dark:border-slate-800 pt-12 space-y-6 animate-reveal">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-3xl font-serif font-black text-careermap-navy dark:text-white flex items-center gap-4">
+                <div className="w-1.5 h-10 bg-careermap-teal rounded-full" />
+                Courses in this Track
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1.5 font-medium">
+                Deepen your learning with corresponding curriculum courses in <span className="font-bold text-careermap-teal">{selectedRoadmap.category}</span>
+                {isMultiLevel(selectedRoadmap.phases) && (
+                  <span> at the <span className="font-bold uppercase tracking-wider text-[11px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-700 dark:text-slate-350">{getCorrespondingCourseLevel(activeLevel)}</span> level</span>
+                )}
+              </p>
+            </div>
+            <div className="bg-careermap-teal/5 text-careermap-teal px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-wider border border-careermap-teal/10">
+              {matchedCourses.length} {matchedCourses.length === 1 ? 'Course' : 'Courses'} Connected
+            </div>
+          </div>
+
+          {matchedCourses.length === 0 ? (
+            <div className="bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] p-10 text-center shadow-sm">
+              <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <BookOpen size={24} className="text-slate-300" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-1">No assigned courses for this level yet</h3>
+              <p className="text-slate-400 text-xs max-w-sm mx-auto font-medium">
+                You can complete the milestones above or explore other curriculum topics from the Courses tab.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {matchedCourses.map(course => {
+                const getLevelBadgeCls = (lvl: string) => {
+                  const l = String(lvl || '').trim().toLowerCase();
+                  if (l === 'beginner') return 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/30';
+                  if (l === 'intermediate' || l === 'medium') return 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/30';
+                  return 'bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-900/30';
+                };
+
+                return (
+                  <div
+                    key={course.id}
+                    onClick={() => onOpenCourse && onOpenCourse(course.id)}
+                    className="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2rem] p-6 shadow-sm hover:shadow-xl hover:border-careermap-teal/20 transition-all duration-300 cursor-pointer flex flex-col justify-between transform hover:-translate-y-1"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border ${getLevelBadgeCls(course.level)}`}>
+                          {course.level}
+                        </span>
+                        <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-400 group-hover:bg-careermap-teal group-hover:text-white flex items-center justify-center transition-all">
+                          <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                        </div>
+                      </div>
+                      <h4 className="text-lg font-serif font-black text-careermap-navy dark:text-white group-hover:text-careermap-teal transition-colors mb-2 line-clamp-2 leading-snug">
+                        {course.title}
+                      </h4>
+                      <p className="text-slate-400 dark:text-slate-500 text-xs font-medium line-clamp-3 leading-relaxed mb-6">
+                        {course.description}
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center justify-between pt-4 border-t border-slate-50 dark:border-slate-800/50">
+                      <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                        <span className="flex items-center gap-1"><Clock size={11} /> {course.duration || 'Self-paced'}</span>
+                        <span className="flex items-center gap-1"><BookOpen size={11} /> {course.modules?.length || 0} Modules</span>
+                      </div>
+                      <span className="text-[9px] font-black text-careermap-teal uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                        Start →
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -454,10 +604,10 @@ const CuratedRoadmapsView: React.FC<CuratedRoadmapsViewProps> = ({ onGenerateCus
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="flex-1 min-w-[150px] px-6 py-4 rounded-[1.25rem] bg-slate-50 dark:bg-slate-800 border-none font-bold text-sm text-slate-600 dark:text-slate-300 outline-none focus:ring-2 focus:ring-careermap-navy/10"
+              className="flex-1 min-w-[150px] px-6 py-4 rounded-[1.25rem] bg-slate-50 dark:bg-slate-800 border-none font-bold text-sm text-slate-600 dark:text-slate-300 outline-none focus:ring-2 focus:ring-careermap-navy/10 cursor-pointer"
             >
               <option value="all">All Sectors</option>
-              {['Frontend Development', 'Backend Development', 'Full Stack', 'Data Science', 'Mobile Development', 'DevOps', 'Design', 'Cybersecurity'].map(c => (
+              {SYSTEM_CATEGORIES.map(c => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
@@ -477,58 +627,73 @@ const CuratedRoadmapsView: React.FC<CuratedRoadmapsViewProps> = ({ onGenerateCus
       </div>
 
       {/* Roadmaps Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {filteredRoadmaps.map((roadmap) => (
-          <div
-            key={roadmap.id}
-            onClick={() => handleViewDetails(roadmap.id)}
-            className="group relative bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border border-white dark:border-slate-800 shadow-lg hover:shadow-[0_30px_60px_-15px_rgba(2,67,109,0.15)] transition-all duration-500 cursor-pointer overflow-hidden transform hover:-translate-y-3"
-          >
-            {/* Hover Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-careermap-navy/[0.02] to-careermap-teal/[0.05] opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="space-y-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {(showAllRoadmaps ? filteredRoadmaps : filteredRoadmaps.slice(0, 6)).map((roadmap) => (
+            <div
+              key={roadmap.id}
+              onClick={() => handleViewDetails(roadmap.id)}
+              className="group relative bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border border-white dark:border-slate-800 shadow-lg hover:shadow-[0_30px_60px_-15px_rgba(2,67,109,0.15)] transition-all duration-500 cursor-pointer overflow-hidden transform hover:-translate-y-3"
+            >
+              {/* Hover Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-br from-careermap-navy/[0.02] to-careermap-teal/[0.05] opacity-0 group-hover:opacity-100 transition-opacity" />
 
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-6">
-                <span className="text-[10px] font-black text-careermap-teal bg-careermap-teal/10 uppercase tracking-[0.2em] px-3 py-1.5 rounded-full">
-                  {roadmap.category}
-                </span>
-                <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full ${
-                  roadmap.isAi ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' :
-                  roadmap.difficulty_level === 'all' ? 'bg-gradient-to-r from-emerald-50 via-amber-50 to-red-50 text-slate-600 border border-slate-200' :
-                  roadmap.difficulty_level === 'beginner' ? 'bg-green-50 text-green-600' :
-                  roadmap.difficulty_level === 'intermediate' ? 'bg-amber-50 text-amber-600' :
-                  'bg-red-50 text-red-600'
-                }`}>
-                  {roadmap.isAi
-                    ? <span className="flex items-center gap-1"><Sparkles size={10} /> AI Generated</span>
-                    : roadmap.difficulty_level === 'all'
-                      ? '🎯 3 Levels'
-                      : roadmap.difficulty_level}
-                </span>
-              </div>
-
-              <h3 className="text-2xl font-serif font-black text-careermap-navy dark:text-white mb-4 leading-tight group-hover:text-careermap-navy dark:group-hover:text-careermap-teal transition-colors">
-                {roadmap.title}
-              </h3>
-              
-              <p className="text-slate-400 font-medium text-sm line-clamp-3 mb-8 leading-relaxed font-sans">
-                {roadmap.description}
-              </p>
-
-              <div className="flex items-center justify-between pt-8 border-t border-slate-50 dark:border-slate-800">
-                <div className="flex items-center gap-4">
-                   <div className="flex items-center gap-1.5 text-slate-400 font-bold text-[10px] uppercase tracking-widest font-sans">
-                     <Clock size={12} /> {roadmap.estimated_duration}
-                   </div>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-6">
+                  <span className="text-[10px] font-black text-careermap-teal bg-careermap-teal/10 uppercase tracking-[0.2em] px-3 py-1.5 rounded-full">
+                    {roadmap.category}
+                  </span>
+                  <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full ${
+                    roadmap.isAi ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' :
+                    roadmap.difficulty_level === 'all' ? 'bg-gradient-to-r from-emerald-50 via-amber-50 to-red-50 text-slate-600 border border-slate-200' :
+                    roadmap.difficulty_level === 'beginner' ? 'bg-green-50 text-green-600' :
+                    roadmap.difficulty_level === 'intermediate' ? 'bg-amber-50 text-amber-600' :
+                    'bg-red-50 text-red-600'
+                  }`}>
+                    {roadmap.isAi
+                      ? <span className="flex items-center gap-1"><Sparkles size={10} /> AI Generated</span>
+                      : roadmap.difficulty_level === 'all'
+                        ? '🎯 3 Levels'
+                        : roadmap.difficulty_level}
+                  </span>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-careermap-navy text-white flex items-center justify-center opacity-0 transform translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
-                  <ArrowRight size={18} />
+
+                <h3 className="text-2xl font-serif font-black text-careermap-navy dark:text-white mb-4 leading-tight group-hover:text-careermap-navy dark:group-hover:text-careermap-teal transition-colors">
+                  {roadmap.title}
+                </h3>
+                
+                <p className="text-slate-400 font-medium text-sm line-clamp-3 mb-8 leading-relaxed font-sans">
+                  {roadmap.description}
+                </p>
+
+                <div className="flex items-center justify-between pt-8 border-t border-slate-50 dark:border-slate-800">
+                  <div className="flex items-center gap-4">
+                     <div className="flex items-center gap-1.5 text-slate-400 font-bold text-[10px] uppercase tracking-widest font-sans">
+                       <Clock size={12} /> {roadmap.estimated_duration}
+                     </div>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-careermap-navy text-white flex items-center justify-center opacity-0 transform translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                    <ArrowRight size={18} />
+                  </div>
                 </div>
               </div>
             </div>
+          ))}
+        </div>
+
+        {filteredRoadmaps.length > 6 && (
+          <div className="flex justify-center pt-4">
+            <button
+              onClick={() => setShowAllRoadmaps(!showAllRoadmaps)}
+              className="group flex items-center gap-3 px-10 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl font-black text-xs uppercase tracking-[0.2em] text-careermap-navy dark:text-careermap-teal hover:border-careermap-teal transition-all shadow-sm hover:shadow-xl"
+            >
+              {showAllRoadmaps ? 'Show Less' : 'View All Roadmaps'}
+              <ChevronRight size={18} className={`transition-transform duration-300 ${showAllRoadmaps ? '-rotate-90' : 'rotate-90 group-hover:translate-y-1'}`} />
+            </button>
           </div>
-        ))}
+        )}
       </div>
+
 
       {/* Empty State */}
       {filteredRoadmaps.length === 0 && (
@@ -541,22 +706,7 @@ const CuratedRoadmapsView: React.FC<CuratedRoadmapsViewProps> = ({ onGenerateCus
         </div>
       )}
 
-      {/* AI Fallback CTA */}
-      <div className="relative overflow-hidden bg-careermap-navy rounded-[3rem] p-12 text-center text-white shadow-2xl">
-        <div className="absolute top-0 right-0 p-10 opacity-[0.05] pointer-events-none">
-          <Sparkles size={200} />
-        </div>
-        <div className="relative z-10 max-w-2xl mx-auto">
-          <h3 className="text-3xl md:text-4xl font-serif font-black mb-4">Can't find your ideal path?</h3>
-          <p className="mb-8 text-white/70 font-medium text-lg">Let our AI engine architect a personalized roadmap tailored specifically to your unique goals and background.</p>
-          <button
-            onClick={onGenerateCustom}
-            className="bg-white text-careermap-navy px-10 py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] hover:bg-careermap-teal hover:text-white transition-all shadow-xl shadow-black/20"
-          >
-            Generate Custom Roadmap with AI
-          </button>
-        </div>
-      </div>
+
     </div>
   );
 };

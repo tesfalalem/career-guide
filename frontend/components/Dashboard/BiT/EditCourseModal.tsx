@@ -6,6 +6,30 @@ import {
 } from 'lucide-react';
 import RichTextEditor from '../../common/RichTextEditor';
 
+const SYSTEM_CATEGORIES = [
+  'Full-Stack Development',
+  'Frontend Web Development',
+  'Backend Development',
+  'Mobile App Development',
+  'Artificial Intelligence',
+  'Machine Learning',
+  'Cloud Computing',
+  'Cybersecurity',
+  'Data Science',
+  'UI/UX Design',
+  'DevOps Engineering',
+  'Software Engineering',
+  'Database Management',
+  'Computer Networking',
+  'API Development',
+  'Blockchain Development',
+  'Internet of Things (IoT)',
+  'Game Development',
+  'Embedded Systems',
+  'System Administration',
+  'Other'
+];
+
 const API = 'http://localhost/careerguide/backend/api';
 const token = () => localStorage.getItem('auth_token') || '';
 
@@ -186,13 +210,52 @@ const EditCourseModal: React.FC<Props> = ({ isOpen, course, onClose, onSuccess }
   });
   const [modules, setModules] = useState<Module[]>([]);
 
+  const [selectedCat, setSelectedCat] = useState('Full-Stack Development');
+  const [customCat, setCustomCat] = useState('');
+  const categoryDropdownRef = React.useRef<HTMLDivElement>(null);
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
+        setIsCategoryDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleCategorySelectChange = (val: string) => {
+    setSelectedCat(val);
+    if (val !== 'Other') {
+      setForm(p => ({ ...p, category: val }));
+    } else {
+      setForm(p => ({ ...p, category: customCat }));
+    }
+  };
+
+  const handleCustomCategoryChange = (val: string) => {
+    setCustomCat(val);
+    setForm(p => ({ ...p, category: val }));
+  };
+
   // Populate form when course changes
   useEffect(() => {
     if (!course) return;
+    const cat = course.category || 'Full-Stack Development';
+    const isPredefined = SYSTEM_CATEGORIES.includes(cat);
+    if (isPredefined && cat !== 'Other') {
+      setSelectedCat(cat);
+      setCustomCat('');
+    } else {
+      setSelectedCat('Other');
+      setCustomCat(cat);
+    }
+
     setForm({
       title: course.title || '',
       description: course.description || '',
-      category: course.category || '',
+      category: cat,
       level: course.level || 'Intermediate',
       duration: course.duration || '',
     });
@@ -323,34 +386,61 @@ const EditCourseModal: React.FC<Props> = ({ isOpen, course, onClose, onSuccess }
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Description</label>
-                <textarea
-                  value={form.description}
-                  onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white outline-none focus:ring-2 focus:ring-careermap-teal/20 resize-none"
-                  placeholder="What will students learn?"
-                />
+              <div className="relative" ref={categoryDropdownRef}>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Category</label>
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white outline-none text-sm flex items-center justify-between hover:border-slate-300 dark:hover:border-slate-600 transition-all font-semibold"
+                >
+                  <span>{selectedCat}</span>
+                  <ChevronDown size={18} className={`text-slate-400 transition-transform ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {isCategoryDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 z-[100] mt-1.5 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-64 overflow-y-auto py-1.5 animate-in fade-in-50 slide-in-from-top-1 duration-150">
+                    {SYSTEM_CATEGORIES.map(c => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => {
+                          handleCategorySelectChange(c);
+                          setIsCategoryDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors flex items-center justify-between ${
+                          selectedCat === c ? 'text-careermap-teal font-bold bg-slate-50/50 dark:bg-slate-750/30' : 'text-slate-700 dark:text-slate-350'
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              {/* Custom Category Input if "Other" is selected */}
+              {selectedCat === 'Other' && (
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Category</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                    Custom Category <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
-                    value={form.category}
-                    onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white outline-none"
-                    placeholder="e.g. Web Development"
+                    value={customCat}
+                    onChange={e => handleCustomCategoryChange(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white outline-none focus:ring-2 focus:ring-careermap-teal/20"
+                    placeholder="Enter custom category manually"
                   />
                 </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Level</label>
                   <select
                     value={form.level}
                     onChange={e => setForm(p => ({ ...p, level: e.target.value }))}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white outline-none"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white outline-none cursor-pointer"
                   >
                     <option>Beginner</option>
                     <option>Intermediate</option>
@@ -367,6 +457,17 @@ const EditCourseModal: React.FC<Props> = ({ isOpen, course, onClose, onSuccess }
                     placeholder="e.g. 40 Hours"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Description</label>
+                <textarea
+                  value={form.description}
+                  onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white outline-none focus:ring-2 focus:ring-careermap-teal/20 resize-none"
+                  placeholder="What will students learn?"
+                />
               </div>
             </section>
 
@@ -497,6 +598,9 @@ const EditCourseModal: React.FC<Props> = ({ isOpen, course, onClose, onSuccess }
                 ))}
               </div>
             </section>
+
+            {/* Scroll spacer to give plenty of viewport space below select elements */}
+            <div className="h-32" />
           </div>
 
           {/* Footer */}

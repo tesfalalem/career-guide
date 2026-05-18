@@ -20,7 +20,7 @@ import { User } from './types';
 import { apiClient, getToken } from './services/apiClient';
 
 function App() {
-  const [view, setView] = useState<'home' | 'login' | 'signup' | 'onboarding' | 'dashboard' | 'mission' | 'faq' | 'user-guide' | 'privacy' | 'terms'>('home');
+  const [view, setView] = useState<'home' | 'login' | 'signup' | 'onboarding' | 'dashboard' | 'mission' | 'faq' | 'user-guide' | 'privacy' | 'terms' | 'chat'>('home');
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [systemStats, setSystemStats] = useState({ students: 2000, roadmaps: 50, completion: 98 });
@@ -156,7 +156,7 @@ function App() {
       case 'terms': return <TermsOfServicePage />;
       default: return (
         <>
-          <Hero onNavigate={navigateTo} systemStats={systemStats} />
+          <Hero />
           
           {/* Trust Layer */}
           <div className="bg-slate-50 dark:bg-slate-900/50 py-12 border-y border-slate-100 dark:border-slate-800 overflow-hidden">
@@ -195,7 +195,7 @@ function App() {
                     onClick={() => navigateTo('signup')}
                     className="bg-white text-careermap-navy hover:bg-slate-50 px-10 py-4 rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg transition-all active:scale-95"
                   >
-                    Build My Roadmap
+                    Register
                   </button>
                   <button
                     onClick={() => navigateTo('login')}

@@ -8,8 +8,11 @@ interface ConfirmModalProps {
   confirmText?: string;
   cancelText?: string;
   onConfirm: () => void;
-  onCancel: () => void;
+  onCancel?: () => void;
+  onClose?: () => void;   // alias for onCancel
   variant?: 'danger' | 'warning' | 'info';
+  type?: string;          // alias for variant
+  loading?: boolean;      // ignored — kept for backward compat
 }
 
 const ConfirmModal: React.FC<ConfirmModalProps> = ({
@@ -20,8 +23,15 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   cancelText = 'Cancel',
   onConfirm,
   onCancel,
-  variant = 'danger'
+  onClose,
+  variant,
+  type,
 }) => {
+  // Support both onCancel and onClose as the dismiss handler
+  const handleCancel = onCancel ?? onClose ?? (() => {});
+  // Support both variant and type (legacy) for the style
+  const resolvedVariant: 'danger' | 'warning' | 'info' =
+    (variant as any) ?? (type === 'danger' ? 'danger' : type === 'warning' ? 'warning' : 'danger');
   if (!isOpen) return null;
 
   const variantStyles = {
@@ -42,14 +52,14 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
     }
   };
 
-  const style = variantStyles[variant];
+  const style = variantStyles[resolvedVariant];
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-fade-in" 
-        onClick={onCancel}
+        onClick={handleCancel}
       />
       
       {/* Modal Container */}
@@ -61,7 +71,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
               {style.icon}
             </div>
             <button 
-              onClick={onCancel}
+              onClick={handleCancel}
               className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
             >
               <X size={20} />
@@ -80,7 +90,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
         {/* Actions */}
         <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex gap-3">
           <button
-            onClick={onCancel}
+            onClick={handleCancel}
             className="flex-1 px-6 py-4 rounded-2xl font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:scale-95"
           >
             {cancelText}

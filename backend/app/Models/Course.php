@@ -128,6 +128,14 @@ class Course {
         return $stmt->execute();
     }
 
+    public function updateModules($courseId, $modulesJson) {
+        $query = "UPDATE " . $this->table . " SET modules = :modules WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':modules', $modulesJson);
+        $stmt->bindParam(':id', $courseId);
+        return $stmt->execute();
+    }
+
     public function updateUserXP($userId, $xpGained) {
         $query = "UPDATE users SET xp = xp + :xp_gained WHERE id = :user_id";
         $stmt = $this->conn->prepare($query);

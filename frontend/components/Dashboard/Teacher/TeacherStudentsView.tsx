@@ -324,6 +324,12 @@ const TeacherStudentsView: React.FC = () => {
                         <div>
                           <div className="font-semibold text-primary dark:text-white">{student.student_name}</div>
                           <div className="text-sm text-slate-500">{student.student_email}</div>
+                          {(student as any).course_title && (
+                            <div className="text-xs font-black text-careermap-teal uppercase tracking-wider mt-1 flex items-center gap-1.5">
+                              <span className="inline-block w-1.5 h-1.5 bg-careermap-teal rounded-full animate-pulse" />
+                              {(student as any).course_title}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>

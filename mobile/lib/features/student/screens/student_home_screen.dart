@@ -26,7 +26,7 @@ class StudentHomeScreen extends ConsumerWidget {
             // ── Welcome card ─────────────────────────────────────────────
             GradientCard(
               badge: 'STUDENT PORTAL',
-              title: 'Hello, ${user?.firstName ?? 'Student'} 👋',
+              title: 'Hello, ${user?.firstName ?? 'Student'}',
               subtitle: 'Ready to level up today?',
               colors: const [AppColors.navy, Color(0xFF0369A1)],
               trailing: CircleAvatar(
@@ -58,23 +58,11 @@ class StudentHomeScreen extends ConsumerWidget {
                 childAspectRatio: 1.5,
                 children: [
                   InfoCard(
-                    label: 'Credits (XP)',
-                    value: '${stats['totalXP'] ?? 0}',
-                    icon: Icons.bolt_rounded,
-                    color: AppColors.warning,
-                  ),
-                  InfoCard(
                     label: 'Courses',
                     value: '${stats['coursesEnrolled'] ?? 0}',
                     icon: Icons.book_rounded,
                     color: AppColors.teal,
                     onTap: () => context.go('/student/courses'),
-                  ),
-                  InfoCard(
-                    label: 'Day Streak',
-                    value: '${stats['streak'] ?? 0}',
-                    icon: Icons.local_fire_department_rounded,
-                    color: AppColors.error,
                   ),
                   InfoCard(
                     label: 'Lessons Done',
@@ -150,9 +138,17 @@ class StudentHomeScreen extends ConsumerWidget {
             _ExploreCard(
               icon: Icons.quiz_rounded,
               title: 'Skill Assessments',
-              subtitle: 'Test your knowledge and earn XP',
+              subtitle: 'Test your knowledge with custom quizzes',
               color: AppColors.warning,
               onTap: () => context.go('/student/assessments'),
+            ),
+            const SizedBox(height: 10),
+            _ExploreCard(
+              icon: Icons.work_rounded,
+              title: 'Explore Careers',
+              subtitle: 'Browse current career fields and required skills',
+              color: AppColors.success,
+              onTap: () => context.go('/student/careers'),
             ),
 
             const SizedBox(height: 28),
@@ -311,7 +307,7 @@ class _StatsShimmer extends StatelessWidget {
       mainAxisSpacing: 12,
       childAspectRatio: 1.5,
       children: List.generate(
-        4,
+        2,
         (_) => Container(
           decoration: BoxDecoration(
             color: AppColors.slate100,

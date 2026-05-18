@@ -10,7 +10,7 @@ class ProgressScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(studentStatsProvider);
-    final activityAsync = ref.watch(recentActivityProvider);
+    final enrolledCoursesAsync = ref.watch(enrolledCoursesProvider);
 
     return Scaffold(
       appBar: AppHeader(title: 'My Progress'),
@@ -18,7 +18,7 @@ class ProgressScreen extends ConsumerWidget {
         color: AppColors.teal,
         onRefresh: () async {
           ref.invalidate(studentStatsProvider);
-          ref.invalidate(recentActivityProvider);
+          ref.invalidate(enrolledCoursesProvider);
         },
         child: ListView(
           padding: const EdgeInsets.all(20),
@@ -42,12 +42,7 @@ class ProgressScreen extends ConsumerWidget {
                     childAspectRatio: 1.6,
                     children: [
                       _StatTile(
-                          label: 'Total XP',
-                          value: '${stats['totalXP'] ?? 0}',
-                          icon: Icons.bolt_rounded,
-                          color: AppColors.warning),
-                      _StatTile(
-                          label: 'Courses',
+                          label: 'Courses Enrolled',
                           value: '${stats['coursesEnrolled'] ?? 0}',
                           icon: Icons.book_rounded,
                           color: AppColors.teal),
@@ -56,11 +51,6 @@ class ProgressScreen extends ConsumerWidget {
                           value: '${stats['completedLessons'] ?? 0}',
                           icon: Icons.check_circle_rounded,
                           color: AppColors.success),
-                      _StatTile(
-                          label: 'Day Streak',
-                          value: '${stats['streak'] ?? 0}',
-                          icon: Icons.local_fire_department_rounded,
-                          color: AppColors.error),
                     ],
                   ),
                 ],
@@ -69,45 +59,158 @@ class ProgressScreen extends ConsumerWidget {
 
             const SizedBox(height: 28),
 
-            // ── XP Progress bar ──────────────────────────────────────────
-            statsAsync.maybeWhen(
-              data: (stats) {
-                final xp = stats['totalXP'] ?? 0;
-                final nextLevel = ((xp ~/ 1000) + 1) * 1000;
-                final progress = (xp % 1000) / 1000.0;
-                return _XpCard(
-                    xp: xp, nextLevel: nextLevel, progress: progress);
-              },
-              orElse: () => const SizedBox.shrink(),
+            // ── Active Focus Areas ────────────────────────────────────────
+            Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: AppColors.teal.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.analytics_rounded,
+                      color: AppColors.teal, size: 16),
+                ),
+                const SizedBox(width: 10),
+                Text('Active Focus Areas',
+                    style: Theme.of(context).textTheme.headlineSmall),
+              ],
             ),
-
-            const SizedBox(height: 28),
-
-            // ── Recent activity ──────────────────────────────────────────
-            Text('Recent Activity',
-                style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 16),
-            activityAsync.when(
+            enrolledCoursesAsync.when(
               loading: () => const Center(
-                  child: CircularProgressIndicator(color: AppColors.teal)),
+                  child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: CircularProgressIndicator(color: AppColors.teal),
+              )),
               error: (_, __) => const SizedBox.shrink(),
-              data: (activities) => activities.isEmpty
+              data: (courses) => courses.isEmpty
                   ? Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
                         color: Theme.of(context).cardTheme.color,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: AppColors.slate100),
                       ),
                       child: const Center(
-                        child: Text('No recent activity',
-                            style: TextStyle(color: AppColors.slate400)),
+                        child: Text(
+                          'No enrolled courses yet. Start a course to see your progress!',
+                          style: TextStyle(color: AppColors.slate400, fontSize: 13),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     )
-                  : Column(
-                      children: activities
-                          .map((a) => _ActivityItem(activity: a))
-                          .toList(),
+                  : ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: courses.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, i) {
+                        final course = courses[i];
+                        final progressVal = (course.progress ?? 0) / 100.0;
+                        final isDark =
+                            Theme.of(context).brightness == Brightness.dark;
+                        return Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.slate900 : Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                                color: isDark
+                                    ? AppColors.slate800
+                                    : AppColors.slate100),
+                            boxShadow: isDark
+                                ? null
+                                : [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.03),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    )
+                                  ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      course.title,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 15,
+                                        letterSpacing: 0.1,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.teal.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      course.level.toUpperCase(),
+                                      style: const TextStyle(
+                                        color: AppColors.teal,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 10,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '${course.progress ?? 0}% Completed',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                      color: isDark
+                                          ? AppColors.slate300
+                                          : AppColors.slate700,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${course.completedLessons.length} of ${course.totalLessons} lessons',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.slate400,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: LinearProgressIndicator(
+                                  value: progressVal,
+                                  backgroundColor: isDark
+                                      ? AppColors.slate800
+                                      : AppColors.slate100,
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                          AppColors.teal),
+                                  minHeight: 8,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
             ),
           ],
@@ -125,7 +228,7 @@ class ProgressScreen extends ConsumerWidget {
       mainAxisSpacing: 12,
       childAspectRatio: 1.6,
       children: List.generate(
-          4,
+          2,
           (_) => Container(
                 decoration: BoxDecoration(
                     color: AppColors.slate100,
@@ -186,116 +289,6 @@ class _StatTile extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       color: AppColors.slate400)),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _XpCard extends StatelessWidget {
-  final int xp;
-  final int nextLevel;
-  final double progress;
-
-  const _XpCard(
-      {required this.xp, required this.nextLevel, required this.progress});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.navy, Color(0xFF0369A1)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('XP Progress',
-                  style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600)),
-              Text('$xp / $nextLevel XP',
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: Colors.white.withOpacity(0.2),
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(AppColors.tealLight),
-              minHeight: 8,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            '${((1 - progress) * 1000).round()} XP to next level',
-            style: const TextStyle(color: Colors.white60, fontSize: 11),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActivityItem extends StatelessWidget {
-  final Map<String, dynamic> activity;
-  const _ActivityItem({required this.activity});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.slate900 : Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border:
-            Border.all(color: isDark ? AppColors.slate800 : AppColors.slate100),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.teal.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.bookmark_rounded,
-                color: AppColors.teal, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(activity['title'] ?? '',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: 13),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-                Text(activity['category'] ?? '',
-                    style: const TextStyle(
-                        fontSize: 11, color: AppColors.slate400)),
-              ],
-            ),
           ),
         ],
       ),

@@ -154,7 +154,9 @@ const TeacherProfileView: React.FC = () => {
             <div className="flex items-center gap-2 mb-2">
               <h1 className="text-2xl font-bold text-primary dark:text-white">{profile.name}</h1>
               {verificationBadges.filter(b => b.verified).map((badge, i) => (
-                <BadgeCheck key={i} size={18} className="text-green-500" title={badge.label} />
+                <span key={i} title={badge.label}>
+                  <BadgeCheck size={18} className="text-green-500" />
+                </span>
               ))}
             </div>
             <p className="text-slate-600 dark:text-slate-400 mb-4">{profile.institution}</p>

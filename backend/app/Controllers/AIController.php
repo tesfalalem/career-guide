@@ -74,6 +74,7 @@ class AIController {
         $lessonTitle = $data['lesson_title'] ?? '';
         $moduleTitle = $data['module_title'] ?? '';
         $courseTitle = $data['course_title'] ?? '';
+        $courseId = $data['course_id'] ?? null;
 
         if (empty($lessonTitle) || empty($moduleTitle) || empty($courseTitle)) {
             http_response_code(400);
@@ -81,9 +82,64 @@ class AIController {
             return;
         }
 
+        // 1. Check database cache if course_id is provided
+        if ($courseId) {
+            require_once __DIR__ . '/../Models/Course.php';
+            $courseModel = new Course();
+            $course = $courseModel->findById($courseId);
+            if ($course && isset($course['modules']) && is_array($course['modules'])) {
+                $modules = $course['modules'];
+                $found = false;
+                $currentContent = null;
+                
+                foreach ($modules as $mIdx => $module) {
+                    if (($module['title'] ?? '') === $moduleTitle) {
+                        foreach ($module['lessons'] as $lIdx => $lesson) {
+                            if (($lesson['title'] ?? '') === $lessonTitle) {
+                                if (isset($lesson['content']) && $lesson['content'] !== '[CONTENT_PENDING]' && !empty($lesson['content'])) {
+                                    $currentContent = $lesson['content'];
+                                    $found = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if ($found) break;
+                }
+                
+                if ($found && $currentContent) {
+                    echo json_encode(['content' => $currentContent]);
+                    return;
+                }
+            }
+        }
+
+        // 2. Generate new lesson content using AI
         $content = $this->aiService->generateLessonContent($lessonTitle, $moduleTitle, $courseTitle);
 
         if ($content) {
+            // 3. Save/cache the generated content back to the course modules JSON structure
+            if ($courseId && isset($courseModel) && isset($course) && is_array($course['modules'])) {
+                $modules = $course['modules'];
+                $updated = false;
+                
+                foreach ($modules as $mIdx => &$module) {
+                    if (($module['title'] ?? '') === $moduleTitle) {
+                        foreach ($module['lessons'] as &$lesson) {
+                            if (($lesson['title'] ?? '') === $lessonTitle) {
+                                $lesson['content'] = $content;
+                                $updated = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                if ($updated) {
+                    $courseModel->updateModules($courseId, json_encode($modules));
+                }
+            }
+            
             echo json_encode(['content' => $content]);
         } else {
             http_response_code(500);

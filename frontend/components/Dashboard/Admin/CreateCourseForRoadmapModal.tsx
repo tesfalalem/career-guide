@@ -7,6 +7,30 @@ import {
 import { adminService } from '../../../services/adminService';
 import RichTextEditor from '../../common/RichTextEditor';
 
+const SYSTEM_CATEGORIES = [
+  'Full-Stack Development',
+  'Frontend Web Development',
+  'Backend Development',
+  'Mobile App Development',
+  'Artificial Intelligence',
+  'Machine Learning',
+  'Cloud Computing',
+  'Cybersecurity',
+  'Data Science',
+  'UI/UX Design',
+  'DevOps Engineering',
+  'Software Engineering',
+  'Database Management',
+  'Computer Networking',
+  'API Development',
+  'Blockchain Development',
+  'Internet of Things (IoT)',
+  'Game Development',
+  'Embedded Systems',
+  'System Administration',
+  'Other'
+];
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 type BlockType = 'text' | 'link' | 'image' | 'video' | 'file';
 
@@ -248,7 +272,35 @@ const CreateCourseForRoadmapModal: React.FC<Props> = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'content' | 'questions'>('content');
-  const [form, setForm] = useState({ title: '', description: '', level: 'Intermediate', duration: '' });
+  const [form, setForm] = useState({ title: '', description: '', category: 'Full-Stack Development', level: 'Intermediate', duration: '' });
+  const [selectedCat, setSelectedCat] = useState('Full-Stack Development');
+  const [customCat, setCustomCat] = useState('');
+  const categoryDropdownRef = React.useRef<HTMLDivElement>(null);
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
+        setIsCategoryDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleCategorySelectChange = (val: string) => {
+    setSelectedCat(val);
+    if (val !== 'Other') {
+      setForm(p => ({ ...p, category: val }));
+    } else {
+      setForm(p => ({ ...p, category: customCat }));
+    }
+  };
+
+  const handleCustomCategoryChange = (val: string) => {
+    setCustomCat(val);
+    setForm(p => ({ ...p, category: val }));
+  };
   const [modules, setModules] = useState<Module[]>([emptyModule()]);
   const [questions, setQuestions] = useState<Question[]>([
     { question: '', options: ['', '', '', ''], correct_answer: 0, explanation: '' }
@@ -392,18 +444,79 @@ const CreateCourseForRoadmapModal: React.FC<Props> = ({
               <h4 className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Course Details</h4>
               <input type="text" value={form.title} required
                 onChange={e => setForm({ ...form, title: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white font-bold outline-none focus:ring-2 focus:ring-teal-500/20"
+                placeholder="Course Title *" />
+              
+              <div className="relative" ref={categoryDropdownRef}>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Category</label>
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white outline-none text-sm flex items-center justify-between hover:border-slate-300 dark:hover:border-slate-600 transition-all font-semibold"
+                >
+                  <span>{selectedCat}</span>
+                  <ChevronDown size={18} className={`text-slate-400 transition-transform ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {isCategoryDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 z-[100] mt-1.5 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-64 overflow-y-auto py-1.5 animate-in fade-in-50 slide-in-from-top-1 duration-150">
+                    {SYSTEM_CATEGORIES.map(c => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => {
+                          handleCategorySelectChange(c);
+                          setIsCategoryDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors flex items-center justify-between ${
+                          selectedCat === c ? 'text-careermap-teal font-bold bg-slate-50/50 dark:bg-slate-750/30' : 'text-slate-700 dark:text-slate-350'
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Custom Category Input if "Other" is selected */}
+              {selectedCat === 'Other' && (
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                    Custom Category <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={customCat}
+                    onChange={e => handleCustomCategoryChange(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white outline-none focus:ring-2 focus:ring-teal-500/20 text-sm"
+                    placeholder="Enter custom category manually"
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Level</label>
+                  <select value={form.level} onChange={e => setForm({ ...form, level: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white outline-none text-sm cursor-pointer">
+                    <option>Beginner</option><option>Intermediate</option><option>Advanced</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Duration</label>
+                  <input type="text" value={form.duration}
+                    onChange={e => setForm({ ...form, duration: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white outline-none text-sm"
+                    placeholder="Duration (e.g. 20 Hours)" />
+                </div>
+              </div>
+
+              <textarea value={form.description}
+                onChange={e => setForm({ ...form, description: e.target.value })}
+                rows={3}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white outline-none focus:ring-2 focus:ring-teal-500/20 resize-none"
                 placeholder="Course description (optional)" />
-              <div className="grid grid-cols-2 gap-4">
-                <select value={form.level} onChange={e => setForm({ ...form, level: e.target.value })}
-                  className="px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white outline-none">
-                  <option>Beginner</option><option>Intermediate</option><option>Advanced</option>
-                </select>
-                <input type="text" value={form.duration}
-                  onChange={e => setForm({ ...form, duration: e.target.value })}
-                  className="px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white outline-none"
-                  placeholder="Duration (e.g. 20 Hours)" />
-              </div>
             </section>
 
             {/* Modules & Lessons */}
@@ -564,6 +677,9 @@ const CreateCourseForRoadmapModal: React.FC<Props> = ({
               ))}
             </section>
             )}
+
+            {/* Scroll spacer to give plenty of viewport space below select elements */}
+            <div className="h-32" />
           </div>
 
           {/* Footer */}

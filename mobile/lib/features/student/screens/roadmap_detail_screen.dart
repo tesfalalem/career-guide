@@ -87,6 +87,7 @@ class _RoadmapDetailScreenState extends ConsumerState<RoadmapDetailScreen> {
               pinned: true,
               backgroundColor: AppColors.navy,
               foregroundColor: Colors.white,
+              iconTheme: const IconThemeData(color: Colors.white),
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
                   decoration: const BoxDecoration(

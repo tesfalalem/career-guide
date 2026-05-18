@@ -22,9 +22,9 @@ const API = 'http://localhost/careerguide/backend/api';
 const authToken = () => localStorage.getItem('auth_token') || '';
 
 const levelCls = (level: string) =>
-  level === 'Advanced'     ? 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-300' :
-  level === 'Intermediate' ? 'bg-careermap-navy/10 text-careermap-navy dark:bg-careermap-navy/20 dark:text-careermap-teal' :
-                             'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300';
+  level === 'Advanced'     ? 'bg-purple-500/10 text-purple-600 border border-purple-200/50' :
+  level === 'Intermediate' ? 'bg-careermap-teal/10 text-careermap-teal border border-careermap-teal/20' :
+                             'bg-emerald-500/10 text-emerald-600 border border-emerald-200/50';
 
 const LibraryView: React.FC<LibraryViewProps> = ({ userId, openCourseId, onCourseOpened }) => {
   const [viewMode, setViewMode] = useState<'list' | 'create' | 'study'>('list');
@@ -60,11 +60,21 @@ const LibraryView: React.FC<LibraryViewProps> = ({ userId, openCourseId, onCours
     if (activeTab === 'browse' && allCourses.length === 0) fetchAllCourses();
   }, [activeTab]);
 
+  const calculateProgress = (course: Course) => {
+    const modules = typeof course.modules === 'string' ? JSON.parse(course.modules) : (course.modules || []);
+    const totalLessons = modules.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0);
+    const completedCount = course.completed_lessons?.length || 0;
+    return totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+  };
+
   const fetchMyCourses = async () => {
     setLoading(true);
     try {
       const courses = await getUserCourses(userId);
-      setUserCourses(courses || []);
+      setUserCourses((courses || []).map((c: any) => ({
+        ...c,
+        modules: typeof c.modules === 'string' ? JSON.parse(c.modules) : (c.modules || [])
+      })));
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
@@ -108,8 +118,19 @@ const LibraryView: React.FC<LibraryViewProps> = ({ userId, openCourseId, onCours
     } catch { setEnrollState({ type: 'error', courseId }); }
     finally {
       setEnrollingId(null);
-      setTimeout(() => setEnrollState(null), 3000);
     }
+  };
+
+  const handleEnrollSuccessAction = () => {
+    if (enrollState?.courseId) {
+      const target = userCourses.find(c => String(c.id) === String(enrollState.courseId));
+      if (target) {
+        openCourse(target);
+      } else {
+        setActiveTab('my');
+      }
+    }
+    setEnrollState(null);
   };
 
   const enrolledIds = new Set(userCourses.map(c => String(c.id)));
@@ -123,6 +144,9 @@ const LibraryView: React.FC<LibraryViewProps> = ({ userId, openCourseId, onCours
     c.title.toLowerCase().includes(search.toLowerCase()) ||
     c.description?.toLowerCase().includes(search.toLowerCase())
   );
+
+  const [showAllBrowse, setShowAllBrowse] = useState(false);
+  const [showAllMy, setShowAllMy] = useState(false);
 
   // ── Views ──────────────────────────────────────────────────────────────────
 
@@ -157,9 +181,9 @@ const LibraryView: React.FC<LibraryViewProps> = ({ userId, openCourseId, onCours
                enrollState.type === 'already' ? 'You are already enrolled in this course.' :
                'Something went wrong. Please try again.'}
             </p>
-            <button onClick={() => setEnrollState(null)}
+            <button onClick={handleEnrollSuccessAction}
               className={`w-full py-3 rounded-xl font-bold text-white ${enrollState.type === 'success' ? 'bg-green-600 hover:bg-green-700' : enrollState.type === 'already' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-red-500 hover:bg-red-600'}`}>
-              {enrollState.type === 'success' ? 'Go to My Courses' : 'Got it'}
+              {enrollState.type === 'success' ? 'Go to Course' : 'Got it'}
             </button>
           </div>
         </div>
@@ -201,40 +225,73 @@ const LibraryView: React.FC<LibraryViewProps> = ({ userId, openCourseId, onCours
         loading ? (
           <CardGridSkeleton count={3} />
         ) : filteredMy.length === 0 ? (
-          <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 border border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem]">
-            <BookOpen size={40} className="mx-auto text-slate-300 mb-4" />
-            <h3 className="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">No Courses Yet</h3>
-            <p className="text-slate-400 max-w-sm mx-auto mb-6">Browse all courses to enroll, or generate a new AI course.</p>
-            <div className="flex gap-3 justify-center">
-              <button onClick={() => setActiveTab('browse')} className="bg-careermap-navy text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-[#023058] transition-all">Browse Courses</button>
-              <button onClick={() => setViewMode('create')} className="border border-careermap-teal text-careermap-teal px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-careermap-teal/5 transition-all">Generate with AI</button>
+          <div className="text-center py-20 bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-[3rem] shadow-sm">
+            <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
+              <BookOpen size={40} className="text-slate-300" />
+            </div>
+            <h3 className="text-2xl font-serif font-bold text-slate-900 dark:text-white mb-2">Your library is empty</h3>
+            <p className="text-slate-500 max-w-sm mx-auto mb-8 font-medium">Start your journey by enrolling in a course or generating a custom AI roadmap.</p>
+            <div className="flex gap-4 justify-center">
+              <button onClick={() => setActiveTab('browse')} className="bg-careermap-navy text-white px-8 py-3 rounded-2xl font-bold text-sm hover:bg-[#023058] transition-all shadow-lg shadow-careermap-navy/20">Browse Courses</button>
+              <button onClick={() => setViewMode('create')} className="bg-white dark:bg-slate-800 border-2 border-careermap-teal text-careermap-teal px-8 py-3 rounded-2xl font-bold text-sm hover:bg-careermap-teal/5 transition-all">AI Generator</button>
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredMy.map(course => (
-              <div key={course.id} onClick={() => openCourse(course)}
-                className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2rem] p-6 hover:shadow-xl hover:shadow-slate-200/50 hover:border-careermap-teal/20 transition-all group cursor-pointer relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-careermap-navy/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
-                <div className="relative flex justify-between items-start mb-5">
-                  <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${levelCls(course.level)}`}>{course.level}</span>
-                  <div className="bg-slate-50 dark:bg-slate-800 p-2 rounded-lg group-hover:bg-careermap-navy group-hover:text-white transition-colors">
-                    <ExternalLink size={15} />
+          <div className="space-y-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+              {(showAllMy ? filteredMy : filteredMy.slice(0, 6)).map(course => (
+                <div key={course.id}
+                  className="group relative bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border border-white dark:border-slate-800 shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer overflow-hidden transform hover:-translate-y-2"
+                  onClick={() => openCourse(course)}>
+                  {/* Progress Glow */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-careermap-navy/[0.02] to-careermap-teal/[0.05] opacity-0 group-hover:opacity-100 transition-opacity" />
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-8">
+                      <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-sm ${levelCls(course.level)}`}>
+                        {course.level}
+                      </span>
+                      <div className="w-10 h-10 rounded-full bg-careermap-navy text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <PlayCircle size={20} />
+                      </div>
+                    </div>
+
+                    <h3 className="text-2xl font-serif font-black text-careermap-navy dark:text-white mb-3 line-clamp-2 leading-tight group-hover:text-careermap-teal transition-colors">{course.title}</h3>
+                    <p className="text-slate-400 font-medium text-xs line-clamp-2 mb-8 leading-relaxed">{course.description}</p>
+
+                    <div className="mb-8">
+                      <div className="flex justify-between items-end mb-2">
+                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Progress</span>
+                        <span className="text-xs font-black text-careermap-teal">{calculateProgress(course)}%</span>
+                      </div>
+                      <div className="w-full bg-slate-50 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-careermap-navy to-careermap-teal transition-all duration-1000" style={{ width: `${calculateProgress(course)}%` }} />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-6 border-t border-slate-50 dark:border-slate-800">
+                      <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-300">
+                        <span className="flex items-center gap-1.5"><Clock size={12} /> {course.duration || '20 hours'}</span>
+                        <span className="flex items-center gap-1.5"><BookOpen size={12} /> {course.modules?.length || 0} Modules</span>
+                      </div>
+                      <span className="text-[10px] font-black text-careermap-navy dark:text-teal-400 uppercase tracking-widest group-hover:translate-x-1 transition-transform">Resume</span>
+                    </div>
                   </div>
                 </div>
-                <div className="relative mb-6 h-28">
-                  <h3 className="text-lg font-display font-bold text-slate-800 dark:text-white mb-2 line-clamp-2 group-hover:text-careermap-teal transition-colors">{course.title}</h3>
-                  <p className="text-slate-400 text-sm line-clamp-2 leading-relaxed">{course.description}</p>
-                </div>
-                <div className="flex items-center gap-4 text-xs font-bold text-slate-400 border-t border-slate-50 dark:border-slate-800/50 pt-4">
-                  <span className="flex items-center gap-1.5"><Clock size={13} className="text-slate-300" /> {course.duration}</span>
-                  <span className="flex items-center gap-1.5"><Monitor size={13} className="text-slate-300" /> {course.modules?.length || 0} Modules</span>
-                  <span className="ml-auto flex items-center gap-1 text-careermap-teal opacity-0 group-hover:opacity-100 transition-opacity">
-                    Open <ArrowLeft size={11} className="rotate-180" />
-                  </span>
-                </div>
+              ))}
+            </div>
+
+            {filteredMy.length > 6 && (
+              <div className="flex justify-center pt-8">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowAllMy(!showAllMy); }}
+                  className="group flex items-center gap-3 px-10 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl font-black text-xs uppercase tracking-[0.2em] text-careermap-navy dark:text-careermap-teal hover:border-careermap-teal transition-all shadow-sm hover:shadow-xl"
+                >
+                  {showAllMy ? 'Show Less' : 'View All My Courses'}
+                  <ChevronRight size={18} className={`transition-transform duration-300 ${showAllMy ? '-rotate-90' : 'rotate-90 group-hover:translate-y-1'}`} />
+                </button>
               </div>
-            ))}
+            )}
           </div>
         )
       )}
@@ -244,95 +301,109 @@ const LibraryView: React.FC<LibraryViewProps> = ({ userId, openCourseId, onCours
         browseLoading ? (
           <CardGridSkeleton count={6} />
         ) : filteredAll.length === 0 ? (
-          <div className="text-center py-16 text-slate-400">
-            <BookOpen size={40} className="mx-auto mb-3 opacity-30" />
-            <p className="font-semibold">No courses available yet.</p>
+          <div className="text-center py-20 bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-[3rem]">
+            <BookOpen size={40} className="mx-auto mb-4 text-slate-300" />
+            <p className="text-lg font-serif font-bold text-slate-400">No courses available in the catalog</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredAll.map(course => {
-              const isEnrolled = enrolledIds.has(String(course.id));
-              const isEnrolling = enrollingId === String(course.id);
-              const isExpanded = expandedCoursePreviews.has(String(course.id));
-              
-              return (
-                <div key={course.id}
-                  className={`bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] p-6 transition-all duration-300 flex flex-col ${isExpanded ? 'ring-2 ring-careermap-teal shadow-2xl' : 'hover:shadow-lg'}`}>
-                  <div className="flex justify-between items-start mb-4">
-                    <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${levelCls(course.level)}`}>{course.level}</span>
-                    {course.rating && (
-                      <span className="flex items-center gap-1 text-xs font-bold text-amber-500">
-                        <Star size={12} fill="currentColor" /> {course.rating}
+          <div className="space-y-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+              {(showAllBrowse ? filteredAll : filteredAll.slice(0, 6)).map(course => {
+                const isEnrolled = enrolledIds.has(String(course.id));
+                const isEnrolling = enrollingId === String(course.id);
+                const isExpanded = expandedCoursePreviews.has(String(course.id));
+                
+                return (
+                  <div key={course.id}
+                    className={`group relative bg-white dark:bg-slate-900 border transition-all duration-500 rounded-[2.5rem] p-8 flex flex-col ${isExpanded ? 'ring-2 ring-careermap-teal shadow-2xl z-10' : 'border-slate-200 dark:border-slate-800 hover:shadow-xl hover:border-careermap-teal/20'}`}>
+                    
+                    <div className="flex justify-between items-center mb-6">
+                      <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-sm ${levelCls(course.level)}`}>
+                        {course.level}
                       </span>
-                    )}
-                  </div>
 
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2 line-clamp-2">{course.title}</h3>
-                  <p className="text-slate-400 text-sm line-clamp-2 leading-relaxed mb-4 flex-1">{course.description}</p>
-
-                  <div className="flex items-center gap-3 text-xs text-slate-400 mb-5 pb-5 border-b border-slate-50 dark:border-slate-800">
-                    <span className="flex items-center gap-1"><Clock size={12} /> {course.duration || 'Self-paced'}</span>
-                    <button 
-                      onClick={(e) => togglePreview(String(course.id), e)}
-                      className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 dark:bg-slate-800 rounded-full text-careermap-navy dark:text-teal-400 font-bold hover:bg-careermap-teal/10 transition-colors"
-                    >
-                      <BookOpen size={12} /> {course.modules?.length || 0} modules {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                    </button>
-                    {course.enrolled && <span className="flex items-center gap-1"><Users size={12} /> {course.enrolled}</span>}
-                  </div>
-
-                  {isExpanded && (
-                    <div className="mb-6 space-y-4 animate-in slide-in-from-top-2 duration-300">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Course Curriculum</p>
-                      <div className="max-h-48 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
-                        {course.modules?.map((mod: any, mIdx: number) => (
-                          <div key={mIdx} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-transparent">
-                            <h4 className="text-[11px] font-bold text-slate-700 dark:text-slate-200 mb-1 flex items-center gap-2">
-                              <div className="w-1.5 h-1.5 rounded-full bg-careermap-teal" /> {mod.title}
-                            </h4>
-                            <div className="pl-3.5 space-y-1">
-                              {mod.lessons?.map((lesson: any, lIdx: number) => (
-                                <div key={lIdx} className="text-[10px] text-slate-400 flex items-center justify-between">
-                                  <span>{lesson.title}</span>
-                                  <span>{lesson.duration}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
                     </div>
-                  )}
 
-                  <div className="flex gap-2 mt-auto">
-                    {isEnrolled ? (
-                      <>
-                        <div className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-green-50 dark:bg-green-900/20 text-green-600 font-bold text-sm border border-green-200 dark:border-green-800">
-                          <CheckCircle size={15} /> Enrolled
+                    <h3 className="text-2xl font-serif font-black text-careermap-navy dark:text-white mb-3 line-clamp-2 leading-tight group-hover:text-careermap-teal transition-colors">{course.title}</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm line-clamp-2 leading-relaxed font-medium mb-8 flex-1">{course.description}</p>
+
+                    <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400 mb-8 pb-8 border-b border-slate-100 dark:border-slate-800">
+                      <span className="flex items-center gap-2"><Clock size={14} className="text-slate-300" /> {course.duration || 'Self-paced'}</span>
+                      <button 
+                        onClick={(e) => togglePreview(String(course.id), e)}
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-careermap-navy dark:text-teal-400 font-black hover:bg-careermap-teal hover:text-white transition-all duration-300"
+                      >
+                        <BookOpen size={14} /> {course.modules?.length || 0} modules {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                      </button>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="mb-8 space-y-4 animate-in slide-in-from-top-4 duration-500">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-careermap-teal">Curriculum Deep Dive</p>
+                        <div className="max-h-60 overflow-y-auto pr-4 space-y-3 custom-scrollbar">
+                          {course.modules?.map((mod: any, mIdx: number) => (
+                            <div key={mIdx} className="p-5 bg-slate-50 dark:bg-slate-800 rounded-[1.5rem] border border-slate-100 dark:border-slate-700/50 shadow-sm">
+                              <h4 className="text-xs font-black text-careermap-navy dark:text-white mb-3 flex items-center gap-3">
+                                <div className="w-2 h-2 rounded-full bg-careermap-teal shadow-lg shadow-careermap-teal/50" /> 
+                                {mod.title}
+                              </h4>
+                              <div className="pl-5 space-y-2 border-l-2 border-slate-200 dark:border-slate-700 ml-1">
+                                {mod.lessons?.map((lesson: any, lIdx: number) => (
+                                  <div key={lIdx} className="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center justify-between group/lesson">
+                                    <span className="group-hover/lesson:text-careermap-teal transition-colors">{lesson.title}</span>
+                                    <span className="text-[9px] font-black text-slate-300 uppercase">{lesson.duration}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        <button onClick={() => openCourse(course)}
-                          className="flex-1 py-2.5 rounded-xl bg-careermap-navy text-white font-bold text-sm hover:bg-[#023058] transition-all">
-                          Open
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button onClick={() => openCourse(course)}
-                          className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
-                          Preview
-                        </button>
-                        <button onClick={(e) => handleEnroll(String(course.id), e)} disabled={isEnrolling}
-                          className="flex-1 py-2.5 rounded-xl bg-careermap-navy text-white font-bold text-sm hover:bg-[#023058] disabled:opacity-50 transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-navy-500/10">
-                          {isEnrolling ? <Loader2 size={14} className="animate-spin" /> : null}
-                          Enroll
-                        </button>
-                      </>
+                      </div>
                     )}
+
+                    <div className="flex gap-4 mt-auto">
+                      {isEnrolled ? (
+                        <>
+                          <div className="flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 font-black text-xs uppercase tracking-widest border border-emerald-200/50 dark:border-emerald-800/50">
+                            <CheckCircle size={16} /> Enrolled
+                          </div>
+                          <button onClick={() => openCourse(course)}
+                            className="flex-1 py-4 rounded-2xl bg-careermap-navy text-white font-black text-xs uppercase tracking-widest hover:bg-[#023058] transition-all shadow-lg shadow-careermap-navy/20 hover:-translate-y-1">
+                            Continue
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button onClick={() => openCourse(course)}
+                            className="flex-1 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-black text-xs uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                            Preview
+                          </button>
+                          <button onClick={(e) => handleEnroll(String(course.id), e)} disabled={isEnrolling}
+                            className="flex-1 py-4 rounded-2xl bg-careermap-navy text-white font-black text-xs uppercase tracking-widest hover:bg-[#023058] disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-xl shadow-careermap-navy/30 hover:-translate-y-1">
+                            {isEnrolling ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+                            Enroll Now
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+
+            {filteredAll.length > 6 && (
+              <div className="flex justify-center pt-8">
+                <button
+                  onClick={() => setShowAllBrowse(!showAllBrowse)}
+                  className="group flex items-center gap-3 px-10 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl font-black text-xs uppercase tracking-[0.2em] text-careermap-navy dark:text-careermap-teal hover:border-careermap-teal transition-all shadow-sm hover:shadow-xl"
+                >
+                  {showAllBrowse ? 'Show Less' : 'View All Courses'}
+                  <ChevronRight size={18} className={`transition-transform duration-300 ${showAllBrowse ? '-rotate-90' : 'rotate-90 group-hover:translate-y-1'}`} />
+                </button>
+              </div>
+            )}
           </div>
+
         )
       )}
     </div>

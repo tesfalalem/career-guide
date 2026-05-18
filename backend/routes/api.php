@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 class Router {
     private $routes = [];
@@ -132,6 +132,7 @@ class Router {
         // Course Assignment System
         $this->routes['POST']['/api/course-assignments/request'] = 'CourseAssignmentController@requestAssignment';
         $this->routes['GET']['/api/course-assignments/my'] = 'CourseAssignmentController@getMyAssignment';
+        $this->routes['GET']['/api/course-assignments/approved'] = 'CourseAssignmentController@getApprovedAssignments';
         $this->routes['GET']['/api/course-assignments/pending'] = 'CourseAssignmentController@getPendingAssignments';
         $this->routes['GET']['/api/course-assignments/all'] = 'CourseAssignmentController@getAllAssignments';
         $this->routes['POST']['/api/course-assignments/:id/approve'] = 'CourseAssignmentController@approveAssignment';
@@ -141,6 +142,13 @@ class Router {
         $this->routes['GET']['/api/course-assignments/available-bit'] = 'CourseAssignmentController@getBitCourses';
         $this->routes['POST']['/api/course-assignments/request-multiple'] = 'CourseAssignmentController@requestMultipleAssignments';
         $this->routes['GET']['/api/course-assignments/my-students'] = 'CourseAssignmentController@getMyStudents';
+
+        // Teacher Course-Specific Materials Management
+        $this->routes['GET']['/api/teacher/courses/:id/materials'] = 'ResourceController@getCourseMaterials';
+        $this->routes['POST']['/api/teacher/courses/:id/materials'] = 'ResourceController@createCourseMaterial';
+        $this->routes['PUT']['/api/teacher/materials/:id'] = 'ResourceController@updateCourseMaterial';
+        $this->routes['DELETE']['/api/teacher/materials/:id'] = 'ResourceController@deleteCourseMaterial';
+        $this->routes['GET']['/api/courses/:id/teacher-materials'] = 'ResourceController@getStudentCourseMaterials';
 
         // File Upload & Serve (for course content blocks)
         $this->routes['POST']['/api/upload'] = 'UploadController@upload';

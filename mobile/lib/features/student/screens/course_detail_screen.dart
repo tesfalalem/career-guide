@@ -5,6 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/models/course_model.dart';
+import '../providers/student_providers.dart';
 
 final _courseDetailProvider =
     FutureProvider.family<CourseModel, String>((ref, id) async {
@@ -24,6 +25,82 @@ class CourseDetailScreen extends ConsumerStatefulWidget {
 class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
   int? _activeModuleIdx;
   int? _activeLessonIdx;
+  bool _lessonLoading = false;
+
+  Future<void> _fetchLessonContent(CourseModel course, int moduleIdx, int lessonIdx) async {
+    final lesson = course.modules[moduleIdx].lessons[lessonIdx];
+    if (lesson.content != '[CONTENT_PENDING]' && lesson.content.isNotEmpty) {
+      return;
+    }
+
+    setState(() => _lessonLoading = true);
+
+    try {
+      final api = ref.read(apiClientProvider);
+      final res = await api.post(
+        '/ai/lesson-content',
+        data: {
+          'course_id': course.id,
+          'lesson_title': lesson.title,
+          'module_title': course.modules[moduleIdx].title,
+          'course_title': course.title,
+        },
+      );
+
+      final newContent = res.data['content'] as String?;
+      if (newContent != null) {
+        setState(() {
+          lesson.content = newContent;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load lesson content: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _lessonLoading = false);
+      }
+    }
+  }
+
+  Future<void> _toggleLessonCompletion(CourseModel course, String lessonTitle) async {
+    final updatedList = List<String>.from(course.completedLessons);
+    if (updatedList.contains(lessonTitle)) {
+      updatedList.remove(lessonTitle);
+    } else {
+      updatedList.add(lessonTitle);
+    }
+
+    final total = course.totalLessons;
+    final progress = total > 0 ? ((updatedList.length / total) * 100).round() : 0;
+
+    try {
+      final api = ref.read(apiClientProvider);
+      await api.put(
+        '${ApiConstants.courses}/${course.id}/progress',
+        data: {
+          'progress': progress,
+          'completed_lessons': updatedList,
+        },
+      );
+      ref.invalidate(_courseDetailProvider(widget.courseId));
+      ref.invalidate(studentStatsProvider);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update progress: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,11 +119,24 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
         if (_activeModuleIdx != null && _activeLessonIdx != null) {
           final lesson =
               course.modules[_activeModuleIdx!].lessons[_activeLessonIdx!];
+          final isCompleted = course.completedLessons.contains(lesson.title);
+          
+          if (lesson.content == '[CONTENT_PENDING]' || lesson.content.isEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!_lessonLoading) {
+                _fetchLessonContent(course, _activeModuleIdx!, _activeLessonIdx!);
+              }
+            });
+          }
+
           return _LessonViewer(
             lesson: lesson,
             course: course,
             moduleIdx: _activeModuleIdx!,
             lessonIdx: _activeLessonIdx!,
+            isCompleted: isCompleted,
+            lessonLoading: _lessonLoading,
+            onToggleComplete: () => _toggleLessonCompletion(course, lesson.title),
             onBack: () => setState(() {
               _activeModuleIdx = null;
               _activeLessonIdx = null;
@@ -108,6 +198,7 @@ class _CourseOverviewState extends State<_CourseOverview> {
             pinned: true,
             backgroundColor: AppColors.navy,
             foregroundColor: Colors.white,
+            iconTheme: const IconThemeData(color: Colors.white),
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: const BoxDecoration(
@@ -285,24 +376,37 @@ class _CourseOverviewState extends State<_CourseOverview> {
                           ...module.lessons.asMap().entries.map((lEntry) {
                             final lIdx = lEntry.key;
                             final lesson = lEntry.value;
+                            final isCompleted = course.completedLessons.contains(lesson.title);
                             return ListTile(
                               onTap: () => widget.onOpenLesson(mIdx, lIdx),
                               leading: Container(
                                 width: 32,
                                 height: 32,
                                 decoration: BoxDecoration(
-                                  color: AppColors.teal.withOpacity(0.08),
+                                  color: isCompleted
+                                      ? AppColors.success.withOpacity(0.12)
+                                      : AppColors.teal.withOpacity(0.08),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Icon(
-                                    Icons.play_circle_outline_rounded,
-                                    color: AppColors.teal,
+                                child: Icon(
+                                    isCompleted
+                                        ? Icons.check_circle_rounded
+                                        : Icons.play_circle_outline_rounded,
+                                    color: isCompleted
+                                        ? AppColors.success
+                                        : AppColors.teal,
                                     size: 18),
                               ),
                               title: Text(lesson.title,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontSize: 13,
-                                      fontWeight: FontWeight.w600)),
+                                      fontWeight: FontWeight.w600,
+                                      decoration: isCompleted
+                                          ? TextDecoration.lineThrough
+                                          : null,
+                                      color: isCompleted
+                                          ? AppColors.slate400
+                                          : null)),
                               subtitle: Text(lesson.duration,
                                   style: const TextStyle(
                                       fontSize: 11, color: AppColors.slate400)),
@@ -337,6 +441,9 @@ class _LessonViewer extends StatelessWidget {
   final VoidCallback onBack;
   final VoidCallback onNext;
   final bool isLast;
+  final bool isCompleted;
+  final VoidCallback onToggleComplete;
+  final bool lessonLoading;
 
   const _LessonViewer({
     required this.lesson,
@@ -346,6 +453,9 @@ class _LessonViewer extends StatelessWidget {
     required this.onBack,
     required this.onNext,
     required this.isLast,
+    required this.isCompleted,
+    required this.onToggleComplete,
+    required this.lessonLoading,
   });
 
   bool _isHtml(String s) =>
@@ -427,51 +537,66 @@ class _LessonViewer extends StatelessWidget {
             child: SafeArea(
               child: Row(
                 children: [
+                  // Back to course details
                   Expanded(
-                    child: OutlinedButton.icon(
+                    child: OutlinedButton(
                       onPressed: onBack,
-                      icon: const Icon(Icons.arrow_back_rounded, size: 16),
-                      label: const Text('Back'),
                       style: OutlinedButton.styleFrom(
+                        foregroundColor: isDark ? Colors.white : AppColors.slate700,
+                        side: BorderSide(
+                          color: isDark ? AppColors.slate700 : AppColors.slate200,
+                          width: 1.5,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Icon(Icons.arrow_back_rounded, size: 16),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Toggle Complete
+                  ElevatedButton.icon(
+                    onPressed: onToggleComplete,
+                    icon: Icon(
+                      isCompleted ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                      size: 16,
+                      color: isCompleted ? Colors.white : AppColors.teal,
+                    ),
+                    label: Text(
+                      isCompleted ? 'Done' : 'Complete',
+                      style: TextStyle(
+                        color: isCompleted ? Colors.white : AppColors.teal,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isCompleted
+                          ? AppColors.success
+                          : AppColors.teal.withOpacity(0.12),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Next Lesson or Finish
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: isLast ? onBack : onNext,
+                      icon: Icon(
+                        isLast ? Icons.celebration : Icons.arrow_forward_rounded,
+                        size: 16,
+                      ),
+                      label: Text(isLast ? 'Finish' : 'Next'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.teal,
                         padding: const EdgeInsets.symmetric(vertical: 13),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                   ),
-                  if (!isLast) ...[
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: ElevatedButton.icon(
-                        onPressed: onNext,
-                        icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-                        label: const Text('Next Lesson'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.teal,
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                  ] else ...[
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: ElevatedButton.icon(
-                        onPressed: onBack,
-                        icon: const Icon(Icons.check_circle_rounded, size: 16),
-                        label: const Text('Complete'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.success,
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
@@ -482,10 +607,47 @@ class _LessonViewer extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context, String content) {
-    if (content.isEmpty || content == '[CONTENT_PENDING]') {
-      return const Text('Content not yet available.',
-          style: TextStyle(
-              color: AppColors.slate400, fontStyle: FontStyle.italic));
+    if (lessonLoading || content.isEmpty || content == '[CONTENT_PENDING]') {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 60.0, horizontal: 20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(
+                width: 48,
+                height: 48,
+                child: CircularProgressIndicator(
+                  color: AppColors.teal,
+                  strokeWidth: 3,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'AI is architecting your lesson...',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : AppColors.navy,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Compiling high-fidelity concepts and practice exercises specifically for this lesson.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.slate400,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     // Try JSON block array

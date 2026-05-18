@@ -128,7 +128,7 @@ const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps & { initialTab?: 
   const renderContent = () => {
     switch (activeTab) {
       case 'overview':
-        return <AdminOverview analytics={analytics} onNavigate={setActiveTab} />;
+        return <AdminOverview analytics={analytics} onNavigate={(tab) => setActiveTab(tab as AdminTab)} />;
       case 'users':
         return <AdminUsersView />;
       case 'approvals':
@@ -140,7 +140,7 @@ const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps & { initialTab?: 
       case 'support':
         return <AdminSupportView />;
       default:
-        return <AdminOverview analytics={analytics} onNavigate={setActiveTab} />;
+        return <AdminOverview analytics={analytics} onNavigate={(tab) => setActiveTab(tab as AdminTab)} />;
     }
   };
 

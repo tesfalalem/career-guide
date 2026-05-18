@@ -12,9 +12,11 @@ class EducationalResource {
     public function create($data) {
         $query = "INSERT INTO " . $this->table . " 
                   (title, description, resource_type, file_path, external_url, 
-                   category, tags, uploaded_by, file_size, file_type, status) 
+                   category, tags, uploaded_by, file_size, file_type, status,
+                   course_id, module_name, lesson_name, notes) 
                   VALUES (:title, :description, :resource_type, :file_path, :external_url,
-                          :category, :tags, :uploaded_by, :file_size, :file_type, :status)";
+                          :category, :tags, :uploaded_by, :file_size, :file_type, :status,
+                          :course_id, :module_name, :lesson_name, :notes)";
 
         $stmt = $this->conn->prepare($query);
         
@@ -29,6 +31,17 @@ class EducationalResource {
         $stmt->bindParam(':file_size', $data['file_size']);
         $stmt->bindParam(':file_type', $data['file_type']);
         $stmt->bindParam(':status', $data['status']);
+
+        // Optional/nullable fields
+        $course_id = $data['course_id'] ?? null;
+        $module_name = $data['module_name'] ?? null;
+        $lesson_name = $data['lesson_name'] ?? null;
+        $notes = $data['notes'] ?? null;
+
+        $stmt->bindParam(':course_id', $course_id);
+        $stmt->bindParam(':module_name', $module_name);
+        $stmt->bindParam(':lesson_name', $lesson_name);
+        $stmt->bindParam(':notes', $notes);
 
         if ($stmt->execute()) {
             return $this->conn->lastInsertId();

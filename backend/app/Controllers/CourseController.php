@@ -82,23 +82,7 @@ class CourseController {
             return;
         }
 
-        // Generate full content for every lesson upfront
-        $courseTitle = $courseData['title'] ?? $role;
-        foreach ($courseData['modules'] as &$module) {
-            $moduleTitle = $module['title'] ?? '';
-            foreach ($module['lessons'] as &$lesson) {
-                if (($lesson['content'] ?? '') === '[CONTENT_PENDING]' || empty($lesson['content'])) {
-                    $content = $this->aiService->generateLessonContent(
-                        $lesson['title'],
-                        $moduleTitle,
-                        $courseTitle
-                    );
-                    $lesson['content'] = $content;
-                }
-            }
-        }
-
-        // Save to database with full content
+        // Save to database with course structure (lessons will be generated on-demand)
         $courseId = $this->courseModel->create([
             'title'       => $courseData['title'],
             'description' => $courseData['description'],

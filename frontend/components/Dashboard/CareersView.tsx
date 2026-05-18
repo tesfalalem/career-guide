@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Search, Tag, ChevronRight, X, Loader2, AlertCircle,
   Code2, Database, Shield, Cloud, Smartphone, Palette,
-  Network, Server, Briefcase, GraduationCap
+  Network, Server, Briefcase, GraduationCap, BrainCircuit
 } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 
@@ -25,15 +25,27 @@ const CATEGORY_STYLE: Record<string, {
   accent: string;
   light: string;
 }> = {
-  'Software Engineering':    { icon: <Code2 size={32} />,       gradient: 'from-[#1e3a5f] to-[#0d9488]', accent: '#0d9488', light: 'bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300' },
-  'Data Science & AI':       { icon: <Database size={32} />,    gradient: 'from-[#312e81] to-[#6d28d9]', accent: '#7c3aed', light: 'bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300' },
-  'Cybersecurity':           { icon: <Shield size={32} />,      gradient: 'from-[#7f1d1d] to-[#dc2626]', accent: '#dc2626', light: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
-  'Cloud & DevOps':          { icon: <Cloud size={32} />,       gradient: 'from-[#0c4a6e] to-[#0284c7]', accent: '#0284c7', light: 'bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300' },
-  'Mobile Development':      { icon: <Smartphone size={32} />,  gradient: 'from-[#064e3b] to-[#059669]', accent: '#059669', light: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
-  'UI/UX Design':            { icon: <Palette size={32} />,     gradient: 'from-[#831843] to-[#db2777]', accent: '#db2777', light: 'bg-pink-50 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300' },
-  'Network Engineering':     { icon: <Network size={32} />,     gradient: 'from-[#1c1917] to-[#78716c]', accent: '#78716c', light: 'bg-stone-50 text-stone-700 dark:bg-stone-900/30 dark:text-stone-300' },
-  'Database Administration': { icon: <Server size={32} />,      gradient: 'from-[#1e3a5f] to-[#2563eb]', accent: '#2563eb', light: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
-  'General':                 { icon: <GraduationCap size={32} />, gradient: 'from-[#1e3a5f] to-[#0d9488]', accent: '#0d9488', light: 'bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300' },
+  'Full-Stack Development':    { icon: <Code2 size={32} />,       gradient: 'from-[#1e3a5f] to-[#0d9488]', accent: '#0d9488', light: 'bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300' },
+  'Frontend Web Development':  { icon: <Code2 size={32} />,       gradient: 'from-[#0f766e] to-[#14b8a6]', accent: '#14b8a6', light: 'bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400' },
+  'Backend Development':       { icon: <Server size={32} />,      gradient: 'from-[#1e1b4b] to-[#4338ca]', accent: '#4338ca', light: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' },
+  'Mobile App Development':    { icon: <Smartphone size={32} />,  gradient: 'from-[#064e3b] to-[#059669]', accent: '#059669', light: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
+  'Artificial Intelligence':   { icon: <BrainCircuit size={32} />,gradient: 'from-[#312e81] to-[#7c3aed]', accent: '#7c3aed', light: 'bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300' },
+  'Machine Learning':          { icon: <Database size={32} />,    gradient: 'from-[#1e3a8a] to-[#3b82f6]', accent: '#3b82f6', light: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+  'Cloud Computing':           { icon: <Cloud size={32} />,       gradient: 'from-[#0c4a6e] to-[#0284c7]', accent: '#0284c7', light: 'bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300' },
+  'Cybersecurity':             { icon: <Shield size={32} />,      gradient: 'from-[#7f1d1d] to-[#dc2626]', accent: '#dc2626', light: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
+  'Data Science':              { icon: <Database size={32} />,    gradient: 'from-[#4c1d95] to-[#8b5cf6]', accent: '#8b5cf6', light: 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
+  'UI/UX Design':              { icon: <Palette size={32} />,     gradient: 'from-[#831843] to-[#db2777]', accent: '#db2777', light: 'bg-pink-50 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300' },
+  'DevOps Engineering':        { icon: <Cloud size={32} />,       gradient: 'from-[#172554] to-[#1d4ed8]', accent: '#1d4ed8', light: 'bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300' },
+  'Software Engineering':      { icon: <Code2 size={32} />,       gradient: 'from-[#1e3a5f] to-[#0d9488]', accent: '#0d9488', light: 'bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300' },
+  'Database Management':       { icon: <Server size={32} />,      gradient: 'from-[#1e3a5f] to-[#2563eb]', accent: '#2563eb', light: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+  'Computer Networking':       { icon: <Network size={32} />,     gradient: 'from-[#1c1917] to-[#78716c]', accent: '#78716c', light: 'bg-stone-50 text-stone-700 dark:bg-stone-900/30 dark:text-stone-300' },
+  'API Development':           { icon: <Network size={32} />,     gradient: 'from-[#030712] to-[#4b5563]', accent: '#4b5563', light: 'bg-gray-50 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300' },
+  'Blockchain Development':    { icon: <Shield size={32} />,      gradient: 'from-[#1e1b4b] to-[#6366f1]', accent: '#6366f1', light: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400' },
+  'Internet of Things (IoT)':  { icon: <Smartphone size={32} />,  gradient: 'from-[#065f46] to-[#10b981]', accent: '#10b981', light: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' },
+  'Game Development':          { icon: <Palette size={32} />,     gradient: 'from-[#701a75] to-[#d946ef]', accent: '#d946ef', light: 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-300' },
+  'Embedded Systems':          { icon: <Server size={32} />,      gradient: 'from-[#1e293b] to-[#64748b]', accent: '#64748b', light: 'bg-slate-50 text-slate-700 dark:bg-slate-900/30 dark:text-slate-300' },
+  'System Administration':     { icon: <Server size={32} />,      gradient: 'from-[#1c1917] to-[#44403c]', accent: '#44403c', light: 'bg-stone-50 text-stone-800 dark:bg-stone-950/40 dark:text-stone-300' },
+  'Other':                     { icon: <GraduationCap size={32} />,gradient: 'from-[#1e3a5f] to-[#0d9488]', accent: '#0d9488', light: 'bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300' }
 };
 
 const getCategoryStyle = (category: string) =>
@@ -173,6 +185,7 @@ const CareersView: React.FC = () => {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
   const [selected, setSelected] = useState<Career | null>(null);
+  const [showAllCareers, setShowAllCareers] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -283,10 +296,24 @@ const CareersView: React.FC = () => {
           <p className="text-sm text-slate-400 font-medium">
             {careers.length} career{careers.length !== 1 ? 's' : ''} found
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {careers.map(career => (
-              <CareerCard key={career.id} career={career} onView={() => setSelected(career)} />
-            ))}
+          <div className="space-y-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {(showAllCareers ? careers : careers.slice(0, 6)).map(career => (
+                <CareerCard key={career.id} career={career} onView={() => setSelected(career)} />
+              ))}
+            </div>
+
+            {careers.length > 6 && (
+              <div className="flex justify-center pt-4">
+                <button
+                  onClick={() => setShowAllCareers(!showAllCareers)}
+                  className="group flex items-center gap-3 px-10 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl font-black text-xs uppercase tracking-[0.2em] text-careermap-navy dark:text-careermap-teal hover:border-careermap-teal transition-all shadow-sm hover:shadow-xl"
+                >
+                  {showAllCareers ? 'Show Less' : 'View All Careers'}
+                  <ChevronRight size={18} className={`transition-transform duration-300 ${showAllCareers ? '-rotate-90' : 'rotate-90 group-hover:translate-y-1'}`} />
+                </button>
+              </div>
+            )}
           </div>
         </>
       )}

@@ -157,7 +157,9 @@ class AppDrawer extends ConsumerWidget {
                 children: [
                   ...items.map((item) => _DrawerNavItem(
                         item: item,
-                        isActive: currentPath.startsWith(item.path),
+                        isActive: item.path == '/student' || item.path == '/teacher' || item.path == '/bit' || item.path == '/admin'
+                            ? currentPath == item.path
+                            : currentPath.startsWith(item.path),
                         accentColor: accentColor,
                         onTap: () {
                           _closeDrawer(context);

@@ -10,6 +10,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   final List<Widget>? actions;
   final Color? backgroundColor;
   final bool showDrawerButton;
+  final bool showBackButton;
 
   const AppHeader({
     super.key,
@@ -18,6 +19,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
     this.actions,
     this.backgroundColor,
     this.showDrawerButton = true,
+    this.showBackButton = false,
   });
 
   @override
@@ -54,7 +56,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       scrolledUnderElevation: 0,
       automaticallyImplyLeading: false,
-      leading: showDrawerButton
+      leading: showBackButton
           ? IconButton(
               icon: Container(
                 width: 36,
@@ -64,14 +66,31 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
-                  Icons.menu_rounded,
+                  Icons.arrow_back_rounded,
                   color: isDark ? Colors.white : AppColors.navy,
                   size: 20,
                 ),
               ),
-              onPressed: () => _openDrawer(context),
+              onPressed: () => context.pop(),
             )
-          : null,
+          : (showDrawerButton
+              ? IconButton(
+                  icon: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.slate800 : AppColors.slate100,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.menu_rounded,
+                      color: isDark ? Colors.white : AppColors.navy,
+                      size: 20,
+                    ),
+                  ),
+                  onPressed: () => _openDrawer(context),
+                )
+              : null),
       title: showLogo
           ? RichText(
               text: TextSpan(

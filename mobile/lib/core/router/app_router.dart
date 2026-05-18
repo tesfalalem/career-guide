@@ -17,8 +17,10 @@ import '../../features/student/screens/courses_screen.dart';
 import '../../features/student/screens/course_detail_screen.dart';
 import '../../features/student/screens/assessments_screen.dart';
 import '../../features/student/screens/assessment_quiz_screen.dart';
-import '../../features/student/screens/progress_screen.dart';
 import '../../features/student/screens/student_profile_screen.dart';
+import '../../features/student/screens/careers_screen.dart';
+import '../../features/student/screens/ai_roadmap_generator_screen.dart';
+import '../../features/student/screens/ai_course_generator_screen.dart';
 
 // Shared
 import '../../features/shared/screens/notifications_screen.dart';
@@ -64,6 +66,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const RoadmapsScreen(),
             routes: [
               GoRoute(
+                path: 'generate',
+                builder: (_, __) => const AiRoadmapGeneratorScreen(),
+              ),
+              GoRoute(
                 path: ':id',
                 builder: (_, state) =>
                     RoadmapDetailScreen(id: state.pathParameters['id']!),
@@ -74,6 +80,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/student/courses',
             builder: (_, __) => const CoursesScreen(),
             routes: [
+              GoRoute(
+                path: 'generate',
+                builder: (_, __) => const AiCourseGeneratorScreen(),
+              ),
               GoRoute(
                 path: ':id',
                 builder: (_, state) => CourseDetailScreen(
@@ -88,20 +98,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: ':id',
-                builder: (_, state) => AssessmentQuizScreen(
-                  assessmentId: int.parse(state.pathParameters['id']!),
-                  title: state.uri.queryParameters['title'] ?? '',
-                ),
+                builder: (_, state) {
+                  final extra = state.extra as Map<String, dynamic>?;
+                  final title = extra?['title'] ??
+                      state.uri.queryParameters['title'] ??
+                      'Assessment';
+                  return AssessmentQuizScreen(
+                    assessmentId: int.parse(state.pathParameters['id']!),
+                    title: title,
+                  );
+                },
               ),
             ],
           ),
           GoRoute(
-            path: '/student/progress',
-            builder: (_, __) => const ProgressScreen(),
-          ),
-          GoRoute(
             path: '/student/profile',
             builder: (_, __) => const StudentProfileScreen(),
+          ),
+          GoRoute(
+            path: '/student/careers',
+            builder: (_, __) => const CareersScreen(),
           ),
         ],
       ),

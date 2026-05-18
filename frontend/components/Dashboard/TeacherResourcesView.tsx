@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Upload, Link as LinkIcon, FileText, Video, BookOpen, X, Loader2, CheckCircle, Clock, XCircle, Edit, Trash2, File, Eye, Download } from 'lucide-react';
+import { Plus, Upload, Link as LinkIcon, FileText, Video, BookOpen, X, Loader2, CheckCircle, Clock, XCircle, Edit, Trash2, File, Eye, Download, StickyNote } from 'lucide-react';
 import ConfirmModal from '../common/ConfirmModal';
 
 interface Resource {
@@ -17,6 +17,10 @@ interface Resource {
   views: number;
   downloads: number;
   created_at: string;
+  course_id?: number | string;
+  module_name?: string;
+  lesson_name?: string;
+  notes?: string;
 }
 
 interface ResourceStats {
@@ -28,10 +32,25 @@ interface ResourceStats {
   total_downloads: number;
 }
 
+interface CourseAssignment {
+  id: number;
+  course_id: number;
+  course_title: string;
+  course_description?: string;
+  level?: string;
+  category?: string;
+  modules?: Array<{
+    title: string;
+    lessons: Array<{ title: string }>;
+  }>;
+}
+
 const TeacherResourcesView: React.FC = () => {
   const [resources, setResources] = useState<Resource[]>([]);
   const [stats, setStats] = useState<ResourceStats | null>(null);
+  const [courses, setCourses] = useState<CourseAssignment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [coursesLoading, setCoursesLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
@@ -41,7 +60,11 @@ const TeacherResourcesView: React.FC = () => {
     resource_type: 'document',
     external_url: '',
     category: '',
-    tags: ''
+    tags: '',
+    course_id: '',
+    module_name: '',
+    lesson_name: '',
+    notes: ''
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file');
@@ -62,6 +85,7 @@ const TeacherResourcesView: React.FC = () => {
     { value: 'document', label: 'Document', icon: FileText },
     { value: 'video', label: 'Video', icon: Video },
     { value: 'link', label: 'External Link', icon: LinkIcon },
+    { value: 'note', label: 'Note / Text', icon: StickyNote },
     { value: 'article', label: 'Article', icon: FileText },
     { value: 'course', label: 'Course', icon: BookOpen },
     { value: 'tutorial', label: 'Tutorial', icon: BookOpen }
@@ -70,6 +94,7 @@ const TeacherResourcesView: React.FC = () => {
   useEffect(() => {
     fetchResources();
     fetchStats();
+    fetchApprovedCourses();
   }, []);
 
   const fetchResources = async () => {
@@ -110,6 +135,26 @@ const TeacherResourcesView: React.FC = () => {
     }
   };
 
+  const fetchApprovedCourses = async () => {
+    setCoursesLoading(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('http://localhost/careerguide/backend/api/course-assignments/approved', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setCourses(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch approved courses:', err);
+    } finally {
+      setCoursesLoading(false);
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -123,6 +168,12 @@ const TeacherResourcesView: React.FC = () => {
       setSelectedFile(file);
       setError(null);
     }
+  };
+
+  const getCourseName = (courseId?: string | number) => {
+    if (!courseId) return null;
+    const c = courses.find(item => String(item.course_id) === String(courseId));
+    return c ? c.course_title : `Course #${courseId}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -139,8 +190,14 @@ const TeacherResourcesView: React.FC = () => {
       formDataToSend.append('resource_type', formData.resource_type);
       formDataToSend.append('category', formData.category);
       formDataToSend.append('tags', formData.tags);
+      formDataToSend.append('course_id', formData.course_id);
+      formDataToSend.append('module_name', formData.module_name);
+      formDataToSend.append('lesson_name', formData.lesson_name);
+      formDataToSend.append('notes', formData.notes);
       
-      if (uploadMode === 'file' && selectedFile) {
+      if (formData.resource_type === 'note') {
+        // notes don't require file or URL
+      } else if (uploadMode === 'file' && selectedFile) {
         formDataToSend.append('file', selectedFile);
       } else if (uploadMode === 'url' && formData.external_url) {
         formDataToSend.append('external_url', formData.external_url);
@@ -182,7 +239,11 @@ const TeacherResourcesView: React.FC = () => {
       resource_type: resource.resource_type,
       external_url: resource.external_url || '',
       category: resource.category,
-      tags: resource.tags.join(', ')
+      tags: resource.tags.join(', '),
+      course_id: resource.course_id ? String(resource.course_id) : '',
+      module_name: resource.module_name || '',
+      lesson_name: resource.lesson_name || '',
+      notes: resource.notes || ''
     });
     setUploadMode(resource.file_path ? 'file' : 'url');
     setShowEditForm(true);
@@ -204,6 +265,10 @@ const TeacherResourcesView: React.FC = () => {
       formDataToSend.append('resource_type', formData.resource_type);
       formDataToSend.append('category', formData.category);
       formDataToSend.append('tags', formData.tags);
+      formDataToSend.append('course_id', formData.course_id);
+      formDataToSend.append('module_name', formData.module_name);
+      formDataToSend.append('lesson_name', formData.lesson_name);
+      formDataToSend.append('notes', formData.notes);
       
       if (selectedFile) {
         formDataToSend.append('file', selectedFile);
@@ -214,7 +279,7 @@ const TeacherResourcesView: React.FC = () => {
       }
 
       const response = await fetch(`http://localhost/careerguide/backend/api/teacher/resources/${editingResource.id}`, {
-        method: 'PUT',
+        method: 'POST', // Use POST with a hidden method parameter or direct POST since the backend handles multipart/form-data best via POST
         headers: {
           'Authorization': `Bearer ${token}`
         },
@@ -245,7 +310,11 @@ const TeacherResourcesView: React.FC = () => {
       resource_type: 'document',
       external_url: '',
       category: '',
-      tags: ''
+      tags: '',
+      course_id: '',
+      module_name: '',
+      lesson_name: '',
+      notes: ''
     });
     setSelectedFile(null);
     setUploadMode('file');
@@ -403,174 +472,268 @@ const TeacherResourcesView: React.FC = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Upload Mode Toggle */}
-              <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => setUploadMode('file')}
-                  className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all ${
-                    uploadMode === 'file'
-                      ? 'bg-white dark:bg-slate-700 text-careermap-teal shadow-sm'
-                      : 'text-slate-500'
-                  }`}
+              {/* Course Selection (MANDATORY first step!) */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                  Select Course <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.course_id}
+                  onChange={(e) => {
+                    const selectedId = e.target.value;
+                    const selectedCourseObj = courses.find(c => String(c.course_id) === selectedId);
+                    setFormData({
+                      ...formData,
+                      course_id: selectedId,
+                      category: selectedCourseObj?.category || 'General',
+                      module_name: '',
+                      lesson_name: ''
+                    });
+                  }}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none font-semibold text-slate-700 dark:text-white"
+                  required
                 >
-                  <Upload size={16} className="inline mr-2" />
-                  Upload File
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setUploadMode('url')}
-                  className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all ${
-                    uploadMode === 'url'
-                      ? 'bg-white dark:bg-slate-700 text-careermap-teal shadow-sm'
-                      : 'text-slate-500'
-                  }`}
-                >
-                  <LinkIcon size={16} className="inline mr-2" />
-                  External URL
-                </button>
+                  <option value="">— Choose the Course First —</option>
+                  {courses.map(c => (
+                    <option key={c.course_id} value={c.course_id}>
+                      {c.course_title} ({c.category})
+                    </option>
+                  ))}
+                </select>
+                {courses.length === 0 && !coursesLoading && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    ⚠️ You do not have any approved course assignments. Please request or wait for an approved course assignment before uploading.
+                  </p>
+                )}
               </div>
 
-              {/* File Upload or URL Input */}
-              {uploadMode === 'file' ? (
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                    Upload File (Max 50MB)
-                  </label>
-                  <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-8 text-center hover:border-teal-500 transition-all">
-                    <input
-                      type="file"
-                      onChange={handleFileChange}
-                      className="hidden"
-                      id="file-upload"
-                      accept=".pdf,.doc,.docx,.ppt,.pptx,.mp4,.mov,.mpeg,.jpg,.jpeg,.png,.gif"
-                    />
-                    <label htmlFor="file-upload" className="cursor-pointer">
-                      <Upload size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-                      {selectedFile ? (
-                        <div>
-                          <p className="text-careermap-teal font-bold mb-1">{selectedFile.name}</p>
-                          <p className="text-sm text-slate-500">{formatFileSize(selectedFile.size)}</p>
-                        </div>
-                      ) : (
-                        <div>
-                          <p className="text-slate-600 dark:text-slate-400 font-bold mb-1">
-                            Click to upload or drag and drop
-                          </p>
-                          <p className="text-sm text-slate-500">
-                            PDF, DOC, PPT, MP4, Images (Max 50MB)
-                          </p>
-                        </div>
-                      )}
-                    </label>
-                  </div>
+              {!formData.course_id ? (
+                <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl text-center text-sm text-slate-500 dark:text-slate-400 font-bold border-2 border-dashed border-slate-200 dark:border-slate-800">
+                  🔒 Please select a course above first to enable the upload options.
                 </div>
               ) : (
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                    External URL
-                  </label>
-                  <input
-                    type="url"
-                    value={formData.external_url}
-                    onChange={(e) => setFormData({ ...formData, external_url: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none"
-                    placeholder="https://example.com/resource"
-                  />
-                </div>
+                <>
+                  {/* Upload Mode Toggle */}
+                  {formData.resource_type !== 'note' && (
+                    <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => setUploadMode('file')}
+                        className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all ${
+                          uploadMode === 'file'
+                            ? 'bg-white dark:bg-slate-700 text-careermap-teal shadow-sm'
+                            : 'text-slate-500'
+                        }`}
+                      >
+                        <Upload size={16} className="inline mr-2" />
+                        Upload File
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setUploadMode('url')}
+                        className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all ${
+                          uploadMode === 'url'
+                            ? 'bg-white dark:bg-slate-700 text-careermap-teal shadow-sm'
+                            : 'text-slate-500'
+                        }`}
+                      >
+                        <LinkIcon size={16} className="inline mr-2" />
+                        External URL
+                      </button>
+                    </div>
+                  )}
+
+                  {/* File Upload, URL Input, or Note Content */}
+                  {formData.resource_type === 'note' ? (
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                        Note Content (HTML / Plain Text)
+                      </label>
+                      <textarea
+                        value={formData.notes}
+                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none min-h-[150px]"
+                        placeholder="Enter the educational note content here..."
+                        required
+                      />
+                    </div>
+                  ) : uploadMode === 'file' ? (
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                        Upload File (Max 50MB)
+                      </label>
+                      <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-8 text-center hover:border-teal-500 transition-all">
+                        <input
+                          type="file"
+                          onChange={handleFileChange}
+                          className="hidden"
+                          id="file-upload"
+                          accept=".pdf,.doc,.docx,.ppt,.pptx,.mp4,.mov,.mpeg,.jpg,.jpeg,.png,.gif"
+                        />
+                        <label htmlFor="file-upload" className="cursor-pointer">
+                          <Upload size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+                          {selectedFile ? (
+                            <div>
+                              <p className="text-careermap-teal font-bold mb-1">{selectedFile.name}</p>
+                              <p className="text-sm text-slate-500">{formatFileSize(selectedFile.size)}</p>
+                            </div>
+                          ) : (
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400 font-bold mb-1">
+                                Click to upload or drag and drop
+                              </p>
+                              <p className="text-sm text-slate-500">
+                                PDF, DOC, PPT, MP4, Images (Max 50MB)
+                              </p>
+                            </div>
+                          )}
+                        </label>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                        External URL
+                      </label>
+                      <input
+                        type="url"
+                        value={formData.external_url}
+                        onChange={(e) => setFormData({ ...formData, external_url: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none"
+                        placeholder="https://example.com/resource"
+                        required
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                      Title
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none min-h-[100px]"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                        Resource Type
+                      </label>
+                      <select
+                        value={formData.resource_type}
+                        onChange={(e) => setFormData({ ...formData, resource_type: e.target.value, notes: '' })}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none"
+                      >
+                        {resourceTypes.map(type => (
+                          <option key={type.value} value={type.value}>{type.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                        Category
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.category}
+                        readOnly
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 outline-none font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Module & Lesson Selectors */}
+                  {courses.find(c => String(c.course_id) === formData.course_id)?.modules && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                          Module (Optional)
+                        </label>
+                        <select
+                          value={formData.module_name}
+                          onChange={(e) => setFormData({ ...formData, module_name: e.target.value, lesson_name: '' })}
+                          className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none text-sm"
+                        >
+                          <option value="">— General (no module) —</option>
+                          {courses.find(c => String(c.course_id) === formData.course_id)?.modules?.map((m: any, i: number) => (
+                            <option key={i} value={m.title}>{m.title}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                          Lesson (Optional)
+                        </label>
+                        <select
+                          value={formData.lesson_name}
+                          onChange={(e) => setFormData({ ...formData, lesson_name: e.target.value })}
+                          className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none text-sm"
+                          disabled={!formData.module_name}
+                        >
+                          <option value="">— All lessons —</option>
+                          {courses.find(c => String(c.course_id) === formData.course_id)?.modules
+                            ?.find((m: any) => m.title === formData.module_name)
+                            ?.lessons.map((l: any, i: number) => (
+                              <option key={i} value={l.title}>{l.title}</option>
+                            ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                      Tags (comma-separated)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.tags}
+                      onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none"
+                      placeholder="react, javascript, frontend"
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="flex-1 bg-careermap-navy text-white py-3 rounded-xl font-bold hover:bg-[#023058] transition-all disabled:opacity-50"
+                    >
+                      {submitting ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'Add Resource'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddForm(false);
+                        resetForm();
+                      }}
+                      className="px-6 py-3 rounded-xl border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
               )}
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none min-h-[100px]"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                    Resource Type
-                  </label>
-                  <select
-                    value={formData.resource_type}
-                    onChange={(e) => setFormData({ ...formData, resource_type: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none"
-                  >
-                    {resourceTypes.map(type => (
-                      <option key={type.value} value={type.value}>{type.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                    Category
-                  </label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none"
-                    required
-                  >
-                    <option value="">Select Category</option>
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                  Tags (comma-separated)
-                </label>
-                <input
-                  type="text"
-                  value={formData.tags}
-                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none"
-                  placeholder="react, javascript, frontend"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1 bg-careermap-navy text-white py-3 rounded-xl font-bold hover:bg-[#023058] transition-all disabled:opacity-50"
-                >
-                  {submitting ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'Add Resource'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddForm(false);
-                    resetForm();
-                  }}
-                  className="px-6 py-3 rounded-xl border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
-                >
-                  Cancel
-                </button>
-              </div>
             </form>
           </div>
         </div>
@@ -601,36 +764,81 @@ const TeacherResourcesView: React.FC = () => {
             )}
 
             <form onSubmit={handleUpdate} className="space-y-4">
-              {/* Upload Mode Toggle */}
-              <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => setUploadMode('file')}
-                  className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all ${
-                    uploadMode === 'file'
-                      ? 'bg-white dark:bg-slate-700 text-careermap-teal shadow-sm'
-                      : 'text-slate-500'
-                  }`}
+              {/* Course Selection */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                  Course Assignment <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.course_id}
+                  onChange={(e) => {
+                    const selectedId = e.target.value;
+                    const selectedCourseObj = courses.find(c => String(c.course_id) === selectedId);
+                    setFormData({
+                      ...formData,
+                      course_id: selectedId,
+                      category: selectedCourseObj?.category || 'General',
+                      module_name: '',
+                      lesson_name: ''
+                    });
+                  }}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none font-semibold text-slate-700 dark:text-white"
+                  required
                 >
-                  <Upload size={16} className="inline mr-2" />
-                  Upload File
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setUploadMode('url')}
-                  className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all ${
-                    uploadMode === 'url'
-                      ? 'bg-white dark:bg-slate-700 text-careermap-teal shadow-sm'
-                      : 'text-slate-500'
-                  }`}
-                >
-                  <LinkIcon size={16} className="inline mr-2" />
-                  External URL
-                </button>
+                  <option value="">— Select Course —</option>
+                  {courses.map(c => (
+                    <option key={c.course_id} value={c.course_id}>
+                      {c.course_title} ({c.category})
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {/* File Upload or URL Input */}
-              {uploadMode === 'file' ? (
+              {/* Upload Mode Toggle */}
+              {formData.resource_type !== 'note' && (
+                <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setUploadMode('file')}
+                    className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all ${
+                      uploadMode === 'file'
+                        ? 'bg-white dark:bg-slate-700 text-careermap-teal shadow-sm'
+                        : 'text-slate-500'
+                    }`}
+                  >
+                    <Upload size={16} className="inline mr-2" />
+                    Upload File
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUploadMode('url')}
+                    className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all ${
+                      uploadMode === 'url'
+                        ? 'bg-white dark:bg-slate-700 text-careermap-teal shadow-sm'
+                        : 'text-slate-500'
+                    }`}
+                  >
+                    <LinkIcon size={16} className="inline mr-2" />
+                    External URL
+                  </button>
+                </div>
+              )}
+
+              {/* File Upload, URL Input, or Note Content */}
+              {formData.resource_type === 'note' ? (
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                    Note Content (HTML / Plain Text)
+                  </label>
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none min-h-[150px]"
+                    placeholder="Enter the educational note content here..."
+                    required
+                  />
+                </div>
+              ) : uploadMode === 'file' ? (
                 <div>
                   <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
                     Upload New File (Optional, Max 50MB)
@@ -683,6 +891,7 @@ const TeacherResourcesView: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, external_url: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none"
                     placeholder="https://example.com/resource"
+                    required
                   />
                 </div>
               )}
@@ -719,7 +928,7 @@ const TeacherResourcesView: React.FC = () => {
                   </label>
                   <select
                     value={formData.resource_type}
-                    onChange={(e) => setFormData({ ...formData, resource_type: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, resource_type: e.target.value, notes: '' })}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none"
                   >
                     {resourceTypes.map(type => (
@@ -732,19 +941,54 @@ const TeacherResourcesView: React.FC = () => {
                   <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
                     Category
                   </label>
-                  <select
+                  <input
+                    type="text"
                     value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none"
-                    required
-                  >
-                    <option value="">Select Category</option>
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                    readOnly
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 outline-none font-medium"
+                  />
                 </div>
               </div>
+
+              {/* Module & Lesson Selectors */}
+              {courses.find(c => String(c.course_id) === formData.course_id)?.modules && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                      Module (Optional)
+                    </label>
+                    <select
+                      value={formData.module_name}
+                      onChange={(e) => setFormData({ ...formData, module_name: e.target.value, lesson_name: '' })}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none text-sm"
+                    >
+                      <option value="">— General (no module) —</option>
+                      {courses.find(c => String(c.course_id) === formData.course_id)?.modules?.map((m: any, i: number) => (
+                        <option key={i} value={m.title}>{m.title}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                      Lesson (Optional)
+                    </label>
+                    <select
+                      value={formData.lesson_name}
+                      onChange={(e) => setFormData({ ...formData, lesson_name: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none text-sm"
+                      disabled={!formData.module_name}
+                    >
+                      <option value="">— All lessons —</option>
+                      {courses.find(c => String(c.course_id) === formData.course_id)?.modules
+                        ?.find((m: any) => m.title === formData.module_name)
+                        ?.lessons.map((l: any, i: number) => (
+                          <option key={i} value={l.title}>{l.title}</option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
@@ -820,6 +1064,13 @@ const TeacherResourcesView: React.FC = () => {
                     {resource.description}
                   </p>
                   <div className="flex items-center gap-4 text-sm flex-wrap">
+                    {resource.course_id && (
+                      <span className="inline-flex items-center gap-1 text-teal-600 bg-teal-50 dark:bg-teal-950/40 dark:text-teal-400 border border-teal-100 dark:border-teal-900/30 px-2 py-0.5 rounded-full text-xs font-semibold">
+                        🎓 {getCourseName(resource.course_id)}
+                        {resource.module_name && ` › ${resource.module_name}`}
+                        {resource.lesson_name && ` › ${resource.lesson_name}`}
+                      </span>
+                    )}
                     <span className="inline-flex items-center gap-1 text-slate-500">
                       <BookOpen size={16} />
                       {resource.resource_type}

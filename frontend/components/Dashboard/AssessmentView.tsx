@@ -88,7 +88,7 @@ const AssessmentView: React.FC<AssessmentViewProps> = ({ userId }) => {
             {result.percentage}%
           </div>
           <p className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-widest">{result.score} / {result.total} Correct · {result.passed ? 'Platinum Badge Earned' : 'Threshold: 70%'}</p>
-          {result.passed && <p className="text-emerald-500 font-black text-sm mt-4 uppercase tracking-[0.2em]">+{result.score * 10} Mastery XP</p>}
+
         </div>
 
         {/* Per-question breakdown */}

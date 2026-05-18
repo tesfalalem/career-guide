@@ -3,7 +3,7 @@ import {
   Plus, Search, Edit2, Trash2, Eye, EyeOff,
   Loader2, X, Save, Tag, Briefcase, CheckCircle, AlertCircle,
   Code2, Database, Shield, Cloud, Smartphone, Palette,
-  Network, Server, GraduationCap
+  Network, Server, GraduationCap, BrainCircuit
 } from 'lucide-react';
 import { apiClient } from '../../../services/apiClient';
 
@@ -21,23 +21,53 @@ interface Career {
 }
 
 const CATEGORIES = [
-  'Software Engineering', 'Data Science & AI', 'Cybersecurity',
-  'Cloud & DevOps', 'Mobile Development', 'UI/UX Design',
-  'Network Engineering', 'Database Administration', 'General',
+  'Full-Stack Development',
+  'Frontend Web Development',
+  'Backend Development',
+  'Mobile App Development',
+  'Artificial Intelligence',
+  'Machine Learning',
+  'Cloud Computing',
+  'Cybersecurity',
+  'Data Science',
+  'UI/UX Design',
+  'DevOps Engineering',
+  'Software Engineering',
+  'Database Management',
+  'Computer Networking',
+  'API Development',
+  'Blockchain Development',
+  'Internet of Things (IoT)',
+  'Game Development',
+  'Embedded Systems',
+  'System Administration',
+  'Other'
 ];
 
 // ── Category → icon + gradient (shared with student view) ────────────────────
 
 const CATEGORY_STYLE: Record<string, { icon: React.ReactNode; gradient: string; light: string }> = {
-  'Software Engineering':    { icon: <Code2 size={20} />,        gradient: 'from-[#1e3a5f] to-[#0d9488]', light: 'bg-teal-50 text-teal-700' },
-  'Data Science & AI':       { icon: <Database size={20} />,     gradient: 'from-[#312e81] to-[#6d28d9]', light: 'bg-violet-50 text-violet-700' },
-  'Cybersecurity':           { icon: <Shield size={20} />,       gradient: 'from-[#7f1d1d] to-[#dc2626]', light: 'bg-red-50 text-red-700' },
-  'Cloud & DevOps':          { icon: <Cloud size={20} />,        gradient: 'from-[#0c4a6e] to-[#0284c7]', light: 'bg-sky-50 text-sky-700' },
-  'Mobile Development':      { icon: <Smartphone size={20} />,   gradient: 'from-[#064e3b] to-[#059669]', light: 'bg-emerald-50 text-emerald-700' },
-  'UI/UX Design':            { icon: <Palette size={20} />,      gradient: 'from-[#831843] to-[#db2777]', light: 'bg-pink-50 text-pink-700' },
-  'Network Engineering':     { icon: <Network size={20} />,      gradient: 'from-[#1c1917] to-[#78716c]', light: 'bg-stone-50 text-stone-700' },
-  'Database Administration': { icon: <Server size={20} />,       gradient: 'from-[#1e3a5f] to-[#2563eb]', light: 'bg-blue-50 text-blue-700' },
-  'General':                 { icon: <GraduationCap size={20} />, gradient: 'from-[#1e3a5f] to-[#0d9488]', light: 'bg-teal-50 text-teal-700' },
+  'Full-Stack Development':    { icon: <Code2 size={20} />,       gradient: 'from-[#1e3a5f] to-[#0d9488]', light: 'bg-teal-50 text-teal-700' },
+  'Frontend Web Development':  { icon: <Code2 size={20} />,       gradient: 'from-[#0f766e] to-[#14b8a6]', light: 'bg-teal-50 text-teal-600' },
+  'Backend Development':       { icon: <Server size={20} />,      gradient: 'from-[#1e1b4b] to-[#4338ca]', light: 'bg-indigo-50 text-indigo-700' },
+  'Mobile App Development':    { icon: <Smartphone size={20} />,  gradient: 'from-[#064e3b] to-[#059669]', light: 'bg-emerald-50 text-emerald-700' },
+  'Artificial Intelligence':   { icon: <BrainCircuit size={20} />,gradient: 'from-[#312e81] to-[#7c3aed]', light: 'bg-violet-50 text-violet-700' },
+  'Machine Learning':          { icon: <Database size={20} />,    gradient: 'from-[#1e3a8a] to-[#3b82f6]', light: 'bg-blue-50 text-blue-700' },
+  'Cloud Computing':           { icon: <Cloud size={20} />,       gradient: 'from-[#0c4a6e] to-[#0284c7]', light: 'bg-sky-50 text-sky-700' },
+  'Cybersecurity':             { icon: <Shield size={20} />,      gradient: 'from-[#7f1d1d] to-[#dc2626]', light: 'bg-red-50 text-red-700' },
+  'Data Science':              { icon: <Database size={20} />,    gradient: 'from-[#4c1d95] to-[#8b5cf6]', light: 'bg-purple-50 text-purple-700' },
+  'UI/UX Design':              { icon: <Palette size={20} />,     gradient: 'from-[#831843] to-[#db2777]', light: 'bg-pink-50 text-pink-700' },
+  'DevOps Engineering':        { icon: <Cloud size={20} />,       gradient: 'from-[#172554] to-[#1d4ed8]', light: 'bg-blue-50 text-blue-800' },
+  'Software Engineering':      { icon: <Code2 size={20} />,       gradient: 'from-[#1e3a5f] to-[#0d9488]', light: 'bg-teal-50 text-teal-700' },
+  'Database Management':       { icon: <Server size={20} />,      gradient: 'from-[#1e3a5f] to-[#2563eb]', light: 'bg-blue-50 text-blue-700' },
+  'Computer Networking':       { icon: <Network size={20} />,     gradient: 'from-[#1c1917] to-[#78716c]', light: 'bg-stone-50 text-stone-700' },
+  'API Development':           { icon: <Network size={20} />,     gradient: 'from-[#030712] to-[#4b5563]', light: 'bg-gray-50 text-gray-700' },
+  'Blockchain Development':    { icon: <Shield size={20} />,      gradient: 'from-[#1e1b4b] to-[#6366f1]', light: 'bg-indigo-50 text-indigo-600' },
+  'Internet of Things (IoT)':  { icon: <Smartphone size={20} />,  gradient: 'from-[#065f46] to-[#10b981]', light: 'bg-emerald-50 text-emerald-600' },
+  'Game Development':          { icon: <Palette size={20} />,     gradient: 'from-[#701a75] to-[#d946ef]', light: 'bg-fuchsia-50 text-fuchsia-700' },
+  'Embedded Systems':          { icon: <Server size={20} />,      gradient: 'from-[#1e293b] to-[#64748b]', light: 'bg-slate-50 text-slate-700' },
+  'System Administration':     { icon: <Server size={20} />,      gradient: 'from-[#1c1917] to-[#44403c]', light: 'bg-stone-50 text-stone-800' },
+  'Other':                     { icon: <GraduationCap size={20} />,gradient: 'from-[#1e3a5f] to-[#0d9488]', light: 'bg-teal-50 text-teal-700' }
 };
 
 const getCategoryStyle = (cat: string) =>
@@ -61,12 +91,35 @@ const CareerFormModal: React.FC<FormModalProps> = ({ career, onClose, onSaved })
   const [form, setForm] = useState({
     title: career?.title ?? '',
     description: career?.description ?? '',
-    category: career?.category ?? 'General',
+    category: career?.category ?? 'Full-Stack Development',
     required_skills: career?.required_skills ?? [] as string[],
     status: career?.status ?? 'published' as 'draft' | 'published',
   });
 
+  const [selectedCat, setSelectedCat] = useState(() => {
+    const cat = career?.category ?? 'Full-Stack Development';
+    return CATEGORIES.includes(cat) && cat !== 'Other' ? cat : 'Other';
+  });
+  const [customCat, setCustomCat] = useState(() => {
+    const cat = career?.category ?? 'Full-Stack Development';
+    return CATEGORIES.includes(cat) && cat !== 'Other' ? '' : cat;
+  });
+
   const set = (k: keyof typeof form, v: any) => setForm(p => ({ ...p, [k]: v }));
+
+  const handleCategorySelectChange = (val: string) => {
+    setSelectedCat(val);
+    if (val !== 'Other') {
+      set('category', val);
+    } else {
+      set('category', customCat);
+    }
+  };
+
+  const handleCustomCategoryChange = (val: string) => {
+    setCustomCat(val);
+    set('category', val);
+  };
 
   const addSkill = () => {
     const s = skillInput.trim();
@@ -154,28 +207,13 @@ const CareerFormModal: React.FC<FormModalProps> = ({ career, onClose, onSaved })
               />
             </div>
 
-            {/* Description */}
-            <div>
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
-                Description <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                value={form.description}
-                onChange={e => set('description', e.target.value)}
-                required
-                rows={4}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-careermap-teal/30 text-sm resize-none"
-                placeholder="Describe what this career involves, responsibilities, and opportunities..."
-              />
-            </div>
-
             {/* Category + Status */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Category</label>
                 <select
-                  value={form.category}
-                  onChange={e => set('category', e.target.value)}
+                  value={selectedCat}
+                  onChange={e => handleCategorySelectChange(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none text-sm"
                 >
                   {CATEGORIES.map(c => <option key={c}>{c}</option>)}
@@ -192,6 +230,38 @@ const CareerFormModal: React.FC<FormModalProps> = ({ career, onClose, onSaved })
                   <option value="published">Published</option>
                 </select>
               </div>
+            </div>
+
+            {/* Custom Category Input if "Other" is selected */}
+            {selectedCat === 'Other' && (
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                  Custom Category <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={customCat}
+                  onChange={e => handleCustomCategoryChange(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-careermap-teal/30 text-sm"
+                  placeholder="Enter custom category manually"
+                />
+              </div>
+            )}
+
+            {/* Description */}
+            <div>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                Description <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={form.description}
+                onChange={e => set('description', e.target.value)}
+                required
+                rows={4}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-careermap-teal/30 text-sm resize-none"
+                placeholder="Describe what this career involves, responsibilities, and opportunities..."
+              />
             </div>
 
             {/* Category icon preview */}
@@ -243,6 +313,9 @@ const CareerFormModal: React.FC<FormModalProps> = ({ career, onClose, onSaved })
                 </div>
               )}
             </div>
+
+            {/* Scroll spacer to give plenty of viewport space below select elements */}
+            <div className="h-20" />
           </div>
 
           {/* Footer */}

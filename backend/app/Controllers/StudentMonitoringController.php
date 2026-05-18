@@ -55,14 +55,39 @@ class StudentMonitoringController {
         return $user;
     }
 
-    // Get all students using teacher's resources
+    // Get all students using teacher's resources and registered courses
     public function getMyStudents() {
         $teacher = $this->requireAuth(['teacher', 'admin']);
 
         try {
             $stmt = $this->db->prepare("
-                SELECT * FROM teacher_student_overview
-                WHERE teacher_id = ?
+                SELECT 
+                    sce.student_id as student_id,
+                    u.name as student_name,
+                    u.email as student_email,
+                    sce.teacher_id,
+                    c.title as course_title,
+                    sce.course_id,
+                    COALESCE(ce.progress, 0) as progress,
+                    COALESCE(sem.total_resources_accessed, 1) as total_resources_accessed,
+                    COALESCE(sem.total_resources_completed, CASE WHEN ce.progress >= 100 THEN 1 ELSE 0 END) as total_resources_completed,
+                    COALESCE(sem.total_time_spent, 0) as total_time_spent,
+                    COALESCE(sem.average_rating, 0.00) as average_rating,
+                    COALESCE(ce.updated_at, sce.enrolled_at) as last_activity_at,
+                    COALESCE(sem.engagement_score, COALESCE(ce.progress, 0)) as engagement_score,
+                    COALESCE(sem.risk_level, CASE 
+                        WHEN COALESCE(ce.progress, 0) >= 70 THEN 'low'
+                        WHEN COALESCE(ce.progress, 0) >= 30 THEN 'medium'
+                        ELSE 'high'
+                    END) as risk_level,
+                    1 as active_resources,
+                    0 as unread_feedback_count
+                FROM student_class_enrollments sce
+                JOIN users u ON sce.student_id = u.id
+                JOIN courses c ON sce.course_id = c.id
+                LEFT JOIN course_enrollments ce ON ce.user_id = sce.student_id AND ce.course_id = sce.course_id
+                LEFT JOIN student_engagement_metrics sem ON sem.user_id = sce.student_id AND sem.teacher_id = sce.teacher_id
+                WHERE sce.teacher_id = ?
                 ORDER BY engagement_score DESC, last_activity_at DESC
             ");
             
@@ -83,7 +108,7 @@ class StudentMonitoringController {
             ]);
         } catch (PDOException $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Failed to fetch students']);
+            echo json_encode(['error' => 'Failed to fetch students: ' . $e->getMessage()]);
         }
     }
 
@@ -103,20 +128,43 @@ class StudentMonitoringController {
                 return;
             }
 
-            // Get progress on teacher's resources
+            // Get progress on teacher's assigned courses and uploaded resources
             $stmt = $this->db->prepare("
                 SELECT 
-                    srp.*,
+                    sce.course_id as resource_id,
+                    c.title as resource_title,
+                    'Course' as resource_type,
+                    c.category as category,
+                    CASE WHEN COALESCE(ce.progress, 0) >= 100 THEN 'completed' ELSE 'in_progress' END as status,
+                    COALESCE(ce.progress, 0) as progress_percentage,
+                    0 as time_spent_total,
+                    COALESCE(ce.updated_at, sce.enrolled_at) as last_accessed_at,
+                    NULL as rating
+                FROM student_class_enrollments sce
+                JOIN courses c ON sce.course_id = c.id
+                LEFT JOIN course_enrollments ce ON ce.user_id = sce.student_id AND ce.course_id = sce.course_id
+                WHERE sce.student_id = ? AND sce.teacher_id = ?
+                
+                UNION ALL
+                
+                SELECT 
+                    srp.resource_id,
                     er.title as resource_title,
                     er.resource_type,
-                    er.category
+                    er.category,
+                    srp.status,
+                    srp.progress_percentage,
+                    srp.time_spent_total,
+                    srp.last_accessed_at,
+                    srp.rating
                 FROM student_resource_progress srp
                 JOIN educational_resources er ON srp.resource_id = er.id
                 WHERE srp.user_id = ? AND er.uploaded_by = ?
-                ORDER BY srp.last_accessed_at DESC
+                
+                ORDER BY last_accessed_at DESC
             ");
             
-            $stmt->execute([$studentId, $teacher['id']]);
+            $stmt->execute([$studentId, $teacher['id'], $studentId, $teacher['id']]);
             $progress = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // Get engagement metrics

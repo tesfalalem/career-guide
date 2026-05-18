@@ -72,6 +72,7 @@ export interface User {
   streak: number;
   profile_image?: string | null;
   created_at?: string;
+  account_status?: 'pending' | 'approved' | 'rejected' | string;
 }
 
 export interface QuizQuestion {

@@ -11,12 +11,11 @@ import TeacherStudentsView from './Teacher/TeacherStudentsView';
 import TeacherCourseSelection from './Teacher/TeacherCourseSelection';
 import TeacherAnalyticsView from './Teacher/TeacherAnalyticsView';
 import TeacherProfileView from './Teacher/TeacherProfileView';
-import TeacherSettingsView from './Teacher/TeacherSettingsView';
 import NotificationBell from '../common/NotificationBell';
 import UserAvatar from '../common/UserAvatar';
 import { TeacherDashboardLayoutProps, TeacherStats } from '../../types';
 
-export type TeacherTab = 'overview' | 'resources' | 'students' | 'analytics' | 'profile' | 'settings';
+export type TeacherTab = 'overview' | 'resources' | 'students' | 'analytics' | 'profile';
 
 const TeacherDashboardLayout: React.FC<TeacherDashboardLayoutProps> = ({ 
   user, 
@@ -89,13 +88,12 @@ const TeacherDashboardLayout: React.FC<TeacherDashboardLayoutProps> = ({
     { id: 'students', label: 'Students', icon: Users },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'profile', label: 'Profile', icon: UserCircle },
-    { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ];
 
   const renderContent = () => {
     switch (activeTab) {
       case 'overview':
-        return <TeacherOverview stats={stats} onNavigate={setActiveTab} />;
+        return <TeacherOverview stats={stats} onNavigate={(tab) => setActiveTab(tab as TeacherTab)} />;
       case 'resources':
         return <TeacherResourcesView />;
       case 'students':
@@ -104,10 +102,8 @@ const TeacherDashboardLayout: React.FC<TeacherDashboardLayoutProps> = ({
         return <TeacherAnalyticsView />;
       case 'profile':
         return <TeacherProfileView />;
-      case 'settings':
-        return <TeacherSettingsView />;
       default:
-        return <TeacherOverview stats={stats} onNavigate={setActiveTab} />;
+        return <TeacherOverview stats={stats} onNavigate={(tab) => setActiveTab(tab as TeacherTab)} />;
     }
   };
 

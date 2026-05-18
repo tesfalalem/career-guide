@@ -2,6 +2,30 @@ import React, { useState } from 'react';
 import { X, Plus, Loader2, Link as LinkIcon, Upload } from 'lucide-react';
 import { adminService } from '../../../services/adminService';
 
+const SYSTEM_CATEGORIES = [
+  'Full-Stack Development',
+  'Frontend Web Development',
+  'Backend Development',
+  'Mobile App Development',
+  'Artificial Intelligence',
+  'Machine Learning',
+  'Cloud Computing',
+  'Cybersecurity',
+  'Data Science',
+  'UI/UX Design',
+  'DevOps Engineering',
+  'Software Engineering',
+  'Database Management',
+  'Computer Networking',
+  'API Development',
+  'Blockchain Development',
+  'Internet of Things (IoT)',
+  'Game Development',
+  'Embedded Systems',
+  'System Administration',
+  'Other'
+];
+
 interface CreateResourceModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -11,12 +35,13 @@ interface CreateResourceModalProps {
 const CreateResourceModal: React.FC<CreateResourceModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [resourceMode, setResourceMode] = useState<'link' | 'file'>('link');
+  const [selectedCat, setSelectedCat] = useState('Full-Stack Development');
+  const [customCat, setCustomCat] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     resource_type: 'link',
     external_url: '',
-    category: 'Web Development',
     tags: '',
     file_path: '',
     file_size: 0,
@@ -33,6 +58,11 @@ const CreateResourceModal: React.FC<CreateResourceModalProps> = ({ isOpen, onClo
       return;
     }
 
+    if (selectedCat === 'Other' && !customCat.trim()) {
+      alert('Please enter a custom category');
+      return;
+    }
+
     if (resourceMode === 'link' && !formData.external_url.trim()) {
       alert('Please enter a URL');
       return;
@@ -46,7 +76,7 @@ const CreateResourceModal: React.FC<CreateResourceModalProps> = ({ isOpen, onClo
         resource_type: formData.resource_type,
         external_url: resourceMode === 'link' ? formData.external_url : null,
         file_path: resourceMode === 'file' ? formData.file_path : null,
-        category: formData.category,
+        category: selectedCat === 'Other' ? customCat : selectedCat,
         tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
         file_size: formData.file_size,
         file_type: formData.file_type
@@ -127,6 +157,38 @@ const CreateResourceModal: React.FC<CreateResourceModalProps> = ({ isOpen, onClo
               />
             </div>
 
+            {/* Standard Category Selector & Custom Input */}
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                  Category
+                </label>
+                <select
+                  value={selectedCat}
+                  onChange={(e) => setSelectedCat(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white focus:ring-2 focus:ring-teal-500/20 outline-none"
+                >
+                  {SYSTEM_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+
+              {selectedCat === 'Other' && (
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                    Custom Category <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={customCat}
+                    onChange={(e) => setCustomCat(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white focus:ring-2 focus:ring-teal-500/20 outline-none"
+                    placeholder="Enter custom category manually"
+                  />
+                </div>
+              )}
+            </div>
+
             <div>
               <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                 Description
@@ -193,40 +255,22 @@ const CreateResourceModal: React.FC<CreateResourceModalProps> = ({ isOpen, onClo
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  Category
-                </label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white focus:ring-2 focus:ring-teal-500/20 outline-none"
-                >
-                  <option value="Web Development">Web Development</option>
-                  <option value="Mobile Development">Mobile Development</option>
-                  <option value="Data Science">Data Science</option>
-                  <option value="DevOps">DevOps</option>
-                  <option value="AI/ML">AI/ML</option>
-                  <option value="Cybersecurity">Cybersecurity</option>
-                  <option value="Game Development">Game Development</option>
-                  <option value="General">General</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  Tags (comma-separated)
-                </label>
-                <input
-                  type="text"
-                  value={formData.tags}
-                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white focus:ring-2 focus:ring-teal-500/20 outline-none"
-                  placeholder="e.g., react, javascript"
-                />
-              </div>
+            {/* Tags (comma-separated) */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                Tags (comma-separated)
+              </label>
+              <input
+                type="text"
+                value={formData.tags}
+                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white focus:ring-2 focus:ring-teal-500/20 outline-none"
+                placeholder="e.g., react, javascript"
+              />
             </div>
+
+            {/* Scroll spacer to give plenty of viewport space below select elements */}
+            <div className="h-32" />
           </div>
 
           {/* Footer */}

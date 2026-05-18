@@ -263,21 +263,11 @@ class BitController {
         )->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($students as $student) {
-            $sid = $student['id'];
-
-            if ($roadmap['status'] === 'published') {
-                $conn->prepare("INSERT IGNORE INTO roadmap_enrollments (user_id, roadmap_id, status) VALUES (?, ?, 'active')")
-                     ->execute([$sid, $roadmapId]);
-            }
-
-            $conn->prepare("INSERT IGNORE INTO course_enrollments (user_id, course_id, enrolled_at) VALUES (?, ?, NOW())")
-                 ->execute([$sid, $courseId]);
-
             $conn->prepare("INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, 'new_resource', ?, ?, '/courses')")
                  ->execute([
-                     $sid,
+                     $student['id'],
                      'New Course: ' . $data['title'],
-                     'A new BiT course "' . $data['title'] . '" has been added to your Courses.'
+                     'A new BiT course "' . $data['title'] . '" is now available in the catalog.'
                  ]);
         }
 
@@ -331,10 +321,8 @@ class BitController {
         ")->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($students as $student) {
-            $conn->prepare("INSERT IGNORE INTO course_enrollments (user_id, course_id, enrolled_at) VALUES (?, ?, NOW())")
-                 ->execute([$student['id'], $courseId]);
             $conn->prepare("INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, 'new_resource', ?, ?, '/courses')")
-                 ->execute([$student['id'], 'New Course: ' . $data['title'], 'A new BiT course "' . $data['title'] . '" has been added.']);
+                 ->execute([$student['id'], 'New Course: ' . $data['title'], 'A new standalone BiT course "' . $data['title'] . '" is now available.']);
         }
 
         http_response_code(201);

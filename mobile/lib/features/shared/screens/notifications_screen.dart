@@ -58,6 +58,7 @@ class NotificationsScreen extends ConsumerWidget {
       appBar: AppHeader(
         title: 'Notifications',
         showDrawerButton: false,
+        showBackButton: true,
         actions: [
           TextButton(
             onPressed: () async {

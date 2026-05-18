@@ -59,6 +59,8 @@ const TeacherOverview: React.FC<TeacherOverviewProps> = ({ stats: propStats, onN
           totalResources: statsData.stats.totalResources,
           approvedResources: statsData.stats.approvedResources,
           pendingResources: statsData.stats.pendingResources,
+          rejectedResources: statsData.stats.rejectedResources || 0,
+          totalRoadmaps: statsData.stats.totalRoadmaps || 0,
           totalStudents: statsData.stats.activeStudents
         });
         setQuickStats({

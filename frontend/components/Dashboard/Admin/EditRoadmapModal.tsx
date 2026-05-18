@@ -3,6 +3,30 @@ import { X, Plus, Trash2, Loader2, Save } from 'lucide-react';
 import { adminService } from '../../../services/adminService';
 import RichTextEditor from '../../common/RichTextEditor';
 
+const SYSTEM_CATEGORIES = [
+  'Full-Stack Development',
+  'Frontend Web Development',
+  'Backend Development',
+  'Mobile App Development',
+  'Artificial Intelligence',
+  'Machine Learning',
+  'Cloud Computing',
+  'Cybersecurity',
+  'Data Science',
+  'UI/UX Design',
+  'DevOps Engineering',
+  'Software Engineering',
+  'Database Management',
+  'Computer Networking',
+  'API Development',
+  'Blockchain Development',
+  'Internet of Things (IoT)',
+  'Game Development',
+  'Embedded Systems',
+  'System Administration',
+  'Other'
+];
+
 interface Phase {
   title: string;
   description: string;
@@ -78,7 +102,7 @@ const EditRoadmapModal: React.FC<EditRoadmapModalProps> = ({ isOpen, roadmap, on
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: 'Web Development',
+    category: 'Full-Stack Development',
     estimated_duration: '',
     status: 'published',
     tags: '',
@@ -89,12 +113,39 @@ const EditRoadmapModal: React.FC<EditRoadmapModalProps> = ({ isOpen, roadmap, on
     advanced: [emptyPhase()],
   });
 
+  const [selectedCat, setSelectedCat] = useState('Full-Stack Development');
+  const [customCat, setCustomCat] = useState('');
+
+  const handleCategorySelectChange = (val: string) => {
+    setSelectedCat(val);
+    if (val !== 'Other') {
+      setFormData(p => ({ ...p, category: val }));
+    } else {
+      setFormData(p => ({ ...p, category: customCat }));
+    }
+  };
+
+  const handleCustomCategoryChange = (val: string) => {
+    setCustomCat(val);
+    setFormData(p => ({ ...p, category: val }));
+  };
+
   useEffect(() => {
     if (!roadmap) return;
+    const cat = roadmap.category || 'Full-Stack Development';
+    const isPredefined = SYSTEM_CATEGORIES.includes(cat);
+    if (isPredefined && cat !== 'Other') {
+      setSelectedCat(cat);
+      setCustomCat('');
+    } else {
+      setSelectedCat('Other');
+      setCustomCat(cat);
+    }
+
     setFormData({
       title: roadmap.title || '',
       description: roadmap.description || '',
-      category: roadmap.category || 'Web Development',
+      category: cat,
       estimated_duration: roadmap.estimated_duration || '',
       status: roadmap.status || 'draft',
       tags: Array.isArray(roadmap.tags) ? roadmap.tags.join(', ') : '',
@@ -186,24 +237,15 @@ const EditRoadmapModal: React.FC<EditRoadmapModalProps> = ({ isOpen, roadmap, on
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white outline-none focus:ring-2 focus:ring-careermap-teal/20 text-sm"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={e => setFormData(p => ({ ...p, description: e.target.value }))}
-                  rows={2}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white outline-none focus:ring-2 focus:ring-careermap-teal/20 text-sm resize-none"
-                />
-              </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Category</label>
                   <select
-                    value={formData.category}
-                    onChange={e => setFormData(p => ({ ...p, category: e.target.value }))}
+                    value={selectedCat}
+                    onChange={e => handleCategorySelectChange(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white outline-none text-sm"
                   >
-                    {['Web Development','Mobile Development','Data Science','DevOps','AI/ML','Cybersecurity','Game Development'].map(c => <option key={c}>{c}</option>)}
+                    {SYSTEM_CATEGORIES.map(c => <option key={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
@@ -228,6 +270,33 @@ const EditRoadmapModal: React.FC<EditRoadmapModalProps> = ({ isOpen, roadmap, on
                     <option value="archived">Archived</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Custom Category Input if "Other" is selected */}
+              {selectedCat === 'Other' && (
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Custom Category <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={customCat}
+                    onChange={e => handleCustomCategoryChange(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white outline-none focus:ring-2 focus:ring-careermap-teal/20 text-sm"
+                    placeholder="Enter custom category manually"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Description</label>
+                <textarea
+                  value={formData.description}
+                  onChange={e => setFormData(p => ({ ...p, description: e.target.value }))}
+                  rows={2}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primary dark:text-white outline-none focus:ring-2 focus:ring-careermap-teal/20 text-sm resize-none"
+                />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Tags (comma-separated)</label>
@@ -315,6 +384,9 @@ const EditRoadmapModal: React.FC<EditRoadmapModalProps> = ({ isOpen, roadmap, on
                 </div>
               ))}
             </section>
+
+            {/* Scroll spacer to give plenty of viewport space below select elements */}
+            <div className="h-32" />
           </div>
 
           {/* Footer */}

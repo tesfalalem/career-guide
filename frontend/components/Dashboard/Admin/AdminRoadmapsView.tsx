@@ -267,7 +267,7 @@ const AdminRoadmapsView: React.FC = () => {
                 </div>
               </div>
             </div>
-          ))})}
+          ))}
         </div>
       )}
 

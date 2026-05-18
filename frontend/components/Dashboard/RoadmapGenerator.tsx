@@ -60,8 +60,13 @@ const RoadmapGenerator: React.FC<RoadmapGeneratorProps> = ({ onCourseCreated, us
       } else {
         setError("Failed to generate roadmap. Please try a different query.");
       }
-    } catch (err) {
-      setError("AI Service unavailable. Check console for API Key status.");
+    } catch (err: any) {
+      const msg = err?.message || '';
+      if (msg.includes('503') || msg.includes('capacity') || msg.includes('UNAVAILABLE') || msg.includes('unavailable')) {
+        setError("AI service is temporarily busy. Please wait a few seconds and try again.");
+      } else {
+        setError("AI Service unavailable. Please check your connection and try again.");
+      }
     } finally {
       setLoading(false);
     }

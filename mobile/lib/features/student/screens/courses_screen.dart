@@ -74,6 +74,15 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen>
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/student/courses/generate'),
+        backgroundColor: AppColors.teal,
+        icon: const Icon(Icons.auto_stories_rounded, color: Colors.white),
+        label: const Text(
+          'AI Custom Course',
+          style: TextStyle(fontWeight: FontWeight.w800, color: Colors.white),
+        ),
+      ),
     );
   }
 }
@@ -114,9 +123,55 @@ class _MyCourses extends ConsumerWidget {
   }
 }
 
-class _BrowseCourses extends ConsumerWidget {
+class _BrowseCourses extends ConsumerStatefulWidget {
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_BrowseCourses> createState() => _BrowseCoursesState();
+}
+
+class _BrowseCoursesState extends ConsumerState<_BrowseCourses> {
+  // Track which course IDs are currently being enrolled
+  final Set<String> _enrolling = {};
+  // Track which course IDs have been enrolled this session
+  final Set<String> _enrolled = {};
+
+  Future<void> _enroll(String courseId) async {
+    if (_enrolling.contains(courseId)) return;
+    setState(() => _enrolling.add(courseId));
+    try {
+      final success = await enrollInCourse(ref, courseId);
+      if (success && mounted) {
+        setState(() => _enrolled.add(courseId));
+        // Refresh My Courses tab
+        ref.invalidate(enrolledCoursesProvider);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Enrolled successfully!'),
+            backgroundColor: AppColors.teal,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Enrollment failed. Please try again.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _enrolling.remove(courseId));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final coursesAsync = ref.watch(allCoursesProvider);
     return coursesAsync.when(
       loading: () =>
@@ -137,8 +192,20 @@ class _BrowseCourses extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 itemCount: courses.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, i) =>
-                    _CourseCard(course: courses[i], showProgress: false),
+                itemBuilder: (context, i) {
+                  final course = courses[i];
+                  final isEnrolling = _enrolling.contains(course.id);
+                  final isEnrolled = _enrolled.contains(course.id);
+                  return _CourseCard(
+                    course: course,
+                    showProgress: false,
+                    enrollButton: _EnrollButton(
+                      isEnrolling: isEnrolling,
+                      isEnrolled: isEnrolled,
+                      onEnroll: () => _enroll(course.id),
+                    ),
+                  );
+                },
               ),
             ),
     );
@@ -148,7 +215,9 @@ class _BrowseCourses extends ConsumerWidget {
 class _CourseCard extends StatelessWidget {
   final CourseModel course;
   final bool showProgress;
-  const _CourseCard({required this.course, required this.showProgress});
+  final Widget? enrollButton;
+  const _CourseCard(
+      {required this.course, required this.showProgress, this.enrollButton});
 
   Color get _levelColor {
     switch (course.level) {
@@ -201,17 +270,6 @@ class _CourseCard extends StatelessWidget {
                           fontSize: 10,
                           fontWeight: FontWeight.w700)),
                 ),
-                const Spacer(),
-                Row(
-                  children: [
-                    const Icon(Icons.star_rounded,
-                        color: AppColors.warning, size: 14),
-                    const SizedBox(width: 3),
-                    Text(course.rating.toStringAsFixed(1),
-                        style: const TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.w700)),
-                  ],
-                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -262,6 +320,11 @@ class _CourseCard extends StatelessWidget {
             ],
 
             const SizedBox(height: 12),
+            // Enroll button (browse tab only)
+            if (enrollButton != null) ...[
+              enrollButton!,
+              const SizedBox(height: 10),
+            ],
             Row(
               children: [
                 const Icon(Icons.access_time_rounded,
@@ -294,6 +357,78 @@ class _CourseCard extends StatelessWidget {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EnrollButton extends StatelessWidget {
+  final bool isEnrolling;
+  final bool isEnrolled;
+  final VoidCallback onEnroll;
+
+  const _EnrollButton({
+    required this.isEnrolling,
+    required this.isEnrolled,
+    required this.onEnroll,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (isEnrolled) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 11),
+        decoration: BoxDecoration(
+          color: AppColors.teal.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.teal.withOpacity(0.3)),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle_rounded, color: AppColors.teal, size: 16),
+            SizedBox(width: 6),
+            Text(
+              'Enrolled',
+              style: TextStyle(
+                color: AppColors.teal,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: isEnrolling ? null : onEnroll,
+        icon: isEnrolling
+            ? const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : const Icon(Icons.add_rounded, size: 16),
+        label: Text(isEnrolling ? 'Enrolling...' : 'Enroll Now'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.navy,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: const TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          ),
         ),
       ),
     );

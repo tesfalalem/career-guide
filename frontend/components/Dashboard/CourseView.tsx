@@ -193,13 +193,71 @@ const BlockRenderer: React.FC<{ content: string }> = ({ content }) => {
 const CourseView: React.FC<CourseViewProps> = ({
   initialCourseData, onBack, isEnrolled: initialEnrolled, userId = 'mock-user-id'
 }) => {
-  const [course] = useState<Course | null>(initialCourseData || null);
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  const [course, setCourse] = useState<Course | null>(initialCourseData || null);
   const [activeModuleIndex, setActiveModuleIndex] = useState(0);
   const [activeLessonIndex, setActiveLessonIndex] = useState(0);
   const [isEnrolled, setIsEnrolled] = useState(initialEnrolled || !!initialCourseData);
-  const [progress, setProgress] = useState(course.progress || 0);
-  const [completedLessons, setCompletedLessons] = useState<string[]>(course.completed_lessons || []);
+  const [progress, setProgress] = useState(course?.progress || 0);
+  const [completedLessons, setCompletedLessons] = useState<string[]>(course?.completed_lessons || []);
   const [isEnrolling, setIsEnrolling] = useState(false);
+
+  // Dynamic On-Demand Lesson Content Generation
+  const [lessonLoading, setLessonLoading] = useState(false);
+
+  useEffect(() => {
+    if (!course || activeModuleIndex === null || activeLessonIndex === null) return;
+    const activeModule = course.modules[activeModuleIndex];
+    const activeLesson = activeModule?.lessons[activeLessonIndex];
+    if (!activeLesson) return;
+
+    if (activeLesson.content === '[CONTENT_PENDING]' || !activeLesson.content) {
+      const fetchLessonContent = async () => {
+        setLessonLoading(true);
+        try {
+          const res = await fetch(`${API_BASE}/ai/lesson-content`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+            },
+            body: JSON.stringify({
+              course_id: course.id,
+              lesson_title: activeLesson.title,
+              module_title: activeModule.title,
+              course_title: course.title
+            })
+          });
+          const data = await res.json();
+          if (data.content) {
+            setCourse(prev => {
+              if (!prev) return null;
+              const nextModules = prev.modules.map(mod => {
+                if (mod.title === activeModule.title) {
+                  return {
+                    ...mod,
+                    lessons: mod.lessons.map(les => {
+                      if (les.title === activeLesson.title) {
+                        return { ...les, content: data.content };
+                      }
+                      return les;
+                    })
+                  };
+                }
+                return mod;
+              });
+              return { ...prev, modules: nextModules };
+            });
+          }
+        } catch (err) {
+          console.error('Failed to load lesson content', err);
+        } finally {
+          setLessonLoading(false);
+        }
+      };
+      fetchLessonContent();
+    }
+  }, [activeModuleIndex, activeLessonIndex, course?.id]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [materials, setMaterials] = useState<any[]>([]);
   const [showMaterials, setShowMaterials] = useState(false);
@@ -270,6 +328,39 @@ const CourseView: React.FC<CourseViewProps> = ({
       window.removeEventListener("mouseup", stopResizing);
     };
   }, [isResizing, resize, stopResizing]);
+
+  // Scroll synchronization: Update activeLessonIndex based on what's visible
+  React.useEffect(() => {
+    if (activeTab !== 'lesson' || !contentRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.id;
+            const match = id.match(/lesson-(\d+)-(\d+)/);
+            if (match) {
+              const mIdx = parseInt(match[1]);
+              const lIdx = parseInt(match[2]);
+              if (activeModuleIndex === mIdx) {
+                setActiveLessonIndex(lIdx);
+              }
+            }
+          }
+        });
+      },
+      {
+        root: contentRef.current,
+        rootMargin: '-10% 0px -80% 0px', // Detect hits near the top of the viewport
+        threshold: 0,
+      }
+    );
+
+    const lessons = contentRef.current.querySelectorAll('article[id^="lesson-"]');
+    lessons.forEach((l) => observer.observe(l));
+
+    return () => observer.disconnect();
+  }, [activeTab, activeModuleIndex]);
 
   if (!course) return null;
 
@@ -425,9 +516,10 @@ const CourseView: React.FC<CourseViewProps> = ({
             <div className="flex items-center justify-between mb-3">
               <button
                 onClick={onBack}
-                className="flex items-center gap-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs uppercase font-bold tracking-widest transition-colors"
+                title="Back to courses"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
               >
-                <ArrowLeft size={14} /> Back
+                <ArrowLeft size={18} />
               </button>
               <button
                 onClick={() => setSidebarOpen(false)}
@@ -476,14 +568,14 @@ const CourseView: React.FC<CourseViewProps> = ({
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="shrink-0">
             {course.modules.map((module, mIdx) => {
               const isExpanded = expandedModules.has(mIdx);
               return (
                 <div key={mIdx} className="border-b border-slate-50 dark:border-slate-800/50">
                   <button
                     onClick={() => toggleModule(mIdx)}
-                    className="w-full px-5 py-4 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between group transition-colors hover:bg-slate-100 dark:hover:bg-slate-800/80 sticky top-0 backdrop-blur-sm z-10"
+                    className="w-full px-5 py-4 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between group transition-colors hover:bg-slate-100 dark:hover:bg-slate-800/80 z-10"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
@@ -504,9 +596,21 @@ const CourseView: React.FC<CourseViewProps> = ({
                         return (
                           <button
                             key={lIdx}
-                            onClick={() => { if (!isLocked) { setActiveModuleIndex(mIdx); setActiveLessonIndex(lIdx); } }}
+                            onClick={() => { 
+                              if (!isLocked) { 
+                                if (activeModuleIndex !== mIdx) {
+                                  setActiveModuleIndex(mIdx);
+                                  setTimeout(() => {
+                                    document.getElementById(`lesson-${mIdx}-${lIdx}`)?.scrollIntoView({ behavior: 'smooth' });
+                                  }, 100);
+                                } else {
+                                  document.getElementById(`lesson-${mIdx}-${lIdx}`)?.scrollIntoView({ behavior: 'smooth' });
+                                }
+                                setActiveLessonIndex(lIdx); 
+                              } 
+                            }}
                             disabled={isLocked}
-                            className={`w-full text-left px-5 py-3 flex items-start gap-3 transition-colors ${isActive ? 'bg-indigo-50 dark:bg-indigo-500/10 border-r-2 border-indigo-500' : 'hover:bg-slate-50 dark:hover:bg-slate-800'} ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`w-full text-left px-5 py-3 flex items-start gap-3 transition-colors ${activeModuleIndex === mIdx && activeLessonIndex === lIdx ? 'bg-indigo-50 dark:bg-indigo-500/10 border-r-2 border-indigo-500' : 'hover:bg-slate-50 dark:hover:bg-slate-800'} ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                             {isActive ? (
                               <PlayCircle size={15} className="text-indigo-500 mt-0.5 shrink-0" />
@@ -612,17 +716,19 @@ const CourseView: React.FC<CourseViewProps> = ({
           >
             <BookOpen size={15} /> Lesson
           </button>
-          <button
-            onClick={() => setActiveTab('materials')}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all ${
-              activeTab === 'materials'
-                ? 'border-careermap-teal text-careermap-teal'
-                : 'border-transparent text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            <User size={15} /> Teacher Materials
-          </button>
-          {(userRole === 'teacher' || userRole === 'admin') && (
+          {course?.author !== 'AI Architect' && (
+            <button
+              onClick={() => setActiveTab('materials')}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all ${
+                activeTab === 'materials'
+                  ? 'border-careermap-teal text-careermap-teal'
+                  : 'border-transparent text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              <User size={15} /> Teacher Materials
+            </button>
+          )}
+          {(userRole === 'teacher' || userRole === 'admin') && course?.author !== 'AI Architect' && (
             <button
               onClick={() => setActiveTab('teacher-manage')}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all ${
@@ -638,32 +744,96 @@ const CourseView: React.FC<CourseViewProps> = ({
 
         {/* ── Tab Content ── */}
         {activeTab === 'lesson' && (
-        <div className="flex-1 overflow-y-auto p-8 md:p-12 max-w-4xl mx-auto w-full">
-          <div className="prose prose-slate dark:prose-invert max-w-none">
-            <h1 className="font-bold text-3xl mb-6">{activeLesson?.title}</h1>
-            <div className="min-h-[400px]">
-              <BlockRenderer content={activeLesson?.content || ''} />
+          <div 
+            ref={contentRef}
+            className="flex-1 overflow-y-auto p-8 md:p-12 max-w-4xl mx-auto w-full scroll-smooth"
+          >
+            {/* Module header in main content */}
+            <div className="mb-10 pb-6 border-b border-slate-100 dark:border-slate-800">
+              <span className="text-careermap-teal font-black text-xs uppercase tracking-[0.3em] mb-3 block">Module {activeModuleIndex + 1}</span>
+              <h2 className="text-4xl font-serif font-black text-slate-800 dark:text-white leading-tight">
+                {activeModule?.title}
+              </h2>
+            </div>
+
+            <div className="space-y-16">
+              {activeModule?.lessons.map((lesson, lIdx) => (
+                <article key={lIdx} id={`lesson-${activeModuleIndex}-${lIdx}`} className="animate-in fade-in slide-in-from-bottom-8 duration-700">
+                  <div className="prose prose-slate dark:prose-invert max-w-none">
+                    <header className="mb-10">
+                      <div className="flex items-center gap-4 mb-4">
+                        <span className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-black text-slate-400">
+                          {lIdx + 1}
+                        </span>
+                        <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800" />
+                      </div>
+                      <h1 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-2 leading-tight">
+                        {lesson.title}
+                      </h1>
+                      <div className="flex items-center gap-3 text-slate-400 text-sm font-medium">
+                        <Clock size={14} /> {lesson.duration}
+                        {completedLessons.includes(lesson.title) && (
+                          <span className="flex items-center gap-1 text-emerald-500 text-xs font-bold uppercase tracking-wider ml-2">
+                            <CheckCircle size={14} /> Completed
+                          </span>
+                        )}
+                      </div>
+                    </header>
+                    
+                    <div className="min-h-[200px]">
+                      {lessonLoading || lesson.content === '[CONTENT_PENDING]' ? (
+                        <div className="flex flex-col items-center justify-center py-16 px-6 rounded-3xl bg-slate-50/50 dark:bg-slate-900/30 border border-dashed border-slate-200 dark:border-slate-800 animate-pulse text-center">
+                          <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 mb-4 shadow-inner">
+                            <Brain className="animate-spin text-indigo-500" size={32} style={{ animationDuration: '3s' }} />
+                          </div>
+                          <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">AI is architecting your lesson...</h3>
+                          <p className="text-sm text-slate-400 max-w-sm">
+                            We are compiling high-fidelity concepts, practice exercises, and study guides specifically for <strong className="text-slate-700 dark:text-slate-200">"{lesson.title}"</strong>.
+                          </p>
+                        </div>
+                      ) : (
+                        <BlockRenderer content={lesson.content || ''} />
+                      )}
+                    </div>
+                  </div>
+
+                  {lIdx < activeModule.lessons.length - 1 && (
+                    <div className="mt-16 pt-8 flex flex-col items-center gap-4">
+                      <div className="w-px h-10 bg-gradient-to-b from-slate-200 to-transparent dark:from-slate-700" />
+                      <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-300 dark:text-slate-600">Next Lesson</span>
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
+
+            {/* Navigation to Next Module */}
+            <div className="mt-32 flex justify-between pt-12 border-t-2 border-slate-100 dark:border-slate-800">
+              <button
+                disabled={activeModuleIndex === 0}
+                onClick={() => { setActiveModuleIndex(prev => prev - 1); setActiveLessonIndex(0); }}
+                className="flex flex-col items-start gap-2 group"
+              >
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-careermap-teal transition-colors">Previous Module</span>
+                <div className="flex items-center gap-3 px-6 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-careermap-teal bg-white dark:bg-slate-900 font-bold text-sm text-slate-700 dark:text-slate-300 transition-all shadow-sm group-hover:shadow-md">
+                  <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> 
+                  {course.modules[activeModuleIndex - 1]?.title || 'Back to Start'}
+                </div>
+              </button>
+
+              <button
+                disabled={activeModuleIndex === course.modules.length - 1}
+                onClick={() => { setActiveModuleIndex(prev => prev + 1); setActiveLessonIndex(0); }}
+                className="flex flex-col items-end gap-2 group text-right"
+              >
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-careermap-teal transition-colors">Next Module</span>
+                <div className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-slate-900 text-white font-bold text-sm hover:bg-black transition-all shadow-lg group-hover:shadow-indigo-500/20">
+                  {course.modules[activeModuleIndex + 1]?.title || 'Finish Course'}
+                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                </div>
+              </button>
             </div>
           </div>
-
-          {/* Navigation */}
-          <div className="mt-16 flex justify-between pt-8 border-t border-slate-100 dark:border-slate-800">
-            <button
-              disabled={isFirst}
-              onClick={goToPrev}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 font-bold text-sm text-slate-600 disabled:opacity-40 transition-all"
-            >
-              <ArrowLeft size={16} /> Previous
-            </button>
-            <button
-              disabled={isLast}
-              onClick={handleCompleteLesson}
-              className="flex items-center gap-2 px-8 py-3 rounded-xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 shadow-lg disabled:opacity-40 transition-all"
-            >
-              Complete & Continue <ArrowRight size={16} />
-            </button>
-          </div>
-        </div>
         )}
 
         {activeTab === 'materials' && (
@@ -672,7 +842,7 @@ const CourseView: React.FC<CourseViewProps> = ({
           </div>
         )}
 
-        {activeTab === 'teacher-manage' && (userRole === 'teacher' || userRole === 'admin') && (
+        {activeTab === 'teacher-manage' && (userRole === 'teacher' || userRole === 'admin') && course?.author !== 'AI Architect' && (
           <div className="flex-1 overflow-y-auto p-8 max-w-4xl mx-auto w-full">
             <TeacherMaterialsTab
               courseId={String(course.id)}

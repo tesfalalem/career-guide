@@ -146,6 +146,15 @@ class RoadmapsScreen extends ConsumerWidget {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/student/roadmaps/generate'),
+        backgroundColor: AppColors.teal,
+        icon: const Icon(Icons.psychology_rounded, color: Colors.white),
+        label: const Text(
+          'AI Custom Roadmap',
+          style: TextStyle(fontWeight: FontWeight.w800, color: Colors.white),
+        ),
+      ),
     );
   }
 }

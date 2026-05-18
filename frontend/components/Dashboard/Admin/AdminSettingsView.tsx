@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Settings, Save, Shield, Bell, Globe, Database, Mail, Key, CheckCircle } from 'lucide-react';
 
 const AdminSettingsView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'general' | 'security' | 'notifications' | 'system'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'notifications'>('general');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -46,9 +46,7 @@ const AdminSettingsView: React.FC = () => {
 
   const tabs = [
     { id: 'general' as const, label: 'General', icon: Settings },
-    { id: 'security' as const, label: 'Security', icon: Shield },
-    { id: 'notifications' as const, label: 'Notifications', icon: Bell },
-    { id: 'system' as const, label: 'System', icon: Database }
+    { id: 'notifications' as const, label: 'Notifications', icon: Bell }
   ];
 
   return (
@@ -176,74 +174,6 @@ const AdminSettingsView: React.FC = () => {
           </div>
         )}
 
-        {/* Security Settings */}
-        {activeTab === 'security' && (
-          <div className="space-y-6">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-10 pb-4 border-b border-slate-50 dark:border-slate-800 flex items-center gap-3">
-              <Shield size={14} className="text-emerald-500" />
-              Security & Credentialing Firewall
-            </h3>
-            
-            <div className="space-y-4">
-              <label className="flex items-start gap-5 p-6 bg-slate-50/50 dark:bg-slate-800/50 rounded-[1.5rem] cursor-pointer hover:bg-emerald-500/5 transition-all group border border-transparent hover:border-emerald-500/10">
-                <input
-                  type="checkbox"
-                  checked={settings.requireEmailVerification}
-                  onChange={(e) => setSettings({ ...settings, requireEmailVerification: e.target.checked })}
-                  className="mt-1 w-6 h-6 text-emerald-500 rounded-lg focus:ring-2 focus:ring-emerald-500 border-slate-200"
-                />
-                <div className="flex-1">
-                  <div className="font-bold text-careermap-navy dark:text-white text-base">Enforce SMTP Handshake</div>
-                  <div className="text-xs text-slate-400 mt-1 font-medium">Require identity verification via email before granting entry</div>
-                </div>
-              </label>
-
-              <label className="flex items-start gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={settings.enableTwoFactor}
-                  onChange={(e) => setSettings({ ...settings, enableTwoFactor: e.target.checked })}
-                  className="mt-1 w-5 h-5 text-careermap-teal rounded focus:ring-2 focus:ring-teal-500"
-                />
-                <div className="flex-1">
-                  <div className="font-semibold text-primary dark:text-white">Enable Two-Factor Authentication</div>
-                  <div className="text-sm text-slate-500 mt-1">Allow users to enable 2FA for enhanced security</div>
-                </div>
-              </label>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-200 dark:border-slate-800">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  Session Timeout (minutes)
-                </label>
-                <input
-                  type="number"
-                  min="5"
-                  max="120"
-                  value={settings.sessionTimeout}
-                  onChange={(e) => setSettings({ ...settings, sessionTimeout: parseInt(e.target.value) })}
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all text-primary dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  Max Login Attempts
-                </label>
-                <input
-                  type="number"
-                  min="3"
-                  max="10"
-                  value={settings.maxLoginAttempts}
-                  onChange={(e) => setSettings({ ...settings, maxLoginAttempts: parseInt(e.target.value) })}
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all text-primary dark:text-white"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Notification Settings */}
         {activeTab === 'notifications' && (
           <div className="space-y-6">
@@ -299,67 +229,6 @@ const AdminSettingsView: React.FC = () => {
                 <div className="flex-1">
                   <div className="font-semibold text-primary dark:text-white">Content Moderation Alerts</div>
                   <div className="text-sm text-slate-500 mt-1">Receive alerts for pending content approvals</div>
-                </div>
-              </label>
-            </div>
-          </div>
-        )}
-
-        {/* System Settings */}
-        {activeTab === 'system' && (
-          <div className="space-y-6">
-            <h3 className="text-xl font-bold text-primary dark:text-white mb-6">System Settings</h3>
-            
-            <div className="space-y-3">
-              <label className="flex items-start gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={settings.autoApproveResources}
-                  onChange={(e) => setSettings({ ...settings, autoApproveResources: e.target.checked })}
-                  className="mt-1 w-5 h-5 text-careermap-teal rounded focus:ring-2 focus:ring-teal-500"
-                />
-                <div className="flex-1">
-                  <div className="font-semibold text-primary dark:text-white">Auto-Approve Resources</div>
-                  <div className="text-sm text-slate-500 mt-1">Automatically approve resources from verified teachers</div>
-                </div>
-              </label>
-
-              <label className="flex items-start gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={settings.autoApproveTeachers}
-                  onChange={(e) => setSettings({ ...settings, autoApproveTeachers: e.target.checked })}
-                  className="mt-1 w-5 h-5 text-careermap-teal rounded focus:ring-2 focus:ring-teal-500"
-                />
-                <div className="flex-1">
-                  <div className="font-semibold text-primary dark:text-white">Auto-Approve Teacher Requests</div>
-                  <div className="text-sm text-slate-500 mt-1">Automatically approve teacher role requests (not recommended)</div>
-                </div>
-              </label>
-
-              <label className="flex items-start gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={settings.enableAnalytics}
-                  onChange={(e) => setSettings({ ...settings, enableAnalytics: e.target.checked })}
-                  className="mt-1 w-5 h-5 text-careermap-teal rounded focus:ring-2 focus:ring-teal-500"
-                />
-                <div className="flex-1">
-                  <div className="font-semibold text-primary dark:text-white">Enable Analytics</div>
-                  <div className="text-sm text-slate-500 mt-1">Track platform usage and generate analytics</div>
-                </div>
-              </label>
-
-              <label className="flex items-start gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={settings.enableLogging}
-                  onChange={(e) => setSettings({ ...settings, enableLogging: e.target.checked })}
-                  className="mt-1 w-5 h-5 text-careermap-teal rounded focus:ring-2 focus:ring-teal-500"
-                />
-                <div className="flex-1">
-                  <div className="font-semibold text-primary dark:text-white">Enable System Logging</div>
-                  <div className="text-sm text-slate-500 mt-1">Log system events and user actions for debugging</div>
                 </div>
               </label>
             </div>

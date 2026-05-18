@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { HelpCircle, ChevronDown, ChevronUp, Search, MessageSquare, BookOpen, Sparkles, UserCircle } from 'lucide-react';
 
 interface FAQPageProps {
-  onNavigate: (view: 'home' | 'login' | 'signup' | 'onboarding' | 'dashboard' | 'mission' | 'faq' | 'user-guide' | 'privacy' | 'terms', tab?: string) => void;
+  onNavigate: (view: 'home' | 'login' | 'signup' | 'onboarding' | 'dashboard' | 'mission' | 'faq' | 'user-guide' | 'privacy' | 'terms' | 'chat', tab?: string) => void;
 }
 
 const FAQPage: React.FC<FAQPageProps> = ({ onNavigate }) => {

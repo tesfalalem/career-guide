@@ -204,7 +204,11 @@ class ResourceController {
             'external_url' => $_POST['external_url'] ?? null,
             'file_path' => null,
             'file_size' => 0,
-            'file_type' => null
+            'file_type' => null,
+            'course_id' => !empty($_POST['course_id']) ? $_POST['course_id'] : null,
+            'module_name' => !empty($_POST['module_name']) ? $_POST['module_name'] : null,
+            'lesson_name' => !empty($_POST['lesson_name']) ? $_POST['lesson_name'] : null,
+            'notes' => !empty($_POST['notes']) ? $_POST['notes'] : null
         ];
 
         // Auto-approve if teacher has an approved course assignment
@@ -212,8 +216,13 @@ class ResourceController {
             $database = new Database();
             $conn = $database->getConnection();
             try {
-                $stmt = $conn->prepare("SELECT id FROM teacher_course_assignments WHERE teacher_id = ? AND status = 'approved' LIMIT 1");
-                $stmt->execute([$user['id']]);
+                if (!empty($data['course_id'])) {
+                    $stmt = $conn->prepare("SELECT id FROM teacher_course_assignments WHERE teacher_id = ? AND course_id = ? AND status = 'approved'");
+                    $stmt->execute([$user['id'], $data['course_id']]);
+                } else {
+                    $stmt = $conn->prepare("SELECT id FROM teacher_course_assignments WHERE teacher_id = ? AND status = 'approved' LIMIT 1");
+                    $stmt->execute([$user['id']]);
+                }
                 if ($stmt->fetch()) {
                     $data['status'] = 'approved'; // auto-approve for assigned teachers
                 }
@@ -240,9 +249,9 @@ class ResourceController {
                 echo json_encode(['error' => $uploadResult['error']]);
                 return;
             }
-        } elseif (empty($data['external_url'])) {
+        } elseif (empty($data['external_url']) && $data['resource_type'] !== 'note') {
             http_response_code(400);
-            echo json_encode(['error' => 'Either file upload or external URL is required']);
+            echo json_encode(['error' => 'Either file upload, external URL, or note text is required']);
             return;
         }
 
@@ -290,6 +299,10 @@ class ResourceController {
         if (isset($_POST['category'])) $data['category'] = $_POST['category'];
         if (isset($_POST['tags'])) $data['tags'] = json_encode(explode(',', $_POST['tags']));
         if (isset($_POST['external_url'])) $data['external_url'] = $_POST['external_url'];
+        if (isset($_POST['course_id'])) $data['course_id'] = !empty($_POST['course_id']) ? $_POST['course_id'] : null;
+        if (isset($_POST['module_name'])) $data['module_name'] = !empty($_POST['module_name']) ? $_POST['module_name'] : null;
+        if (isset($_POST['lesson_name'])) $data['lesson_name'] = !empty($_POST['lesson_name']) ? $_POST['lesson_name'] : null;
+        if (isset($_POST['notes'])) $data['notes'] = !empty($_POST['notes']) ? $_POST['notes'] : null;
 
         // Handle new file upload
         if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {

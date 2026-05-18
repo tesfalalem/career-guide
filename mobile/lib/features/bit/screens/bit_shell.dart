@@ -45,7 +45,7 @@ class BitShell extends StatelessWidget {
 
   int _currentIndex(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
-    for (int i = 0; i < _tabs.length; i++) {
+    for (int i = _tabs.length - 1; i >= 0; i--) {
       if (location.startsWith(_tabs[i].path)) return i;
     }
     return 0;

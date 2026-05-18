@@ -4,7 +4,7 @@ import { GraduationCap, ArrowLeft, Github, User, Mail, Lock, BookOpen, Loader2 }
 import { apiClient } from '../../services/apiClient';
 
 interface SignUpPageProps {
-  onNavigate: (view: 'home' | 'login' | 'signup' | 'dashboard') => void;
+  onNavigate: (view: 'home' | 'login' | 'signup' | 'dashboard' | 'onboarding' | 'mission' | 'faq' | 'user-guide' | 'privacy' | 'terms') => void;
   onSignup: (user: any) => void;
 }
 

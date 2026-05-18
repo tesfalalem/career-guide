@@ -162,12 +162,37 @@ const StudentDashboardLayout: React.FC<StudentDashboardLayoutProps & { initialTa
           </div>
         );
       default:
-        return <DashboardHome user={user} onNavigateToRoadmaps={() => setActiveTab('roadmaps')} onNavigateToAssessments={() => setActiveTab('assessments')} onOpenCourse={() => setActiveTab('courses')} />;
+        return (
+          <DashboardHome 
+            user={user} 
+            onNavigateToRoadmaps={() => { 
+              setActiveTab('roadmaps'); 
+              setRoadmapView('curated');
+              window.scrollTo(0, 0);
+            }} 
+            onNavigateToAiGenerator={() => { 
+              setActiveTab('roadmaps'); 
+              setRoadmapView('ai');
+              window.scrollTo(0, 0);
+            }}
+            onNavigateToAssessments={() => { setActiveTab('assessments'); window.scrollTo(0, 0); }} 
+            onOpenCourse={() => { setActiveTab('courses'); window.scrollTo(0, 0); }} 
+            onNavigateToCareers={() => { setActiveTab('careers'); window.scrollTo(0, 0); }} 
+          />
+        );
     }
   };
 
   return (
-    <div data-testid="student-dashboard" className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 flex font-sans">
+    <div data-testid="student-dashboard" className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 flex font-sans relative">
+      {/* Global Background Image */}
+      <div className="fixed inset-0 pointer-events-none opacity-[0.04] dark:opacity-[0.06] z-0 overflow-hidden">
+        <img 
+          src="/dashboard-bg.png" 
+          alt="" 
+          className="w-full h-full object-cover scale-105 blur-2xl"
+        />
+      </div>
       {/* Sidebar */}
       <aside 
         style={{ width: sidebarOpen ? `${sidebarWidth}px` : '64px' }}
@@ -282,11 +307,7 @@ const StudentDashboardLayout: React.FC<StudentDashboardLayoutProps & { initialTa
                 <h1 className="text-3xl font-serif font-black text-careermap-navy dark:text-white tracking-tight">
                   {menuItems.find(item => item.id === activeTab)?.label}
                 </h1>
-                {activeTab === 'overview' && (
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
-                    {isFirstVisit ? `Welcome, ${user.name}!` : `Welcome back, ${user.name}!`}
-                  </p>
-                )}
+
               </div>
             </div>
             <div className="flex items-center gap-3">

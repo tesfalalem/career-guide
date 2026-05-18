@@ -244,4 +244,32 @@ class CourseAssignmentController {
             'status' => 'pending'
         ]);
     }
+
+    // ── TEACHER: Get all approved assignments for this teacher ────────────────
+    public function getApprovedAssignments() {
+        $user = $this->getUser();
+        if (!$user || $user['role'] !== 'teacher') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Teacher access required']);
+            return;
+        }
+        $conn = $this->db();
+        $this->ensureTables($conn);
+        $stmt = $conn->prepare("
+            SELECT tca.*, c.title as course_title, c.description as course_description,
+                   c.level, c.category, c.modules
+            FROM teacher_course_assignments tca
+            JOIN courses c ON tca.course_id = c.id
+            WHERE tca.teacher_id = ? AND tca.status = 'approved'
+            ORDER BY c.title ASC
+        ");
+        $stmt->execute([$user['id']]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($rows as &$row) {
+            if ($row && is_string($row['modules'])) {
+                $row['modules'] = json_decode($row['modules'], true);
+            }
+        }
+        echo json_encode($rows);
+    }
 }

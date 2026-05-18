@@ -1,10 +1,10 @@
 class LessonModel {
   final String title;
-  final String content;
+  String content;
   final String duration;
   final bool isCompleted;
 
-  const LessonModel({
+  LessonModel({
     required this.title,
     required this.content,
     required this.duration,
@@ -23,7 +23,7 @@ class CourseModuleModel {
   final String title;
   final List<LessonModel> lessons;
 
-  const CourseModuleModel({required this.title, required this.lessons});
+  CourseModuleModel({required this.title, required this.lessons});
 
   factory CourseModuleModel.fromJson(Map<String, dynamic> json) =>
       CourseModuleModel(
@@ -48,7 +48,7 @@ class CourseModel {
   final int? progress;
   final List<String> completedLessons;
 
-  const CourseModel({
+  CourseModel({
     required this.id,
     required this.title,
     required this.description,

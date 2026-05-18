@@ -309,22 +309,7 @@ class _ResultScreen extends StatelessWidget {
                 style: const TextStyle(
                     color: AppColors.slate400, fontWeight: FontWeight.w600),
               ),
-              if (passed) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '+${(result['score'] as int) * 10} XP Earned',
-                    style: const TextStyle(
-                        color: AppColors.success, fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ],
+
               const SizedBox(height: 40),
               SizedBox(
                 width: double.infinity,

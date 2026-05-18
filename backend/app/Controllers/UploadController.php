@@ -104,9 +104,15 @@ class UploadController {
             return;
         }
 
-        $dir = ($type === 'profile') 
-            ? __DIR__ . '/../../uploads/profiles/' 
-            : __DIR__ . '/../../uploads/course-content/';
+        if ($type === 'profile') {
+            $dir = __DIR__ . '/../../uploads/profiles/';
+        } elseif ($type === 'resource') {
+            $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            $subdir = in_array($ext, ['mp4', 'webm', 'mov', 'mpeg']) ? 'videos/' : 'documents/';
+            $dir = __DIR__ . '/../../uploads/resources/' . $subdir;
+        } else {
+            $dir = __DIR__ . '/../../uploads/course-content/';
+        }
             
         $filepath = $dir . $filename;
 

@@ -65,6 +65,22 @@ final allCoursesProvider = FutureProvider<List<CourseModel>>((ref) async {
   }
 });
 
+// Enroll in a course — returns true on success, false if already enrolled
+Future<bool> enrollInCourse(WidgetRef ref, String courseId) async {
+  final api = ref.read(apiClientProvider);
+  try {
+    final res = await api.post(ApiConstants.courseEnroll(courseId));
+    // 200 = enrolled, 409 = already enrolled (both are fine)
+    return res.statusCode == 200 ||
+        res.statusCode == 201 ||
+        res.statusCode == 409;
+  } catch (e) {
+    // DioException with 409 = already enrolled — treat as success
+    final statusCode = (e as dynamic).response?.statusCode;
+    return statusCode == 409;
+  }
+}
+
 // Assessments for student
 final studentAssessmentsProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {

@@ -30,15 +30,15 @@ class StudentShell extends StatelessWidget {
         label: 'Courses',
         path: '/student/courses'),
     DrawerItem(
+        icon: Icons.work_outline_rounded,
+        activeIcon: Icons.work_rounded,
+        label: 'Careers',
+        path: '/student/careers'),
+    DrawerItem(
         icon: Icons.quiz_outlined,
         activeIcon: Icons.quiz_rounded,
         label: 'Assessments',
         path: '/student/assessments'),
-    DrawerItem(
-        icon: Icons.trending_up_outlined,
-        activeIcon: Icons.trending_up_rounded,
-        label: 'Progress',
-        path: '/student/progress'),
     DrawerItem(
         icon: Icons.person_outline,
         activeIcon: Icons.person_rounded,
@@ -63,19 +63,19 @@ class StudentShell extends StatelessWidget {
         label: 'Courses',
         path: '/student/courses'),
     _NavItem(
+        icon: Icons.work_outline_rounded,
+        activeIcon: Icons.work_rounded,
+        label: 'Careers',
+        path: '/student/careers'),
+    _NavItem(
         icon: Icons.quiz_outlined,
         activeIcon: Icons.quiz_rounded,
         label: 'Assess',
         path: '/student/assessments'),
-    _NavItem(
-        icon: Icons.person_outline,
-        activeIcon: Icons.person_rounded,
-        label: 'Profile',
-        path: '/student/profile'),
   ];
 
   int _activeIndex(String location) {
-    for (int i = 0; i < _navItems.length; i++) {
+    for (int i = _navItems.length - 1; i >= 0; i--) {
       if (location.startsWith(_navItems[i].path)) return i;
     }
     return 0;
