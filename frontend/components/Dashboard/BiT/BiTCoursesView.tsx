@@ -12,7 +12,7 @@ import CreateCourseForRoadmapModal from '../Admin/CreateCourseForRoadmapModal';
 import { CardGridSkeleton } from '../../common/Skeleton';
 import EditCourseModal from './EditCourseModal';
 
-const API = 'http://localhost/careerguide/backend/api';
+const API = 'http://localhost/backup/careerguide/backend/api';
 const token = () => localStorage.getItem('auth_token') || '';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -693,7 +693,7 @@ const BiTCoursesView: React.FC = () => {
           addCourseFn={async (_roadmapId, data) => {
             // Create course without linking to a roadmap — use first available roadmap or standalone
             const token = localStorage.getItem('auth_token');
-            const res = await fetch('http://localhost/careerguide/backend/api/bit/courses/standalone', {
+            const res = await fetch('http://localhost/backup/careerguide/backend/api/bit/courses/standalone', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify(data)

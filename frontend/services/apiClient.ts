@@ -3,7 +3,7 @@
  * Replaces Supabase client for backend communication
  */
 
-const API_BASE_URL = 'http://localhost/careerguide/backend/api';
+import { API_BASE_URL } from '../utils/apiConfig';
 
 // Normalize raw DB user object to match the frontend User interface
 const normalizeUser = (raw: any) => {

@@ -458,7 +458,6 @@ class BitController {
 
         echo json_encode($courses);
     }
-
     public function deleteCourse($id) {
         $this->checkPermission();
 

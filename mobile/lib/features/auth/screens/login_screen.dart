@@ -36,12 +36,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _error = null;
       });
     try {
-      await ref.read(authProvider.notifier).login(
+      final user = await ref.read(authProvider.notifier).login(
             _emailCtrl.text.trim(),
             _passwordCtrl.text,
           );
       // Navigate explicitly after successful login
-      if (mounted) context.go('/student');
+      if (mounted) {
+        if (user.isPending) {
+          context.go('/pending');
+        } else if (user.isTeacher) {
+          context.go('/teacher');
+        } else if (user.isAdmin) {
+          context.go('/admin');
+        } else if (user.isBit) {
+          context.go('/bit');
+        } else {
+          context.go('/student');
+        }
+      }
     } catch (e) {
       if (mounted)
         setState(() => _error = e.toString().replaceAll('Exception: ', ''));

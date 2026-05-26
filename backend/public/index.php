@@ -47,14 +47,15 @@ $allowedOrigins = [
     'http://localhost:57266',
 ];
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-// Allow any device on the BiT university network (10.187.x.x subnet)
-// Also allow any localhost port (Flutter web uses random ports)
+// Allow any localhost port (Flutter web uses random ports)
 $isLocalhost = preg_match('/^http:\/\/localhost(:\d+)?$/', $origin);
-$isBitNetwork = str_starts_with($origin, 'http://10.187.');
-if (in_array($origin, $allowedOrigins) || $isLocalhost || $isBitNetwork) {
+// Allow any device on the same LAN subnets (university network + home/lab networks)
+$isLanDevice = preg_match('/^http:\/\/(10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/', $origin);
+if (in_array($origin, $allowedOrigins) || $isLocalhost || $isLanDevice) {
     header('Access-Control-Allow-Origin: ' . ($origin ?: '*'));
 } else {
-    header('Access-Control-Allow-Origin: http://localhost:3000');
+    // For mobile apps that don't send Origin header, allow all
+    header('Access-Control-Allow-Origin: *');
 }
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');

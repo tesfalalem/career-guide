@@ -83,7 +83,7 @@ async function uploadFile(file: File): Promise<string> {
   const token = localStorage.getItem('auth_token');
   const form = new FormData();
   form.append('file', file);
-  const res = await fetch('http://localhost/careerguide/backend/api/upload', {
+  const res = await fetch('http://localhost/backup/careerguide/backend/api/upload', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },
     body: form
@@ -377,7 +377,7 @@ const CreateCourseForRoadmapModal: React.FC<Props> = ({
       const validQuestions = questions.filter(q => q.question.trim() && q.options.every(o => o.trim()));
       if (validQuestions.length > 0 && result?.course_id) {
         const token = localStorage.getItem('auth_token');
-        await fetch('http://localhost/careerguide/backend/api/assessments', {
+        await fetch('http://localhost/backup/careerguide/backend/api/assessments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({

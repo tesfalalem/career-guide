@@ -5,7 +5,9 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/models/course_model.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../providers/student_providers.dart';
+import 'course_materials_tab.dart';
 
 final _courseDetailProvider =
     FutureProvider.family<CourseModel, String>((ref, id) async {
@@ -172,17 +174,18 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
 }
 
 // ── Course Overview ───────────────────────────────────────────────────────────
-class _CourseOverview extends StatefulWidget {
+class _CourseOverview extends ConsumerStatefulWidget {
   final CourseModel course;
   final void Function(int mIdx, int lIdx) onOpenLesson;
   const _CourseOverview({required this.course, required this.onOpenLesson});
 
   @override
-  State<_CourseOverview> createState() => _CourseOverviewState();
+  ConsumerState<_CourseOverview> createState() => _CourseOverviewState();
 }
 
-class _CourseOverviewState extends State<_CourseOverview> {
+class _CourseOverviewState extends ConsumerState<_CourseOverview> {
   final Set<int> _expanded = {0};
+  int _selectedTab = 0; // 0: Curriculum, 1: Teacher Resources
 
   @override
   Widget build(BuildContext context) {
@@ -306,124 +309,227 @@ class _CourseOverviewState extends State<_CourseOverview> {
 
                 const SizedBox(height: 24),
 
-                // ── Curriculum ──────────────────────────────────────────
-                Text('Course Curriculum',
-                    style: Theme.of(context).textTheme.headlineSmall),
-                const SizedBox(height: 14),
+                if (course.author != 'AI Architect') ...[
+                  _buildTabs(isDark),
+                  const SizedBox(height: 8),
+                ],
 
-                ...course.modules.asMap().entries.map((mEntry) {
-                  final mIdx = mEntry.key;
-                  final module = mEntry.value;
-                  final isExpanded = _expanded.contains(mIdx);
+                if (course.author == 'AI Architect' || _selectedTab == 0) ...[
+                  // ── Curriculum ──────────────────────────────────────────
+                  Text('Course Curriculum',
+                      style: Theme.of(context).textTheme.headlineSmall),
+                  const SizedBox(height: 14),
 
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.slate900 : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isExpanded
-                            ? AppColors.teal.withOpacity(0.3)
-                            : (isDark
-                                ? AppColors.slate800
-                                : AppColors.slate100),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        ListTile(
-                          onTap: () => setState(() {
-                            if (isExpanded)
-                              _expanded.remove(mIdx);
-                            else
-                              _expanded.add(mIdx);
-                          }),
-                          leading: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: isExpanded
-                                  ? AppColors.teal.withOpacity(0.12)
-                                  : AppColors.slate100,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Center(
-                              child: Text('${mIdx + 1}',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 13,
-                                      color: isExpanded
-                                          ? AppColors.teal
-                                          : AppColors.slate500)),
-                            ),
-                          ),
-                          title: Text(module.title,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w700, fontSize: 14)),
-                          subtitle: Text(
-                              '${module.lessons.length} lesson${module.lessons.length != 1 ? 's' : ''}',
-                              style: const TextStyle(
-                                  fontSize: 12, color: AppColors.slate400)),
-                          trailing: AnimatedRotation(
-                            turns: isExpanded ? 0.5 : 0,
-                            duration: const Duration(milliseconds: 200),
-                            child: const Icon(Icons.keyboard_arrow_down_rounded,
-                                color: AppColors.slate400),
-                          ),
+                  ...course.modules.asMap().entries.map((mEntry) {
+                    final mIdx = mEntry.key;
+                    final module = mEntry.value;
+                    final isExpanded = _expanded.contains(mIdx);
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.slate900 : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isExpanded
+                              ? AppColors.teal.withOpacity(0.3)
+                              : (isDark
+                                  ? AppColors.slate800
+                                  : AppColors.slate100),
                         ),
-                        if (isExpanded) ...[
-                          const Divider(height: 1),
-                          ...module.lessons.asMap().entries.map((lEntry) {
-                            final lIdx = lEntry.key;
-                            final lesson = lEntry.value;
-                            final isCompleted = course.completedLessons.contains(lesson.title);
-                            return ListTile(
-                              onTap: () => widget.onOpenLesson(mIdx, lIdx),
-                              leading: Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: isCompleted
-                                      ? AppColors.success.withOpacity(0.12)
-                                      : AppColors.teal.withOpacity(0.08),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                    isCompleted
-                                        ? Icons.check_circle_rounded
-                                        : Icons.play_circle_outline_rounded,
-                                    color: isCompleted
-                                        ? AppColors.success
-                                        : AppColors.teal,
-                                    size: 18),
+                      ),
+                      child: Column(
+                        children: [
+                          ListTile(
+                            onTap: () => setState(() {
+                              if (isExpanded)
+                                _expanded.remove(mIdx);
+                              else
+                                _expanded.add(mIdx);
+                            }),
+                            leading: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: isExpanded
+                                    ? AppColors.teal.withOpacity(0.12)
+                                    : AppColors.slate100,
+                                borderRadius: BorderRadius.circular(10),
                               ),
-                              title: Text(lesson.title,
-                                  style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      decoration: isCompleted
-                                          ? TextDecoration.lineThrough
-                                          : null,
+                              child: Center(
+                                child: Text('${mIdx + 1}',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 13,
+                                        color: isExpanded
+                                            ? AppColors.teal
+                                            : AppColors.slate500)),
+                              ),
+                            ),
+                            title: Text(module.title,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w700, fontSize: 14)),
+                            subtitle: Text(
+                                '${module.lessons.length} lesson${module.lessons.length != 1 ? 's' : ''}',
+                                style: const TextStyle(
+                                    fontSize: 12, color: AppColors.slate400)),
+                            trailing: AnimatedRotation(
+                              turns: isExpanded ? 0.5 : 0,
+                              duration: const Duration(milliseconds: 200),
+                              child: const Icon(Icons.keyboard_arrow_down_rounded,
+                                  color: AppColors.slate400),
+                            ),
+                          ),
+                          if (isExpanded) ...[
+                            const Divider(height: 1),
+                            ...module.lessons.asMap().entries.map((lEntry) {
+                              final lIdx = lEntry.key;
+                              final lesson = lEntry.value;
+                              final isCompleted = course.completedLessons.contains(lesson.title);
+                              return ListTile(
+                                onTap: () => widget.onOpenLesson(mIdx, lIdx),
+                                leading: Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: isCompleted
+                                        ? AppColors.success.withOpacity(0.12)
+                                        : AppColors.teal.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                      isCompleted
+                                          ? Icons.check_circle_rounded
+                                          : Icons.play_circle_outline_rounded,
                                       color: isCompleted
-                                          ? AppColors.slate400
-                                          : null)),
-                              subtitle: Text(lesson.duration,
-                                  style: const TextStyle(
-                                      fontSize: 11, color: AppColors.slate400)),
-                              trailing: const Icon(
-                                  Icons.arrow_forward_ios_rounded,
-                                  size: 12,
-                                  color: AppColors.teal),
-                            );
-                          }),
+                                          ? AppColors.success
+                                          : AppColors.teal,
+                                      size: 18),
+                                ),
+                                title: Text(lesson.title,
+                                    style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        decoration: isCompleted
+                                            ? TextDecoration.lineThrough
+                                            : null,
+                                        color: isCompleted
+                                            ? AppColors.slate400
+                                            : null)),
+                                subtitle: Text(lesson.duration,
+                                    style: const TextStyle(
+                                        fontSize: 11, color: AppColors.slate400)),
+                                trailing: const Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    size: 12,
+                                    color: AppColors.teal),
+                              );
+                            }),
+                          ],
                         ],
-                      ],
-                    ),
-                  );
-                }),
+                      ),
+                    );
+                  }),
+                ] else ...[
+                  Builder(
+                    builder: (context) {
+                      final user = ref.watch(currentUserProvider);
+                      final isTeacherOrAdmin = user != null && (user.isTeacher || user.isAdmin);
+                      return CourseMaterialsTab(
+                        course: course,
+                        isTeacherOrAdmin: isTeacherOrAdmin,
+                      );
+                    },
+                  ),
+                ],
 
                 const SizedBox(height: 20),
               ]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabs(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.slate900 : AppColors.slate100,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedTab = 0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: _selectedTab == 0
+                      ? (isDark ? AppColors.slate800 : Colors.white)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: _selectedTab == 0 && !isDark
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          )
+                        ]
+                      : null,
+                ),
+                child: Center(
+                  child: Text(
+                    'Curriculum',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: _selectedTab == 0
+                          ? (isDark ? Colors.white : AppColors.navy)
+                          : AppColors.slate400,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedTab = 1),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: _selectedTab == 1
+                      ? (isDark ? AppColors.slate800 : Colors.white)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: _selectedTab == 1 && !isDark
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          )
+                        ]
+                      : null,
+                ),
+                child: Center(
+                  child: Text(
+                    'Teacher Resources',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: _selectedTab == 1
+                          ? (isDark ? Colors.white : AppColors.navy)
+                          : AppColors.slate400,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ],

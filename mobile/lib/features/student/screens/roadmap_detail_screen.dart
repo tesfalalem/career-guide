@@ -22,6 +22,40 @@ String _stripHtml(String html) {
       .trim();
 }
 
+/// Parse HTML list items (<li>) or <p>/<div> blocks into plain text strings.
+/// Used to render BiT phase descriptions as bullet points.
+List<String> _parseHtmlListItems(String html) {
+  if (html.isEmpty) return [];
+
+  // Try <li> items first
+  final liMatches = RegExp(r'<li[^>]*>([\s\S]*?)<\/li>', caseSensitive: false)
+      .allMatches(html);
+  if (liMatches.isNotEmpty) {
+    return liMatches
+        .map((m) => _stripHtml(m.group(1) ?? ''))
+        .where((s) => s.isNotEmpty)
+        .toList();
+  }
+
+  // Fall back to <p> or <div> blocks
+  final blockMatches =
+      RegExp(r'<(?:p|div)[^>]*>([\s\S]*?)<\/(?:p|div)>', caseSensitive: false)
+          .allMatches(html);
+  if (blockMatches.isNotEmpty) {
+    return blockMatches
+        .map((m) => _stripHtml(m.group(1) ?? ''))
+        .where((s) => s.isNotEmpty)
+        .toList();
+  }
+
+  // Last resort: split by <br>
+  return html
+      .split(RegExp(r'<br\s*/?>', caseSensitive: false))
+      .map((s) => _stripHtml(s))
+      .where((s) => s.isNotEmpty)
+      .toList();
+}
+
 class RoadmapDetailScreen extends ConsumerStatefulWidget {
   final String id;
   const RoadmapDetailScreen({super.key, required this.id});
@@ -289,12 +323,13 @@ class _RoadmapDetailScreenState extends ConsumerState<RoadmapDetailScreen> {
                                     fontSize: 13,
                                   )),
                             ),
-                            title: Text(phase.title,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w700, fontSize: 14)),
-                            subtitle: Text(phase.duration,
-                                style: const TextStyle(
-                                    fontSize: 12, color: AppColors.slate400)),
+                            title: _PhaseTitle(rawTitle: phase.title),
+                            subtitle: phase.duration.isNotEmpty
+                                ? Text(phase.duration,
+                                    style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.slate400))
+                                : null,
                             trailing: AnimatedRotation(
                               turns: isExpanded ? 0.5 : 0,
                               duration: const Duration(milliseconds: 200),
@@ -320,7 +355,7 @@ class _RoadmapDetailScreenState extends ConsumerState<RoadmapDetailScreen> {
                                     const SizedBox(height: 12),
                                     ...phase.topics.map((topic) => Padding(
                                           padding:
-                                              const EdgeInsets.only(bottom: 8),
+                                              const EdgeInsets.only(bottom: 12),
                                           child: Row(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
@@ -329,22 +364,94 @@ class _RoadmapDetailScreenState extends ConsumerState<RoadmapDetailScreen> {
                                                 width: 6,
                                                 height: 6,
                                                 margin: const EdgeInsets.only(
-                                                    top: 5, right: 10),
+                                                    top: 6, right: 10),
                                                 decoration: const BoxDecoration(
                                                   color: AppColors.teal,
                                                   shape: BoxShape.circle,
                                                 ),
                                               ),
                                               Expanded(
-                                                child: Text(topic.title,
-                                                    style: const TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        fontSize: 13)),
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(topic.title,
+                                                        style: const TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            fontSize: 13,
+                                                            color: AppColors.slate700)),
+                                                    if (topic.concepts.isNotEmpty) ...[
+                                                      const SizedBox(height: 4),
+                                                      Padding(
+                                                        padding: const EdgeInsets.only(left: 4),
+                                                        child: Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment.start,
+                                                          children: topic.concepts.map((concept) => Padding(
+                                                            padding: const EdgeInsets.only(top: 4),
+                                                            child: Row(
+                                                              crossAxisAlignment:
+                                                                  CrossAxisAlignment.start,
+                                                              children: [
+                                                                const Text('• ',
+                                                                    style: TextStyle(
+                                                                        color: AppColors.teal,
+                                                                        fontSize: 12,
+                                                                        fontWeight: FontWeight.bold)),
+                                                                Expanded(
+                                                                  child: Text(
+                                                                    concept,
+                                                                    style: const TextStyle(
+                                                                        fontSize: 12,
+                                                                        color: AppColors.slate500,
+                                                                        height: 1.4),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          )).toList(),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ],
+                                                ),
                                               ),
                                             ],
                                           ),
                                         )),
+                                  ] else if (phase.description.isNotEmpty) ...[
+                                    // BiT phases: parse HTML list items as topic bullets
+                                    ..._parseHtmlListItems(phase.description)
+                                        .map(
+                                      (item) => Padding(
+                                        padding:
+                                            const EdgeInsets.only(bottom: 8),
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Container(
+                                              width: 6,
+                                              height: 6,
+                                              margin: const EdgeInsets.only(
+                                                  top: 5, right: 10),
+                                              decoration: const BoxDecoration(
+                                                color: AppColors.teal,
+                                                shape: BoxShape.circle,
+                                              ),
+                                            ),
+                                            Expanded(
+                                              child: Text(item,
+                                                  style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize: 13)),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
                                   ],
                                 ],
                               ),
@@ -406,6 +513,64 @@ class _MetaItem extends StatelessWidget {
                 color: AppColors.slate400,
                 fontWeight: FontWeight.w600)),
       ],
+    );
+  }
+}
+
+class _PhaseTitle extends StatelessWidget {
+  final String rawTitle;
+  const _PhaseTitle({required this.rawTitle});
+
+  @override
+  Widget build(BuildContext context) {
+    // Check if the title starts with an institutional level label like "[Beginner]"
+    final match = RegExp(r'^\[([^\]]+)\]\s*(.*)$').firstMatch(rawTitle);
+    if (match != null) {
+      final level = match.group(1) ?? '';
+      final title = match.group(2) ?? '';
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.teal.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: AppColors.teal.withOpacity(0.25),
+                width: 0.8,
+              ),
+            ),
+            child: Text(
+              level.toUpperCase(),
+              style: const TextStyle(
+                color: AppColors.teal,
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Text(
+      rawTitle,
+      style: const TextStyle(
+        fontWeight: FontWeight.w700,
+        fontSize: 14,
+      ),
     );
   }
 }

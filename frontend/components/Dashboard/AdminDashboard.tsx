@@ -43,7 +43,7 @@ const AdminDashboard: React.FC = () => {
 
     try {
       if (activeTab === 'overview') {
-        const response = await fetch('http://localhost/careerguide/backend/api/admin/analytics', {
+        const response = await fetch('http://localhost/backup/careerguide/backend/api/admin/analytics', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -51,7 +51,7 @@ const AdminDashboard: React.FC = () => {
           setAnalytics(data);
         }
       } else if (activeTab === 'users') {
-        const response = await fetch('http://localhost/careerguide/backend/api/admin/users', {
+        const response = await fetch('http://localhost/backup/careerguide/backend/api/admin/users', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -59,7 +59,7 @@ const AdminDashboard: React.FC = () => {
           setUsers(data);
         }
       } else if (activeTab === 'resources') {
-        const response = await fetch('http://localhost/careerguide/backend/api/admin/resources/pending', {
+        const response = await fetch('http://localhost/backup/careerguide/backend/api/admin/resources/pending', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -77,7 +77,7 @@ const AdminDashboard: React.FC = () => {
   const handleRoleChange = async (userId: number, newRole: string) => {
     const token = localStorage.getItem('auth_token');
     try {
-      const response = await fetch(`http://localhost/careerguide/backend/api/admin/users/${userId}/role`, {
+      const response = await fetch(`http://localhost/backup/careerguide/backend/api/admin/users/${userId}/role`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -97,7 +97,7 @@ const AdminDashboard: React.FC = () => {
   const handleResourceAction = async (resourceId: number, action: 'approve' | 'reject') => {
     const token = localStorage.getItem('auth_token');
     try {
-      const response = await fetch(`http://localhost/careerguide/backend/api/admin/resources/${resourceId}/${action}`, {
+      const response = await fetch(`http://localhost/backup/careerguide/backend/api/admin/resources/${resourceId}/${action}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });

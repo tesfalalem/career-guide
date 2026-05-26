@@ -129,7 +129,17 @@ class CourseAssignmentController {
         $user = $this->getUser();
         if (!$user) { http_response_code(401); echo json_encode(['error'=>'Unauthorized']); return; }
         $conn = $this->db(); $this->ensureTables($conn);
-        $stmt = $conn->query("SELECT c.id,c.title,c.description,c.category,c.level,c.duration,c.rating,c.enrolled_count,c.modules,GROUP_CONCAT(DISTINCT u.name ORDER BY u.name SEPARATOR ', ') as teachers FROM courses c LEFT JOIN teacher_course_assignments tca ON tca.course_id=c.id AND tca.status='approved' LEFT JOIN users u ON u.id=tca.teacher_id GROUP BY c.id ORDER BY c.created_at DESC");
+        $stmt = $conn->query("
+            SELECT c.id, c.title, c.description, c.category, c.level,
+                   c.duration, c.rating, c.enrolled_count, c.modules,
+                   GROUP_CONCAT(DISTINCT u.name ORDER BY u.name SEPARATOR ', ') as teachers
+            FROM courses c
+            LEFT JOIN teacher_course_assignments tca ON tca.course_id = c.id AND tca.status = 'approved'
+            LEFT JOIN users u ON u.id = tca.teacher_id
+            GROUP BY c.id, c.title, c.description, c.category, c.level,
+                     c.duration, c.rating, c.enrolled_count, c.modules
+            ORDER BY c.created_at DESC
+        ");
         $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
         foreach ($courses as &$c) {
             if (is_string($c['modules'])) $c['modules'] = json_decode($c['modules'], true);
@@ -175,7 +185,8 @@ class CourseAssignmentController {
             LEFT JOIN users u2 ON u2.id = tca.teacher_id
             WHERE (u.role = 'bit' OR u.role = 'admin')
               AND (c.author != 'AI Architect' OR c.author IS NULL)
-            GROUP BY c.id
+            GROUP BY c.id, c.title, c.description, c.category, c.level,
+                     c.duration, c.rating, c.enrolled_count, c.modules, u.name
             ORDER BY c.created_at DESC
         ");
 

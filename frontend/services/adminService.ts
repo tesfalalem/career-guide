@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost/careerguide/backend/api';
+import { API_BASE_URL } from '../utils/apiConfig';
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('auth_token');

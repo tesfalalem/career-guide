@@ -24,7 +24,7 @@ class CareersController {
                     description TEXT NOT NULL,
                     category VARCHAR(100) NOT NULL DEFAULT 'General',
                     required_skills JSON DEFAULT NULL,
-                    status ENUM('draft','published') NOT NULL DEFAULT 'draft',
+                    status ENUM('draft','published') NOT NULL DEFAULT 'published',
                     created_by INT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -158,7 +158,7 @@ class CareersController {
                 trim($data['category'] ?? 'General'),
                 !empty($data['thumbnail_url']) ? trim($data['thumbnail_url']) : null,
                 json_encode($skills),
-                in_array($data['status'] ?? '', ['draft', 'published']) ? $data['status'] : 'draft',
+                in_array($data['status'] ?? '', ['draft', 'published']) ? $data['status'] : 'published',
                 $user['id'],
             ]);
 

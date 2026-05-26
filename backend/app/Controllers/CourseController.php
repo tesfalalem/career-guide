@@ -17,19 +17,23 @@ class CourseController {
     }
 
     private function ensureEnrollmentColumns() {
-        $db = new Database();
-        $conn = $db->getConnection();
-        
-        // Check if progress column exists
-        $stmt = $conn->query("SHOW COLUMNS FROM course_enrollments LIKE 'progress'");
-        if ($stmt->rowCount() == 0) {
-            $conn->exec("ALTER TABLE course_enrollments ADD COLUMN progress INT DEFAULT 0");
-        }
-        
-        // Check if completed_lessons column exists
-        $stmt = $conn->query("SHOW COLUMNS FROM course_enrollments LIKE 'completed_lessons'");
-        if ($stmt->rowCount() == 0) {
-            $conn->exec("ALTER TABLE course_enrollments ADD COLUMN completed_lessons JSON DEFAULT NULL");
+        try {
+            $db = new Database();
+            $conn = $db->getConnection();
+            
+            // Check if progress column exists
+            $stmt = $conn->query("SHOW COLUMNS FROM course_enrollments LIKE 'progress'");
+            if ($stmt->rowCount() == 0) {
+                $conn->exec("ALTER TABLE course_enrollments ADD COLUMN progress INT DEFAULT 0");
+            }
+            
+            // Check if completed_lessons column exists
+            $stmt = $conn->query("SHOW COLUMNS FROM course_enrollments LIKE 'completed_lessons'");
+            if ($stmt->rowCount() == 0) {
+                $conn->exec("ALTER TABLE course_enrollments ADD COLUMN completed_lessons JSON DEFAULT NULL");
+            }
+        } catch (\Exception $e) {
+            // Table may not exist yet — safe to ignore, will be created by migration
         }
     }
 

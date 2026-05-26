@@ -1,42 +1,43 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 
 class ApiConstants {
   // ── Base URL ───────────────────────────────────────────────────────────────
   //
-  // The backend runs on XAMPP Apache (port 80) at:
+  // Backend runs on XAMPP Apache (port 80) at:
   //   http://<host>/careerguide/backend/api
   //
-  // • Web (Chrome dev)      → localhost
-  // • Android emulator      → 10.0.2.2  (maps to host machine's localhost)
-  // • Physical Android device → use your machine's LAN IP, e.g. 192.168.x.x
+  // • Web (Chrome dev)     → localhost
+  // • Android emulator     → 10.0.2.2  (maps to host machine's localhost)
+  // • Physical device      → machine's LAN IP (set _physicalDeviceIp below)
   //
-  // To use a physical device, change _physicalDeviceIp to your PC's local IP.
-  // Find it with: ipconfig (Windows) → "IPv4 Address" under your Wi-Fi adapter.
+  // ⚠ Run `ipconfig` (Windows) to find your PC's LAN IP and update below.
 
-  static const String _physicalDeviceIp =
-      '10.187.1.1'; // ← change to your PC's LAN IP
+  static const String _physicalDeviceIp = '10.161.174.178';
+  static const String _backendPath = '/careerguide/backend/api';
 
   static String get baseUrl {
     if (kIsWeb) {
-      return 'http://localhost/careerguide/backend/api';
+      return 'http://localhost$_backendPath';
     }
-    // Android emulator uses 10.0.2.2 to reach host machine
-    // Physical device needs the actual LAN IP
-    const emulatorHost = '10.0.2.2';
-    return 'http://$emulatorHost/careerguide/backend/api';
+    try {
+      if (Platform.isAndroid || Platform.isIOS) {
+        return 'http://$_physicalDeviceIp$_backendPath';
+      }
+    } catch (_) {}
+    return 'http://$_physicalDeviceIp$_backendPath';
   }
 
-  /// Use this URL when running on a physical device connected to the same Wi-Fi.
-  /// Call ApiConstants.physicalDeviceUrl instead of baseUrl in that case.
-  static String get physicalDeviceUrl {
-    return 'http://$_physicalDeviceIp/careerguide/backend/api';
-  }
+  /// Use this when running on Android emulator (maps 10.0.2.2 → host localhost).
+  static String get emulatorUrl => 'http://10.0.2.2$_backendPath';
 
   // ── Auth ───────────────────────────────────────────────────────────────────
   static const String login = '/auth/login';
   static const String register = '/auth/register';
   static const String logout = '/auth/logout';
   static const String refreshToken = '/auth/refresh-token';
+  static const String forgotPassword = '/auth/forgot-password';
+  static const String resetPassword = '/auth/reset-password';
 
   // ── User ───────────────────────────────────────────────────────────────────
   static const String profile = '/users/profile';

@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../Models/CuratedRoadmap.php';
+require_once __DIR__ . '/../Models/User.php';
 require_once __DIR__ . '/../Helpers/JWTHelper.php';
 
 class CuratedRoadmapController {

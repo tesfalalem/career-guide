@@ -4,7 +4,7 @@ import {
   GraduationCap, ArrowRight, Users, Info
 } from 'lucide-react';
 
-const API = 'http://localhost/careerguide/backend/api';
+const API = 'http://localhost/backup/careerguide/backend/api';
 const token = () => localStorage.getItem('auth_token') || '';
 
 interface Course {

@@ -1,7 +1,6 @@
 // Centralized API service with automatic auth handling
 import { authHelper } from '../utils/authHelper';
-
-const API_BASE_URL = 'http://localhost/careerguide/backend/api';
+import { API_BASE_URL } from '../utils/apiConfig';
 
 interface RequestOptions extends RequestInit {
   skipAuth?: boolean;

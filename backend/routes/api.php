@@ -25,12 +25,13 @@ class Router {
         $this->routes['GET']['/api/users/activity'] = 'UserController@getActivity';
 
         // Course Routes
+        // NOTE: static sub-paths must come BEFORE dynamic /:id to avoid shadowing in matchDynamicRoute
         $this->routes['GET']['/api/courses'] = 'CourseController@index';
-        $this->routes['GET']['/api/courses/:id'] = 'CourseController@show';
         $this->routes['POST']['/api/courses/generate'] = 'CourseController@generate';
+        $this->routes['GET']['/api/users/courses'] = 'CourseController@userCourses';
+        $this->routes['GET']['/api/courses/:id'] = 'CourseController@show';
         $this->routes['POST']['/api/courses/:id/enroll'] = 'CourseController@enroll';
         $this->routes['DELETE']['/api/courses/:id/unenroll'] = 'CourseController@unenroll';
-        $this->routes['GET']['/api/users/courses'] = 'CourseController@userCourses';
         $this->routes['PUT']['/api/courses/:id/progress'] = 'CourseController@updateProgress';
 
         // Roadmap Routes
@@ -56,17 +57,20 @@ class Router {
         $this->routes['POST']['/api/bit/roadmaps/:id/course'] = 'BitController@addCourseToRoadmap';
         $this->routes['GET']['/api/bit/courses'] = 'BitController@getCourses';
         $this->routes['POST']['/api/bit/courses/standalone'] = 'BitController@createStandaloneCourse';
+        $this->routes['GET']['/api/bit/courses/:id'] = 'BitController@getCourse';
+        $this->routes['PUT']['/api/bit/courses/:id'] = 'BitController@updateCourse';
         $this->routes['DELETE']['/api/bit/courses/:id'] = 'BitController@deleteCourse';
         $this->routes['GET']['/api/bit/analytics'] = 'BitController@getAnalytics';
 
-        // Admin Resource Management (moderation only ÔÇö no roadmap/course creation)
+        // Admin Resource Management (moderation only — no roadmap/course creation)
+        // NOTE: static routes must be registered BEFORE dynamic /:id routes to avoid shadowing
         $this->routes['POST']['/api/admin/resources'] = 'AdminController@createResource';
         $this->routes['GET']['/api/admin/resources'] = 'AdminController@getResources';
+        $this->routes['GET']['/api/admin/resources/pending'] = 'AdminController@getPendingResources';
         $this->routes['PUT']['/api/admin/resources/:id'] = 'AdminController@updateResource';
         $this->routes['DELETE']['/api/admin/resources/:id'] = 'AdminController@deleteResource';
         $this->routes['POST']['/api/admin/resources/:id/approve'] = 'AdminController@approveResource';
         $this->routes['POST']['/api/admin/resources/:id/reject'] = 'AdminController@rejectResource';
-        $this->routes['GET']['/api/admin/resources/pending'] = 'AdminController@getPendingResources';
 
         // Admin User Management
         $this->routes['GET']['/api/admin/users'] = 'AdminController@getAllUsers';
@@ -81,10 +85,11 @@ class Router {
         $this->routes['GET']['/api/admin/analytics'] = 'AdminController@getAnalytics';
 
         // Public Curated Roadmaps (for students)
+        // NOTE: static routes must be registered BEFORE dynamic /:id routes to avoid shadowing
         $this->routes['GET']['/api/curated-roadmaps'] = 'CuratedRoadmapController@browse';
+        $this->routes['GET']['/api/curated-roadmaps/categories'] = 'CuratedRoadmapController@getCategories';
         $this->routes['GET']['/api/curated-roadmaps/:id'] = 'CuratedRoadmapController@view';
         $this->routes['POST']['/api/curated-roadmaps/:id/enroll'] = 'CuratedRoadmapController@enroll';
-        $this->routes['GET']['/api/curated-roadmaps/categories'] = 'CuratedRoadmapController@getCategories';
         $this->routes['GET']['/api/curated-roadmaps/:id/resources'] = 'CuratedRoadmapController@getResources';
         $this->routes['GET']['/api/curated-roadmaps/:id/courses'] = 'CuratedRoadmapController@getCourses';
 
@@ -95,11 +100,12 @@ class Router {
         $this->routes['POST']['/api/resources/:id/download'] = 'ResourceController@download';
 
         // Teacher Resource Management
+        // NOTE: static sub-paths must come BEFORE dynamic /:id to avoid shadowing in matchDynamicRoute
         $this->routes['GET']['/api/teacher/resources'] = 'ResourceController@getMyResources';
+        $this->routes['GET']['/api/teacher/resources/stats'] = 'ResourceController@getStats';
         $this->routes['POST']['/api/teacher/resources'] = 'ResourceController@create';
         $this->routes['PUT']['/api/teacher/resources/:id'] = 'ResourceController@update';
         $this->routes['DELETE']['/api/teacher/resources/:id'] = 'ResourceController@delete';
-        $this->routes['GET']['/api/teacher/resources/stats'] = 'ResourceController@getStats';
         
         // Resource-Roadmap Matching
         $this->routes['GET']['/api/resources/:id/roadmaps'] = 'ResourceController@getMatchedRoadmaps';
@@ -130,18 +136,19 @@ class Router {
         $this->routes['PUT']['/api/teacher/settings'] = 'TeacherController@updateSettings';
         
         // Course Assignment System
+        // NOTE: static sub-paths must come BEFORE dynamic /:id to avoid shadowing in matchDynamicRoute
         $this->routes['POST']['/api/course-assignments/request'] = 'CourseAssignmentController@requestAssignment';
+        $this->routes['POST']['/api/course-assignments/request-multiple'] = 'CourseAssignmentController@requestMultipleAssignments';
+        $this->routes['POST']['/api/course-assignments/enroll'] = 'CourseAssignmentController@studentEnroll';
         $this->routes['GET']['/api/course-assignments/my'] = 'CourseAssignmentController@getMyAssignment';
         $this->routes['GET']['/api/course-assignments/approved'] = 'CourseAssignmentController@getApprovedAssignments';
         $this->routes['GET']['/api/course-assignments/pending'] = 'CourseAssignmentController@getPendingAssignments';
         $this->routes['GET']['/api/course-assignments/all'] = 'CourseAssignmentController@getAllAssignments';
-        $this->routes['POST']['/api/course-assignments/:id/approve'] = 'CourseAssignmentController@approveAssignment';
-        $this->routes['POST']['/api/course-assignments/:id/reject'] = 'CourseAssignmentController@rejectAssignment';
-        $this->routes['POST']['/api/course-assignments/enroll'] = 'CourseAssignmentController@studentEnroll';
         $this->routes['GET']['/api/course-assignments/available'] = 'CourseAssignmentController@getAvailableCourses';
         $this->routes['GET']['/api/course-assignments/available-bit'] = 'CourseAssignmentController@getBitCourses';
-        $this->routes['POST']['/api/course-assignments/request-multiple'] = 'CourseAssignmentController@requestMultipleAssignments';
         $this->routes['GET']['/api/course-assignments/my-students'] = 'CourseAssignmentController@getMyStudents';
+        $this->routes['POST']['/api/course-assignments/:id/approve'] = 'CourseAssignmentController@approveAssignment';
+        $this->routes['POST']['/api/course-assignments/:id/reject'] = 'CourseAssignmentController@rejectAssignment';
 
         // Teacher Course-Specific Materials Management
         $this->routes['GET']['/api/teacher/courses/:id/materials'] = 'ResourceController@getCourseMaterials';
@@ -164,11 +171,14 @@ class Router {
         $this->routes['POST']['/api/bit/careers/:id/unpublish'] = 'CareersController@unpublish';
 
         // Careers — Public (students, published only)
+        // NOTE: static routes must be registered BEFORE dynamic /:id routes to avoid shadowing
         $this->routes['GET']['/api/careers']             = 'CareersController@publicIndex';
         $this->routes['GET']['/api/careers/categories']  = 'CareersController@publicCategories';
         $this->routes['GET']['/api/careers/:id']         = 'CareersController@publicShow';
 
+
         // Assessment Routes
+        // NOTE: static sub-paths must come BEFORE dynamic /:id to avoid shadowing in matchDynamicRoute
         $this->routes['POST']['/api/assessments'] = 'AssessmentController@create';
         $this->routes['GET']['/api/assessments'] = 'AssessmentController@getForStudent';
         $this->routes['GET']['/api/assessments/course/:id'] = 'AssessmentController@getByCourse';
@@ -178,13 +188,14 @@ class Router {
         $this->routes['DELETE']['/api/assessments/:id'] = 'AssessmentController@delete';
 
         // Notification Routes
+        // NOTE: static sub-paths must come BEFORE dynamic /:id to avoid shadowing in matchDynamicRoute
         $this->routes['GET']['/api/notifications'] = 'NotificationController@getNotifications';
         $this->routes['GET']['/api/notifications/unread-count'] = 'NotificationController@getUnreadCount';
-        $this->routes['PUT']['/api/notifications/:id/read'] = 'NotificationController@markAsRead';
-        $this->routes['PUT']['/api/notifications/mark-all-read'] = 'NotificationController@markAllAsRead';
-        $this->routes['DELETE']['/api/notifications/:id'] = 'NotificationController@deleteNotification';
         $this->routes['GET']['/api/notifications/preferences'] = 'NotificationController@getPreferences';
+        $this->routes['PUT']['/api/notifications/mark-all-read'] = 'NotificationController@markAllAsRead';
         $this->routes['PUT']['/api/notifications/preferences'] = 'NotificationController@updatePreferences';
+        $this->routes['PUT']['/api/notifications/:id/read'] = 'NotificationController@markAsRead';
+        $this->routes['DELETE']['/api/notifications/:id'] = 'NotificationController@deleteNotification';
 
         // Support Chat Routes
         $this->routes['GET']['/api/support/messages'] = 'SupportController@getMessages';
@@ -206,17 +217,24 @@ class Router {
         $apiPos = strpos($fullUri, '/api');
         $uri = ($apiPos !== false) ? substr($fullUri, $apiPos) : $fullUri;
 
-        // Find matching route
+        // 1. Try exact static match first
         if (isset($this->routes[$method][$uri])) {
             $this->callController($this->routes[$method][$uri]);
-        } else {
-            // Try dynamic routes with parameters
-            $this->matchDynamicRoute($method, $uri);
+            return;
         }
+
+        // 2. Try dynamic routes — but skip routes that have no parameters (no colon)
+        //    to avoid matching a static-looking path against a dynamic pattern
+        $this->matchDynamicRoute($method, $uri);
     }
 
     private function matchDynamicRoute($method, $uri) {
+        // Separate routes into static (no params) and dynamic (has params)
+        // Try dynamic routes only — static ones were already checked in dispatch()
         foreach ($this->routes[$method] ?? [] as $route => $handler) {
+            // Skip routes with no parameters — they were already checked as exact matches
+            if (strpos($route, ':') === false) continue;
+
             $pattern = preg_replace('/:\w+/', '([^/]+)', $route);
             $pattern = '#^' . $pattern . '$#';
 

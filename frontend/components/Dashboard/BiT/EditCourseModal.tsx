@@ -30,7 +30,7 @@ const SYSTEM_CATEGORIES = [
   'Other'
 ];
 
-const API = 'http://localhost/careerguide/backend/api';
+const API = 'http://localhost/backup/careerguide/backend/api';
 const token = () => localStorage.getItem('auth_token') || '';
 
 // ── Types ─────────────────────────────────────────────────────────────────────

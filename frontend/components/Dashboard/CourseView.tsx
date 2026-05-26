@@ -12,7 +12,7 @@ import { enrollInCourse } from '../../services/courseService';
 import StudentMaterialsTab from './StudentMaterialsTab';
 import TeacherMaterialsTab from './Teacher/TeacherMaterialsTab';
 
-const API_BASE = 'http://localhost/careerguide/backend/api';
+const API_BASE = 'http://localhost/backup/careerguide/backend/api';
 
 interface CourseViewProps {
   initialCourseData?: Course;
@@ -22,7 +22,7 @@ interface CourseViewProps {
 }
 
 // ── Block Renderer ────────────────────────────────────────────────────────────
-const SERVE_BASE = 'http://localhost/careerguide/backend';
+const SERVE_BASE = 'http://localhost/backup/careerguide/backend';
 
 // Resolve any URL — handles real URLs and legacy [UPLOADED:filename] format
 const resolveUrl = (raw: string | undefined): string | null => {

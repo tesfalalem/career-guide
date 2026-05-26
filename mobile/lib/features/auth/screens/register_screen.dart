@@ -45,7 +45,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         _error = null;
       });
     try {
-      await ref.read(authProvider.notifier).register({
+      final user = await ref.read(authProvider.notifier).register({
         'name': _nameCtrl.text.trim(),
         'email': _emailCtrl.text.trim().toLowerCase(),
         'password': _passwordCtrl.text,
@@ -54,7 +54,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         'student_id': _studentIdCtrl.text.trim(),
       });
       // Navigate explicitly after successful registration
-      if (mounted) context.go('/student');
+      if (mounted) {
+        if (user.isPending) {
+          context.go('/pending');
+        } else if (user.isTeacher) {
+          context.go('/teacher');
+        } else if (user.isAdmin) {
+          context.go('/admin');
+        } else if (user.isBit) {
+          context.go('/bit');
+        } else {
+          context.go('/student');
+        }
+      }
     } catch (e) {
       if (mounted)
         setState(() => _error = e.toString().replaceAll('Exception: ', ''));

@@ -21,7 +21,7 @@ interface QuizResult {
   results: { question_id: number; selected: number; correct_answer: number; is_correct: boolean; explanation: string }[];
 }
 
-const API = 'http://localhost/careerguide/backend/api';
+const API = 'http://localhost/backup/careerguide/backend/api';
 const token = () => localStorage.getItem('auth_token');
 
 const AssessmentView: React.FC<AssessmentViewProps> = ({ userId }) => {

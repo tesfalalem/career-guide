@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost/careerguide/backend/api';
+import { API_BASE_URL } from '../utils/apiConfig';
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('auth_token');
@@ -72,6 +72,22 @@ export const bitService = {
   // Courses
   async getCourses() {
     return handleResponse(await fetch(`${API_BASE_URL}/bit/courses`, { headers: getAuthHeaders() }));
+  },
+
+  async getCourse(id: number) {
+    return handleResponse(await fetch(`${API_BASE_URL}/bit/courses/${id}`, { headers: getAuthHeaders() }));
+  },
+
+  async createStandaloneCourse(data: any) {
+    return handleResponse(await fetch(`${API_BASE_URL}/bit/courses/standalone`, {
+      method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(data)
+    }));
+  },
+
+  async updateCourse(id: number, data: any) {
+    return handleResponse(await fetch(`${API_BASE_URL}/bit/courses/${id}`, {
+      method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(data)
+    }));
   },
 
   async deleteCourse(id: number) {

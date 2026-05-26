@@ -85,7 +85,7 @@ const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps & { initialTab?: 
 
   const fetchPendingApprovalsCount = async () => {
     try {
-      const response = await fetch('http://localhost/careerguide/backend/api/admin/approvals/pending', {
+      const response = await fetch('http://localhost/backup/careerguide/backend/api/admin/approvals/pending', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         }
@@ -102,7 +102,7 @@ const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps & { initialTab?: 
   const fetchAnalytics = async () => {
     const token = localStorage.getItem('auth_token');
     try {
-      const response = await fetch('http://localhost/careerguide/backend/api/admin/analytics', {
+      const response = await fetch('http://localhost/backup/careerguide/backend/api/admin/analytics', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {

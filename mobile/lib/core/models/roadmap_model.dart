@@ -69,8 +69,40 @@ class CuratedRoadmapModel {
     List<RoadmapPhaseModel> phases = [];
     if (json['phases'] != null) {
       final raw = json['phases'];
-      if (raw is List) {
-        phases = raw.map((p) => RoadmapPhaseModel.fromJson(p)).toList();
+      if (raw is List && raw.isNotEmpty) {
+        // Detect multi-level format: [{level:'beginner', phases:[...]}, ...]
+        final first = raw.first;
+        if (first is Map &&
+            first.containsKey('level') &&
+            first.containsKey('phases')) {
+          // Multi-level BiT roadmap — flatten all levels into a single list
+          // but prefix each phase title with the level label for clarity
+          for (final levelEntry in raw) {
+            if (levelEntry is Map) {
+              final levelLabel = levelEntry['label']?.toString() ??
+                  levelEntry['level']?.toString() ??
+                  '';
+              final levelPhases = levelEntry['phases'];
+              if (levelPhases is List) {
+                for (final p in levelPhases) {
+                  if (p is Map<String, dynamic>) {
+                    phases.add(RoadmapPhaseModel.fromJson({
+                      ...p,
+                      // Prepend level label to phase title so students know which level
+                      'title': '[$levelLabel] ${p['title'] ?? ''}',
+                    }));
+                  }
+                }
+              }
+            }
+          }
+        } else {
+          // Old flat format
+          phases = raw
+              .whereType<Map<String, dynamic>>()
+              .map((p) => RoadmapPhaseModel.fromJson(p))
+              .toList();
+        }
       }
     }
 
@@ -89,8 +121,7 @@ class CuratedRoadmapModel {
       tags: tags,
       phases: phases,
       views: int.tryParse(json['views']?.toString() ?? '0') ?? 0,
-      enrollments:
-          int.tryParse(json['enrollments']?.toString() ?? '0') ?? 0,
+      enrollments: int.tryParse(json['enrollments']?.toString() ?? '0') ?? 0,
       creatorName: json['creator_name'] ?? 'BiT',
     );
   }
