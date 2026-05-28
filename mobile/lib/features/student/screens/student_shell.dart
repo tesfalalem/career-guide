@@ -35,6 +35,11 @@ class StudentShell extends StatelessWidget {
         label: 'Careers',
         path: '/student/careers'),
     DrawerItem(
+        icon: Icons.trending_up_outlined,
+        activeIcon: Icons.trending_up_rounded,
+        label: 'Progress',
+        path: '/student/progress'),
+    DrawerItem(
         icon: Icons.quiz_outlined,
         activeIcon: Icons.quiz_rounded,
         label: 'Assessments',

@@ -8,9 +8,14 @@ import '../../../core/providers/auth_provider.dart';
 final _messagesProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final api = ref.read(apiClientProvider);
-  final res = await api.get(ApiConstants.supportMessages);
-  final list = res.data as List? ?? [];
-  return list.map((m) => Map<String, dynamic>.from(m)).toList();
+  try {
+    final res = await api.get(ApiConstants.supportMessages);
+    final list = res.data as List? ?? [];
+    return list.map((m) => Map<String, dynamic>.from(m)).toList();
+  } catch (_) {
+    // Return empty list on any error (including 401) — show empty chat state
+    return [];
+  }
 });
 
 class SupportChatScreen extends ConsumerStatefulWidget {
@@ -101,7 +106,22 @@ class _SupportChatScreenState extends ConsumerState<SupportChatScreen> {
             child: messagesAsync.when(
               loading: () => const Center(
                   child: CircularProgressIndicator(color: AppColors.teal)),
-              error: (e, _) => Center(child: Text('Error: $e')),
+              error: (e, _) => const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.chat_bubble_outline_rounded,
+                        size: 64, color: AppColors.slate300),
+                    SizedBox(height: 16),
+                    Text('Start a conversation',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700, fontSize: 16)),
+                    SizedBox(height: 8),
+                    Text('Our support team is here to help',
+                        style: TextStyle(color: AppColors.slate400)),
+                  ],
+                ),
+              ),
               data: (messages) => messages.isEmpty
                   ? const Center(
                       child: Column(

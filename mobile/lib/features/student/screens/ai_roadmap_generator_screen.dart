@@ -20,13 +20,13 @@ class AiRoadmapGeneratorScreen extends ConsumerStatefulWidget {
 class _AiRoadmapGeneratorScreenState
     extends ConsumerState<AiRoadmapGeneratorScreen> {
   final TextEditingController _inputController = TextEditingController();
-  
+
   bool _isLoading = false;
   bool _isCreatingCourse = false;
-  
+
   AiRoadmapModel? _generatedRoadmap;
   String? _error;
-  
+
   List<Map<String, dynamic>> _history = [];
   bool _loadingHistory = false;
 
@@ -73,7 +73,7 @@ class _AiRoadmapGeneratorScreenState
         ApiConstants.generateRoadmap,
         data: {'role': query},
       );
-      
+
       final data = res.data;
       if (data == null || data['error'] != null) {
         throw Exception(data?['error'] ?? 'Failed to generate');
@@ -123,7 +123,8 @@ class _AiRoadmapGeneratorScreenState
           content: const Text('Roadmap removed successfully'),
           backgroundColor: AppColors.teal,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     } catch (_) {
@@ -133,7 +134,8 @@ class _AiRoadmapGeneratorScreenState
           content: const Text('Failed to delete roadmap'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     }
@@ -142,32 +144,33 @@ class _AiRoadmapGeneratorScreenState
   Future<void> _createCourse() async {
     if (_generatedRoadmap == null) return;
     setState(() => _isCreatingCourse = true);
-    
+
     final api = ref.read(apiClientProvider);
     try {
       final res = await api.post(
         ApiConstants.generateCourse,
         data: {'role': _generatedRoadmap!.role},
       );
-      
+
       final data = res.data;
       if (data == null || data['error'] != null) {
         throw Exception(data?['error'] ?? 'Course generation failed');
       }
 
       final course = CourseModel.fromJson(data);
-      
+
       // Invalidate course providers so they load newly generated courses
       ref.invalidate(enrolledCoursesProvider);
       ref.invalidate(allCoursesProvider);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Course "${course.title}" generated successfully!'),
             backgroundColor: AppColors.teal,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
         // Navigate directly to course viewer
@@ -177,10 +180,12 @@ class _AiRoadmapGeneratorScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Failed to generate full course lessons. Try again.'),
+            content: const Text(
+                'Failed to generate full course lessons. Try again.'),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
@@ -202,7 +207,8 @@ class _AiRoadmapGeneratorScreenState
             content: Text('Unable to open link: $urlString'),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
@@ -212,11 +218,13 @@ class _AiRoadmapGeneratorScreenState
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _generatedRoadmap != null ? 'AI Learning Protocol' : 'AI Roadmap Generator',
+          _generatedRoadmap != null
+              ? 'AI Learning Protocol'
+              : 'AI Roadmap Generator',
           style: const TextStyle(fontWeight: FontWeight.w900),
         ),
         leading: IconButton(
@@ -268,7 +276,8 @@ class _AiRoadmapGeneratorScreenState
           const SizedBox(height: 24),
           const Text(
             'Master Anything.',
-            style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: -1),
+            style: TextStyle(
+                fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: -1),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
@@ -282,7 +291,7 @@ class _AiRoadmapGeneratorScreenState
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
-          
+
           // Custom Search Input
           Container(
             decoration: BoxDecoration(
@@ -304,7 +313,8 @@ class _AiRoadmapGeneratorScreenState
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: Row(
               children: [
-                const Icon(Icons.psychology_rounded, color: AppColors.teal, size: 24),
+                const Icon(Icons.psychology_rounded,
+                    color: AppColors.teal, size: 24),
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
@@ -319,7 +329,9 @@ class _AiRoadmapGeneratorScreenState
                   ),
                 ),
                 GestureDetector(
-                  onTap: _isLoading ? null : () => _generate(_inputController.text),
+                  onTap: _isLoading
+                      ? null
+                      : () => _generate(_inputController.text),
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -342,7 +354,7 @@ class _AiRoadmapGeneratorScreenState
               ],
             ),
           ),
-          
+
           if (_error != null) ...[
             const SizedBox(height: 16),
             Container(
@@ -370,44 +382,9 @@ class _AiRoadmapGeneratorScreenState
               ),
             ),
           ],
-          
-          const SizedBox(height: 24),
-          
-          // Suggestions
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.center,
-            children: ['Launch a Startup', 'Learn Piano', 'Data Science', 'UI/UX Design'].map((tag) {
-              return GestureDetector(
-                onTap: () {
-                  _inputController.text = tag;
-                  _generate(tag);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.slate900 : Colors.white,
-                    border: Border.all(
-                      color: isDark ? AppColors.slate800 : AppColors.slate200,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    tag,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.slate300 : AppColors.slate600,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          
+
           const SizedBox(height: 48),
-          
+
           // History
           _buildHistorySection(isDark),
         ],
@@ -430,10 +407,16 @@ class _AiRoadmapGeneratorScreenState
           children: [
             const Text(
               'Previous Protocols',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.slate400, letterSpacing: 1),
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.slate400,
+                  letterSpacing: 1),
             ),
             const SizedBox(width: 8),
-            Expanded(child: Divider(color: isDark ? AppColors.slate800 : AppColors.slate200)),
+            Expanded(
+                child: Divider(
+                    color: isDark ? AppColors.slate800 : AppColors.slate200)),
           ],
         ),
         const SizedBox(height: 16),
@@ -448,13 +431,14 @@ class _AiRoadmapGeneratorScreenState
             final role = item['role'] ?? '';
             final roadDataRaw = item['road_data'];
             final id = item['id']?.toString() ?? '';
-            
+
             return Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: isDark ? AppColors.slate900 : Colors.white,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: isDark ? AppColors.slate800 : AppColors.slate200),
+                border: Border.all(
+                    color: isDark ? AppColors.slate800 : AppColors.slate200),
               ),
               child: Row(
                 children: [
@@ -477,14 +461,19 @@ class _AiRoadmapGeneratorScreenState
                         children: [
                           Text(
                             role,
-                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.teal),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                                color: AppColors.teal),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             title,
                             style: TextStyle(
                               fontSize: 13,
-                              color: isDark ? AppColors.slate400 : AppColors.slate600,
+                              color: isDark
+                                  ? AppColors.slate400
+                                  : AppColors.slate600,
                             ),
                           ),
                         ],
@@ -492,7 +481,8 @@ class _AiRoadmapGeneratorScreenState
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                    icon: const Icon(Icons.delete_outline_rounded,
+                        color: Colors.red, size: 20),
                     onPressed: () => _deleteHistoryItem(id),
                   ),
                 ],
@@ -507,7 +497,7 @@ class _AiRoadmapGeneratorScreenState
   // ── 2. Detailed Roadmap View ───────────────────────────────────────────────
   Widget _buildRoadmapView(bool isDark) {
     final roadmap = _generatedRoadmap!;
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -536,7 +526,8 @@ class _AiRoadmapGeneratorScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -627,9 +618,9 @@ class _AiRoadmapGeneratorScreenState
               ],
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Action Button: Create Full Course
           SizedBox(
             width: double.infinity,
@@ -640,12 +631,18 @@ class _AiRoadmapGeneratorScreenState
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2),
                     )
                   : const Icon(Icons.auto_stories_rounded),
               label: Text(
-                _isCreatingCourse ? 'ARCHITECTING LESSONS...' : 'CREATE FULL COURSE',
-                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.5),
+                _isCreatingCourse
+                    ? 'ARCHITECTING LESSONS...'
+                    : 'CREATE FULL COURSE',
+                style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 13,
+                    letterSpacing: 0.5),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.teal,
@@ -656,14 +653,15 @@ class _AiRoadmapGeneratorScreenState
               ),
             ),
           ),
-          
+
           const SizedBox(height: 32),
           const Text(
             'Timeline Path',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+            style: TextStyle(
+                fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: -0.5),
           ),
           const SizedBox(height: 16),
-          
+
           // Timeline List of Phases
           ListView.builder(
             shrinkWrap: true,
@@ -685,7 +683,8 @@ class _AiRoadmapGeneratorScreenState
       decoration: BoxDecoration(
         color: isDark ? AppColors.slate900 : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: isDark ? AppColors.slate800 : AppColors.slate200),
+        border:
+            Border.all(color: isDark ? AppColors.slate800 : AppColors.slate200),
       ),
       child: ExpansionTile(
         tilePadding: const EdgeInsets.all(16),
@@ -735,7 +734,7 @@ class _AiRoadmapGeneratorScreenState
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Topics list
           ...phase.topics.map((topic) => _buildTopicTile(topic, isDark)),
         ],
@@ -749,7 +748,8 @@ class _AiRoadmapGeneratorScreenState
       decoration: BoxDecoration(
         color: isDark ? AppColors.slate800 : AppColors.slate50,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isDark ? AppColors.slate700 : AppColors.slate100),
+        border:
+            Border.all(color: isDark ? AppColors.slate700 : AppColors.slate100),
       ),
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
@@ -758,10 +758,11 @@ class _AiRoadmapGeneratorScreenState
           topic.title,
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
         ),
-        leading: const Icon(Icons.bubble_chart_rounded, color: AppColors.teal, size: 20),
+        leading: const Icon(Icons.bubble_chart_rounded,
+            color: AppColors.teal, size: 20),
         children: [
           const SizedBox(height: 8),
-          
+
           // Key Concepts tags
           const Text(
             'KEY CONCEPTS',
@@ -778,7 +779,8 @@ class _AiRoadmapGeneratorScreenState
             runSpacing: 6,
             children: topic.concepts.map((concept) {
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.slate900 : Colors.white,
                   borderRadius: BorderRadius.circular(8),
@@ -797,7 +799,7 @@ class _AiRoadmapGeneratorScreenState
               );
             }).toList(),
           ),
-          
+
           if (topic.resources.isNotEmpty) ...[
             const SizedBox(height: 16),
             const Text(
@@ -810,7 +812,7 @@ class _AiRoadmapGeneratorScreenState
               ),
             ),
             const SizedBox(height: 8),
-            
+
             // Resources list
             ...topic.resources.map((res) {
               IconData rIcon = Icons.link_rounded;
@@ -825,12 +827,13 @@ class _AiRoadmapGeneratorScreenState
                 rIcon = Icons.description_outlined;
                 rColor = Colors.blueGrey;
               }
-              
+
               return InkWell(
                 onTap: () => _launchUrl(res.url),
                 borderRadius: BorderRadius.circular(10),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 8.0, horizontal: 4.0),
                   child: Row(
                     children: [
                       Icon(rIcon, color: rColor, size: 16),
@@ -841,14 +844,17 @@ class _AiRoadmapGeneratorScreenState
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: isDark ? AppColors.slate200 : AppColors.slate800,
+                            color: isDark
+                                ? AppColors.slate200
+                                : AppColors.slate800,
                             decoration: TextDecoration.underline,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const Icon(Icons.arrow_outward_rounded, size: 12, color: AppColors.slate400),
+                      const Icon(Icons.arrow_outward_rounded,
+                          size: 12, color: AppColors.slate400),
                     ],
                   ),
                 ),

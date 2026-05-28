@@ -23,7 +23,6 @@ const BiTRoadmapsView: React.FC = () => {
   const [roadmaps, setRoadmaps] = useState<Roadmap[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [roadmapToDelete, setRoadmapToDelete] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -33,14 +32,12 @@ const BiTRoadmapsView: React.FC = () => {
   const [courseModalOpen, setCourseModalOpen] = useState(false);
   const [roadmapForCourse, setRoadmapForCourse] = useState<Roadmap | null>(null);
 
-  useEffect(() => { fetchRoadmaps(); }, [filterStatus]);
+  useEffect(() => { fetchRoadmaps(); }, []);
 
   const fetchRoadmaps = async () => {
     setLoading(true);
     try {
-      const filters: any = {};
-      if (filterStatus !== 'all') filters.status = filterStatus;
-      const data = await bitService.getRoadmaps(filters);
+      const data = await bitService.getRoadmaps({});
       setRoadmaps(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error(e);
@@ -114,7 +111,7 @@ const BiTRoadmapsView: React.FC = () => {
           className="flex items-center gap-3 px-8 py-4 bg-careermap-navy text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-navy-500/20"
         >
           <Plus size={20} />
-          Forge Roadmap
+          Create Roadmap
         </button>
       </div>
 
@@ -129,24 +126,13 @@ const BiTRoadmapsView: React.FC = () => {
             className="w-full pl-12 pr-6 py-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-careermap-navy dark:text-white font-bold text-sm focus:ring-2 focus:ring-careermap-teal/20 outline-none transition-all"
           />
         </div>
-        <select
-          value={filterStatus}
-          onChange={e => setFilterStatus(e.target.value)}
-          className="px-6 py-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-careermap-navy dark:text-white font-black text-[10px] uppercase tracking-widest focus:ring-2 focus:ring-careermap-teal/20 outline-none cursor-pointer"
-        >
-          <option value="all">Deployment Status</option>
-          <option value="published">Status: Live</option>
-          <option value="draft">Status: Draft</option>
-          <option value="archived">Status: Archived</option>
-        </select>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {[
           { label: 'Total Registry', value: roadmaps.length, color: 'text-careermap-navy dark:text-white' },
           { label: 'Live Tracks', value: roadmaps.filter(r => r.status === 'published').length, color: 'text-emerald-600' },
-          { label: 'In-Queue', value: roadmaps.filter(r => r.status === 'draft').length, color: 'text-slate-400' },
         ].map(s => (
           <div key={s.label} className="bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 p-6 shadow-sm">
             <div className={`text-3xl font-serif font-black ${s.color} transition-colors mb-1`}>{s.value}</div>

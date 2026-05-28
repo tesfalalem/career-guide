@@ -38,7 +38,11 @@ class CourseController {
     }
 
     public function index() {
-        $courses = $this->courseModel->getAll();
+        // Get current user (optional — used for AI course isolation)
+        $user = $this->jwtHelper->getUserFromToken();
+        $userId = $user ? $user['id'] : null;
+
+        $courses = $this->courseModel->getAll($userId);
         foreach ($courses as &$course) {
             if (isset($course['modules']) && is_string($course['modules'])) {
                 $course['modules'] = json_decode($course['modules'], true);
@@ -124,13 +128,32 @@ class CourseController {
             return;
         }
 
-        $result = $this->courseModel->enroll($courseId, $user['id']);
+        try {
+            // Check if already enrolled
+            $db = new Database();
+            $conn = $db->getConnection();
+            $check = $conn->prepare("SELECT id FROM course_enrollments WHERE course_id = :cid AND user_id = :uid LIMIT 1");
+            $check->bindParam(':cid', $courseId);
+            $check->bindParam(':uid', $user['id']);
+            $check->execute();
 
-        if ($result) {
-            echo json_encode(['message' => 'Enrolled successfully']);
-        } else {
+            if ($check->rowCount() > 0) {
+                http_response_code(409);
+                echo json_encode(['message' => 'Already enrolled']);
+                return;
+            }
+
+            $result = $this->courseModel->enroll($courseId, $user['id']);
+
+            if ($result) {
+                echo json_encode(['message' => 'Enrolled successfully']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['error' => 'Failed to enroll']);
+            }
+        } catch (\Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Failed to enroll']);
+            echo json_encode(['error' => 'Enrollment error: ' . $e->getMessage()]);
         }
     }
 

@@ -1,21 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   LayoutDashboard, Users, BarChart3,
-  Settings as SettingsIcon, LogOut, Sun, Moon,
+  LogOut, Sun, Moon,
   Shield, CheckCircle, ChevronsLeft, Menu
 } from 'lucide-react';
 import AdminOverview from './Admin/AdminOverview';
 import AdminUsersView from './Admin/AdminUsersView';
 import AdminApprovalsView from './Admin/AdminApprovalsView';
 import AdminAnalyticsView from './Admin/AdminAnalyticsView';
-import AdminSettingsView from './Admin/AdminSettingsView';
 import AdminSupportView from './Admin/AdminSupportView';
 import { MessageSquare } from 'lucide-react';
 import NotificationBell from '../common/NotificationBell';
 import UserAvatar from '../common/UserAvatar';
 import { AdminDashboardLayoutProps, PlatformAnalytics } from '../../types';
 
-export type AdminTab = 'overview' | 'users' | 'approvals' | 'analytics' | 'settings' | 'support';
+export type AdminTab = 'overview' | 'users' | 'approvals' | 'analytics' | 'support';
 
 const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps & { initialTab?: string }> = ({ 
   user, 
@@ -85,7 +84,7 @@ const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps & { initialTab?: 
 
   const fetchPendingApprovalsCount = async () => {
     try {
-      const response = await fetch('http://localhost/backup/careerguide/backend/api/admin/approvals/pending', {
+      const response = await fetch('http://localhost/careerguide/backend/api/admin/approvals/pending', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         }
@@ -102,7 +101,7 @@ const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps & { initialTab?: 
   const fetchAnalytics = async () => {
     const token = localStorage.getItem('auth_token');
     try {
-      const response = await fetch('http://localhost/backup/careerguide/backend/api/admin/analytics', {
+      const response = await fetch('http://localhost/careerguide/backend/api/admin/analytics', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -122,7 +121,6 @@ const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps & { initialTab?: 
     { id: 'approvals', label: 'Pending Approvals', icon: CheckCircle },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'support', label: 'Support Chat', icon: MessageSquare },
-    { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ];
 
   const renderContent = () => {
@@ -135,8 +133,6 @@ const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps & { initialTab?: 
         return <AdminApprovalsView />;
       case 'analytics':
         return <AdminAnalyticsView />;
-      case 'settings':
-        return <AdminSettingsView />;
       case 'support':
         return <AdminSupportView />;
       default:
@@ -259,15 +255,6 @@ const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps & { initialTab?: 
           </div>
           <div className="flex items-center gap-4">
             <NotificationBell />
-            <div className="h-8 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
-            <div className="hidden sm:flex items-center gap-3 pl-2">
-               <div className="text-right">
-                  <div className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-tighter">System Status</div>
-                  <div className="text-[10px] text-emerald-500 font-bold flex items-center gap-1 justify-end">
-                    <div className="w-1 h-1 rounded-full bg-emerald-500" /> Operational
-                  </div>
-               </div>
-            </div>
           </div>
         </header>
 

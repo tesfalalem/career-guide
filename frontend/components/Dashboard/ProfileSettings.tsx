@@ -182,19 +182,6 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ user, onLogout, onUse
             </div>
           </div>
 
-          {/* User ID (Read-only) */}
-          <div className="dashboard-card bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-8">
-            <div className="flex items-center gap-6">
-              <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-400">
-                <Shield size={20} />
-              </div>
-              <div className="flex-1">
-                <h4 className="font-bold text-primary dark:text-white mb-2">User ID</h4>
-                <p className="text-sm font-medium text-slate-500 font-mono">{user.id}</p>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 mt-1">System Generated</p>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Save/Cancel Buttons */}

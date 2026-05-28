@@ -41,7 +41,7 @@ const AdminApprovalsView: React.FC = () => {
   const fetchCourseAssignments = async () => {
     try {
       const token = localStorage.getItem('auth_token');
-      const res = await fetch('http://localhost/backup/careerguide/backend/api/course-assignments/pending', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch('http://localhost/careerguide/backend/api/course-assignments/pending', { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       setCourseAssignments(Array.isArray(data) ? data : []);
     } catch { setCourseAssignments([]); }
@@ -51,7 +51,7 @@ const AdminApprovalsView: React.FC = () => {
     setActionLoading(true);
     try {
       const token = localStorage.getItem('auth_token');
-      await fetch(`http://localhost/backup/careerguide/backend/api/course-assignments/${id}/approve`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ notes }) });
+      await fetch(`http://localhost/careerguide/backend/api/course-assignments/${id}/approve`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ notes }) });
       fetchCourseAssignments(); setNotes('');
     } catch { alert('Failed'); }
     finally { setActionLoading(false); }
@@ -61,7 +61,7 @@ const AdminApprovalsView: React.FC = () => {
     setActionLoading(true);
     try {
       const token = localStorage.getItem('auth_token');
-      await fetch(`http://localhost/backup/careerguide/backend/api/course-assignments/${id}/reject`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ notes }) });
+      await fetch(`http://localhost/careerguide/backend/api/course-assignments/${id}/reject`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ notes }) });
       fetchCourseAssignments(); setNotes('');
     } catch { alert('Failed'); }
     finally { setActionLoading(false); }

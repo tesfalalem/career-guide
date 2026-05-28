@@ -117,7 +117,6 @@ const AdminUsersView: React.FC = () => {
             <option value="student">Students Only</option>
             <option value="teacher">Teacher Corps</option>
             <option value="bit">BiT Admins</option>
-            <option value="admin">Global Admins</option>
           </select>
         </div>
       </div>

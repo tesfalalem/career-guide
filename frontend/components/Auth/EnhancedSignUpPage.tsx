@@ -45,7 +45,7 @@ const EnhancedSignUpPage: React.FC<EnhancedSignUpPageProps> = ({ onNavigate, onS
 
   const expertiseOptions = [
     'Frontend', 'Backend', 'Full Stack', 'Mobile', 'Data Science', 'ML/AI',
-    'DevOps', 'Cloud', 'Security', 'UI/UX', 'Database', 'Architecture'
+    'DevOps', 'Cloud', 'Security', 'UI/UX', 'Database', 'Architecture','Other'
   ];
 
   const calculatePasswordStrength = (password: string): number => {

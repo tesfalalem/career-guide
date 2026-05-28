@@ -192,7 +192,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   },
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 8),
+
+                // Forgot password link
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: GestureDetector(
+                    onTap: () => context.push('/forgot-password'),
+                    child: const Text(
+                      'Forgot Password?',
+                      style: TextStyle(
+                        color: AppColors.teal,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
 
                 AppButton(
                   label: 'Sign In',

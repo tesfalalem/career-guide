@@ -333,17 +333,6 @@ const RoadmapGenerator: React.FC<RoadmapGeneratorProps> = ({ onCourseCreated, us
              </div>
            )}
 
-           <div className="flex gap-3 mt-12 flex-wrap justify-center">
-              {['Launch a Startup', 'Learn Piano', 'Data Science', 'Speak Japanese'].map(tag => (
-                <button 
-                  key={tag}
-                  onClick={() => { setInput(tag); }}
-                  className="px-6 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-bold text-slate-500 uppercase tracking-widest hover:border-slate-400 hover:text-slate-800 hover:shadow-lg hover:-translate-y-1 transition-all"
-                >
-                  {tag}
-                </button>
-              ))}
-           </div>
 
            {history.length > 0 && (
              <div className="mt-24 w-full text-left animate-in slide-in-from-bottom-5 duration-500">

@@ -119,7 +119,6 @@ class AssessmentController {
         $this->ensureTables($conn);
 
         // Show assessments for courses the student is enrolled in directly
-        // OR courses linked to roadmaps the student is enrolled in
         $stmt = $conn->prepare("
             SELECT DISTINCT a.id, a.title, a.description, a.time_limit, a.course_id,
                    c.title as course_title, c.level,
@@ -131,23 +130,14 @@ class AssessmentController {
                     ORDER BY att.completed_at DESC LIMIT 1) as last_score
             FROM assessments a
             JOIN courses c ON a.course_id = c.id
-            WHERE (
+            WHERE EXISTS (
                 -- Direct course enrollment
-                EXISTS (
-                    SELECT 1 FROM course_enrollments ce
-                    WHERE ce.course_id = c.id AND ce.user_id = ?
-                )
-                OR
-                -- Enrolled via roadmap
-                EXISTS (
-                    SELECT 1 FROM roadmap_courses rc
-                    JOIN roadmap_enrollments re ON re.roadmap_id = rc.roadmap_id
-                    WHERE rc.course_id = c.id AND re.user_id = ?
-                )
+                SELECT 1 FROM course_enrollments ce
+                WHERE ce.course_id = c.id AND ce.user_id = ?
             )
             ORDER BY a.created_at DESC
         ");
-        $stmt->execute([$user['id'], $user['id'], $user['id'], $user['id']]);
+        $stmt->execute([$user['id'], $user['id'], $user['id']]);
 
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
     }

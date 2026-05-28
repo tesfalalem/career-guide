@@ -29,7 +29,8 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
   int? _activeLessonIdx;
   bool _lessonLoading = false;
 
-  Future<void> _fetchLessonContent(CourseModel course, int moduleIdx, int lessonIdx) async {
+  Future<void> _fetchLessonContent(
+      CourseModel course, int moduleIdx, int lessonIdx) async {
     final lesson = course.modules[moduleIdx].lessons[lessonIdx];
     if (lesson.content != '[CONTENT_PENDING]' && lesson.content.isNotEmpty) {
       return;
@@ -62,7 +63,8 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
             content: Text('Failed to load lesson content: $e'),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
@@ -73,7 +75,8 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
     }
   }
 
-  Future<void> _toggleLessonCompletion(CourseModel course, String lessonTitle) async {
+  Future<void> _toggleLessonCompletion(
+      CourseModel course, String lessonTitle) async {
     final updatedList = List<String>.from(course.completedLessons);
     if (updatedList.contains(lessonTitle)) {
       updatedList.remove(lessonTitle);
@@ -82,7 +85,8 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
     }
 
     final total = course.totalLessons;
-    final progress = total > 0 ? ((updatedList.length / total) * 100).round() : 0;
+    final progress =
+        total > 0 ? ((updatedList.length / total) * 100).round() : 0;
 
     try {
       final api = ref.read(apiClientProvider);
@@ -122,11 +126,12 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
           final lesson =
               course.modules[_activeModuleIdx!].lessons[_activeLessonIdx!];
           final isCompleted = course.completedLessons.contains(lesson.title);
-          
+
           if (lesson.content == '[CONTENT_PENDING]' || lesson.content.isEmpty) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!_lessonLoading) {
-                _fetchLessonContent(course, _activeModuleIdx!, _activeLessonIdx!);
+                _fetchLessonContent(
+                    course, _activeModuleIdx!, _activeLessonIdx!);
               }
             });
           }
@@ -138,7 +143,8 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
             lessonIdx: _activeLessonIdx!,
             isCompleted: isCompleted,
             lessonLoading: _lessonLoading,
-            onToggleComplete: () => _toggleLessonCompletion(course, lesson.title),
+            onToggleComplete: () =>
+                _toggleLessonCompletion(course, lesson.title),
             onBack: () => setState(() {
               _activeModuleIdx = null;
               _activeLessonIdx = null;
@@ -376,7 +382,8 @@ class _CourseOverviewState extends ConsumerState<_CourseOverview> {
                             trailing: AnimatedRotation(
                               turns: isExpanded ? 0.5 : 0,
                               duration: const Duration(milliseconds: 200),
-                              child: const Icon(Icons.keyboard_arrow_down_rounded,
+                              child: const Icon(
+                                  Icons.keyboard_arrow_down_rounded,
                                   color: AppColors.slate400),
                             ),
                           ),
@@ -385,7 +392,8 @@ class _CourseOverviewState extends ConsumerState<_CourseOverview> {
                             ...module.lessons.asMap().entries.map((lEntry) {
                               final lIdx = lEntry.key;
                               final lesson = lEntry.value;
-                              final isCompleted = course.completedLessons.contains(lesson.title);
+                              final isCompleted = course.completedLessons
+                                  .contains(lesson.title);
                               return ListTile(
                                 onTap: () => widget.onOpenLesson(mIdx, lIdx),
                                 leading: Container(
@@ -418,7 +426,8 @@ class _CourseOverviewState extends ConsumerState<_CourseOverview> {
                                             : null)),
                                 subtitle: Text(lesson.duration,
                                     style: const TextStyle(
-                                        fontSize: 11, color: AppColors.slate400)),
+                                        fontSize: 11,
+                                        color: AppColors.slate400)),
                                 trailing: const Icon(
                                     Icons.arrow_forward_ios_rounded,
                                     size: 12,
@@ -434,7 +443,8 @@ class _CourseOverviewState extends ConsumerState<_CourseOverview> {
                   Builder(
                     builder: (context) {
                       final user = ref.watch(currentUserProvider);
-                      final isTeacherOrAdmin = user != null && (user.isTeacher || user.isAdmin);
+                      final isTeacherOrAdmin =
+                          user != null && (user.isTeacher || user.isAdmin);
                       return CourseMaterialsTab(
                         course: course,
                         isTeacherOrAdmin: isTeacherOrAdmin,
@@ -648,9 +658,11 @@ class _LessonViewer extends StatelessWidget {
                     child: OutlinedButton(
                       onPressed: onBack,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: isDark ? Colors.white : AppColors.slate700,
+                        foregroundColor:
+                            isDark ? Colors.white : AppColors.slate700,
                         side: BorderSide(
-                          color: isDark ? AppColors.slate700 : AppColors.slate200,
+                          color:
+                              isDark ? AppColors.slate700 : AppColors.slate200,
                           width: 1.5,
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 13),
@@ -661,37 +673,14 @@ class _LessonViewer extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Toggle Complete
-                  ElevatedButton.icon(
-                    onPressed: onToggleComplete,
-                    icon: Icon(
-                      isCompleted ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                      size: 16,
-                      color: isCompleted ? Colors.white : AppColors.teal,
-                    ),
-                    label: Text(
-                      isCompleted ? 'Done' : 'Complete',
-                      style: TextStyle(
-                        color: isCompleted ? Colors.white : AppColors.teal,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isCompleted
-                          ? AppColors.success
-                          : AppColors.teal.withOpacity(0.12),
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
                   // Next Lesson or Finish
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: isLast ? onBack : onNext,
                       icon: Icon(
-                        isLast ? Icons.celebration : Icons.arrow_forward_rounded,
+                        isLast
+                            ? Icons.celebration
+                            : Icons.arrow_forward_rounded,
                         size: 16,
                       ),
                       label: Text(isLast ? 'Finish' : 'Next'),

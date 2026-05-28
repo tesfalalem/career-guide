@@ -291,18 +291,34 @@ class ResourceController {
             return;
         }
 
+        // Read JSON input if content type is application/json, otherwise support POST/urlencoded/PUT
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '';
+        $inputData = [];
+        if (strpos($contentType, 'application/json') !== false) {
+            $inputData = json_decode(file_get_contents('php://input'), true) ?? [];
+        } else {
+            $inputData = $_POST;
+            if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
+                parse_str(file_get_contents('php://input'), $putData);
+                $inputData = array_merge($inputData, $putData);
+            }
+        }
+
         $data = [];
-        
-        if (isset($_POST['title'])) $data['title'] = $_POST['title'];
-        if (isset($_POST['description'])) $data['description'] = $_POST['description'];
-        if (isset($_POST['resource_type'])) $data['resource_type'] = $_POST['resource_type'];
-        if (isset($_POST['category'])) $data['category'] = $_POST['category'];
-        if (isset($_POST['tags'])) $data['tags'] = json_encode(explode(',', $_POST['tags']));
-        if (isset($_POST['external_url'])) $data['external_url'] = $_POST['external_url'];
-        if (isset($_POST['course_id'])) $data['course_id'] = !empty($_POST['course_id']) ? $_POST['course_id'] : null;
-        if (isset($_POST['module_name'])) $data['module_name'] = !empty($_POST['module_name']) ? $_POST['module_name'] : null;
-        if (isset($_POST['lesson_name'])) $data['lesson_name'] = !empty($_POST['lesson_name']) ? $_POST['lesson_name'] : null;
-        if (isset($_POST['notes'])) $data['notes'] = !empty($_POST['notes']) ? $_POST['notes'] : null;
+        if (isset($inputData['title'])) $data['title'] = $inputData['title'];
+        if (isset($inputData['description'])) $data['description'] = $inputData['description'];
+        if (isset($inputData['resource_type'])) $data['resource_type'] = $inputData['resource_type'];
+        if (isset($inputData['category'])) $data['category'] = $inputData['category'];
+        if (isset($inputData['tags'])) {
+            $data['tags'] = is_array($inputData['tags']) 
+                ? json_encode($inputData['tags']) 
+                : json_encode(explode(',', $inputData['tags']));
+        }
+        if (isset($inputData['external_url'])) $data['external_url'] = $inputData['external_url'];
+        if (isset($inputData['course_id'])) $data['course_id'] = !empty($inputData['course_id']) ? $inputData['course_id'] : null;
+        if (isset($inputData['module_name'])) $data['module_name'] = !empty($inputData['module_name']) ? $inputData['module_name'] : null;
+        if (isset($inputData['lesson_name'])) $data['lesson_name'] = !empty($inputData['lesson_name']) ? $inputData['lesson_name'] : null;
+        if (isset($inputData['notes'])) $data['notes'] = !empty($inputData['notes']) ? $inputData['notes'] : null;
 
         // Handle new file upload
         if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {

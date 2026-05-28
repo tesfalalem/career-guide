@@ -12,7 +12,7 @@ import { enrollInCourse } from '../../services/courseService';
 import StudentMaterialsTab from './StudentMaterialsTab';
 import TeacherMaterialsTab from './Teacher/TeacherMaterialsTab';
 
-const API_BASE = 'http://localhost/backup/careerguide/backend/api';
+const API_BASE = 'http://localhost/careerguide/backend/api';
 
 interface CourseViewProps {
   initialCourseData?: Course;
@@ -22,7 +22,7 @@ interface CourseViewProps {
 }
 
 // ── Block Renderer ────────────────────────────────────────────────────────────
-const SERVE_BASE = 'http://localhost/backup/careerguide/backend';
+const SERVE_BASE = 'http://localhost/careerguide/backend';
 
 // Resolve any URL — handles real URLs and legacy [UPLOADED:filename] format
 const resolveUrl = (raw: string | undefined): string | null => {
@@ -265,8 +265,10 @@ const CourseView: React.FC<CourseViewProps> = ({
   const [isResizing, setIsResizing] = useState(false);
   const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set([0]));
   const [showAIModal, setShowAIModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [numQuestions, setNumQuestions] = useState(5);
+  const [courseFinished, setCourseFinished] = useState(false);
 
   // Tab: 'lesson' | 'materials' | 'teacher-manage'
   const [activeTab, setActiveTab] = useState<'lesson' | 'materials' | 'teacher-manage'>('lesson');
@@ -467,8 +469,8 @@ const CourseView: React.FC<CourseViewProps> = ({
       const saveResult = await saveRes.json();
       if (saveResult.error) throw new Error(saveResult.error);
 
-      alert('AI Assessment generated successfully! You can find it in your Assessments center.');
       setShowAIModal(false);
+      setShowSuccessModal(true);
     } catch (err: any) {
       console.error(err);
       alert('Generation failed: ' + err.message);
@@ -535,9 +537,6 @@ const CourseView: React.FC<CourseViewProps> = ({
             <div className="flex items-center gap-2 mb-3">
               <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
                 {course.level}
-              </span>
-              <span className="flex items-center gap-1 text-amber-400 text-xs font-bold">
-                <Star size={12} fill="currentColor" /> {course.rating}
               </span>
             </div>
             {isEnrolled ? (
@@ -822,14 +821,31 @@ const CourseView: React.FC<CourseViewProps> = ({
               </button>
 
               <button
-                disabled={activeModuleIndex === course.modules.length - 1}
-                onClick={() => { setActiveModuleIndex(prev => prev + 1); setActiveLessonIndex(0); }}
+                disabled={activeModuleIndex === course.modules.length - 1 && courseFinished}
+                onClick={() => {
+                  if (activeModuleIndex < course.modules.length - 1) {
+                    setActiveModuleIndex(prev => prev + 1);
+                    setActiveLessonIndex(0);
+                  } else {
+                    setCourseFinished(true);
+                  }
+                }}
                 className="flex flex-col items-end gap-2 group text-right"
               >
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-careermap-teal transition-colors">Next Module</span>
-                <div className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-slate-900 text-white font-bold text-sm hover:bg-black transition-all shadow-lg group-hover:shadow-indigo-500/20">
-                  {course.modules[activeModuleIndex + 1]?.title || 'Finish Course'}
-                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-careermap-teal transition-colors">
+                  {activeModuleIndex === course.modules.length - 1 ? (courseFinished ? 'Completed' : 'Finish') : 'Next Module'}
+                </span>
+                <div className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-bold text-sm transition-all shadow-lg ${
+                  courseFinished && activeModuleIndex === course.modules.length - 1
+                    ? 'bg-emerald-600 text-white shadow-emerald-500/20 cursor-default'
+                    : 'bg-slate-900 text-white hover:bg-black group-hover:shadow-indigo-500/20'
+                }`}>
+                  {activeModuleIndex === course.modules.length - 1
+                    ? courseFinished
+                      ? <><CheckCircle size={18} /> Finished</>
+                      : <>Finish Course <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" /></>
+                    : <>{course.modules[activeModuleIndex + 1]?.title} <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" /></>
+                  }
                 </div>
               </button>
             </div>
@@ -899,6 +915,34 @@ const CourseView: React.FC<CourseViewProps> = ({
                 ) : (
                   <><HelpCircle size={18} /> Generate Quiz Now</>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Assessment Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-300">
+            <div className="p-8 text-center">
+              <div className="flex justify-end">
+                <button onClick={() => setShowSuccessModal(false)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="mx-auto w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 mb-6 animate-bounce">
+                <CheckCircle size={32} />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-800 dark:text-white mb-3">Assessment Ready!</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm mb-8 leading-relaxed">
+                Your AI Assessment has been generated successfully! You can find it in your Assessments center.
+              </p>
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-bold hover:shadow-lg hover:shadow-emerald-500/20 active:scale-[0.98] transition-all"
+              >
+                Awesome!
               </button>
             </div>
           </div>

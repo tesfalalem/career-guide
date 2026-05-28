@@ -7,7 +7,7 @@ import {
 import RichTextEditor from '../../common/RichTextEditor';
 import ConfirmModal from '../../common/ConfirmModal';
 
-const API = 'http://localhost/backup/careerguide/backend/api';
+const API = 'http://localhost/careerguide/backend/api';
 const token = () => localStorage.getItem('auth_token') || '';
 
 interface Material {

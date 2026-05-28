@@ -24,6 +24,11 @@ class TeacherShell extends StatelessWidget {
         label: 'Students',
         path: '/teacher/students'),
     DrawerItem(
+        icon: Icons.bar_chart_outlined,
+        activeIcon: Icons.bar_chart_rounded,
+        label: 'Analytics',
+        path: '/teacher/analytics'),
+    DrawerItem(
         icon: Icons.person_outline,
         activeIcon: Icons.person_rounded,
         label: 'Profile',
@@ -46,6 +51,11 @@ class TeacherShell extends StatelessWidget {
         activeIcon: Icons.people_rounded,
         label: 'Students',
         path: '/teacher/students'),
+    _Tab(
+        icon: Icons.bar_chart_outlined,
+        activeIcon: Icons.bar_chart_rounded,
+        label: 'Analytics',
+        path: '/teacher/analytics'),
     _Tab(
         icon: Icons.person_outline,
         activeIcon: Icons.person_rounded,

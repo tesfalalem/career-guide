@@ -77,11 +77,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserModel?>> {
   }
 
   Future<void> logout() async {
+    // Remove token immediately for instant logout
+    await ApiClient.removeToken();
+    state = const AsyncValue.data(null);
+    // Fire-and-forget the server logout (don't wait)
     try {
       await _api.post(ApiConstants.logout);
     } catch (_) {}
-    await ApiClient.removeToken();
-    state = const AsyncValue.data(null);
   }
 
   void updateUser(UserModel user) {

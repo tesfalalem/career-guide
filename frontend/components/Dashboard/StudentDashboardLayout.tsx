@@ -184,7 +184,7 @@ const StudentDashboardLayout: React.FC<StudentDashboardLayoutProps & { initialTa
   };
 
   return (
-    <div data-testid="student-dashboard" className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 flex font-sans relative">
+    <div data-testid="student-dashboard" className="h-screen bg-[#f8fafc] dark:bg-slate-950 flex font-sans relative overflow-hidden">
       {/* Global Background Image */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.04] dark:opacity-[0.06] z-0 overflow-hidden">
         <img 
@@ -196,7 +196,7 @@ const StudentDashboardLayout: React.FC<StudentDashboardLayoutProps & { initialTa
       {/* Sidebar */}
       <aside 
         style={{ width: sidebarOpen ? `${sidebarWidth}px` : '64px' }}
-        className={`bg-careermap-navy text-white flex flex-col h-screen ${isResizing ? '' : 'transition-all duration-300'} shrink-0 shadow-2xl z-40 relative group`}>
+        className={`bg-careermap-navy text-white flex flex-col h-screen sticky top-0 ${isResizing ? '' : 'transition-all duration-300'} shrink-0 shadow-2xl z-40 relative group`}>
         {/* Resize Handle */}
         {sidebarOpen && (
           <div

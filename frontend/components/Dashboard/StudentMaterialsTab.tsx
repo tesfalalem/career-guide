@@ -5,8 +5,8 @@ import {
   ChevronDown, ChevronRight, User
 } from 'lucide-react';
 
-const API = 'http://localhost/backup/careerguide/backend/api';
-const SERVE_BASE = 'http://localhost/backup/careerguide/backend';
+const API = 'http://localhost/careerguide/backend/api';
+const SERVE_BASE = 'http://localhost/careerguide/backend';
 
 interface Material {
   id: number;

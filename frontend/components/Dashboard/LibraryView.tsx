@@ -18,7 +18,7 @@ interface LibraryViewProps {
 type Tab = 'my' | 'browse';
 type EnrollState = { type: 'success' | 'already' | 'error'; courseId: string } | null;
 
-const API = 'http://localhost/backup/careerguide/backend/api';
+const API = 'http://localhost/careerguide/backend/api';
 const authToken = () => localStorage.getItem('auth_token') || '';
 
 const levelCls = (level: string) =>
@@ -82,7 +82,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({ userId, openCourseId, onCours
   const fetchAllCourses = async () => {
     setBrowseLoading(true);
     try {
-      const res = await fetch(`${API}/course-assignments/available`, {
+      const res = await fetch(`${API}/courses`, {
         headers: { Authorization: `Bearer ${authToken()}` }
       });
       const data = await res.json();
@@ -101,15 +101,14 @@ const LibraryView: React.FC<LibraryViewProps> = ({ userId, openCourseId, onCours
     e.stopPropagation();
     setEnrollingId(courseId);
     try {
-      const res = await fetch(`${API}/course-assignments/enroll`, {
+      const res = await fetch(`${API}/courses/${courseId}/enroll`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken()}` },
-        body: JSON.stringify({ course_id: parseInt(courseId) })
       });
       const data = await res.json();
-      if (res.ok) {
-        setEnrollState({ type: 'success', courseId });
-        fetchMyCourses();
+      if (res.ok || res.status === 409) {
+        setEnrollState({ type: res.status === 409 ? 'already' : 'success', courseId });
+        if (res.ok) fetchMyCourses();
       } else if (data?.message?.toLowerCase().includes('already')) {
         setEnrollState({ type: 'already', courseId });
       } else {

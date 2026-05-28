@@ -12,6 +12,9 @@ interface Analytics {
   pending_resources: number;
   approved_resources: number;
   rejected_resources: number;
+  total_courses?: number;
+  total_careers?: number;
+  total_enrollments?: number;
 }
 
 const AdminAnalyticsView: React.FC = () => {
@@ -102,7 +105,7 @@ const AdminAnalyticsView: React.FC = () => {
               <Users size={16} className="text-emerald-500" />
             </div>
             <div className="text-5xl font-serif font-black text-careermap-navy dark:text-white">{analytics.total_students}</div>
-            <div className="mt-4 text-[10px] font-bold text-emerald-500 uppercase tracking-widest">+4.2% Growth</div>
+            <div className="mt-4 text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Active Learners</div>
           </div>
 
           <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2rem] p-8 shadow-lg hover:border-careermap-teal/30 transition-all">
@@ -114,21 +117,13 @@ const AdminAnalyticsView: React.FC = () => {
             <div className="mt-4 text-[10px] font-bold text-careermap-teal uppercase tracking-widest">Expert Network</div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2rem] p-8 shadow-lg hover:border-careermap-teal/30 transition-all">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Admin Authority</span>
-              <Users size={16} className="text-slate-900 dark:text-white" />
-            </div>
-            <div className="text-5xl font-serif font-black text-careermap-navy dark:text-white">{analytics.total_admins}</div>
-            <div className="mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Control Tier</div>
-          </div>
         </div>
       </div>
 
       {/* Content Statistics */}
       <div>
         <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Curriculum Velocity</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 p-8 shadow-sm">
             <div className="flex items-center gap-6">
               <div className="w-16 h-16 bg-careermap-navy/5 text-careermap-navy dark:text-careermap-teal rounded-2xl flex items-center justify-center">
@@ -152,112 +147,9 @@ const AdminAnalyticsView: React.FC = () => {
               </div>
             </div>
           </div>
-
-          <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 p-8 shadow-sm">
-            <div className="flex items-center gap-6">
-              <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center">
-                <TrendingUp size={32} />
-              </div>
-              <div>
-                <div className="text-4xl font-serif font-black text-careermap-navy dark:text-white">{analytics.pending_resources}</div>
-                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pending Review</div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Resource Breakdown */}
-        <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 p-8">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8">Asset Health Matrix</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-6 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-50 dark:border-emerald-900/20">
-              <div>
-                <div className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Authenticated Assets</div>
-                <div className="text-3xl font-serif font-black text-emerald-600">{analytics.approved_resources}</div>
-              </div>
-              <div className="text-2xl font-serif font-black text-emerald-600/30">
-                {analytics.total_resources > 0 
-                  ? Math.round((analytics.approved_resources / analytics.total_resources) * 100)
-                  : 0}%
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-6 bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl border border-amber-50 dark:border-amber-900/20">
-              <div>
-                <div className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1">Queue Under Review</div>
-                <div className="text-3xl font-serif font-black text-amber-600">{analytics.pending_resources}</div>
-              </div>
-              <div className="text-2xl font-serif font-black text-amber-600/30">
-                {analytics.total_resources > 0 
-                  ? Math.round((analytics.pending_resources / analytics.total_resources) * 100)
-                  : 0}%
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-6 bg-red-50/50 dark:bg-red-900/10 rounded-2xl border border-red-50 dark:border-red-900/20">
-              <div>
-                <div className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest mb-1">De-Listed Content</div>
-                <div className="text-3xl font-serif font-black text-red-600">{analytics.rejected_resources}</div>
-              </div>
-              <div className="text-2xl font-serif font-black text-red-600/30">
-                {analytics.total_resources > 0 
-                  ? Math.round((analytics.rejected_resources / analytics.total_resources) * 100)
-                  : 0}%
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Platform Vitals */}
-        <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 p-8">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8">Platform Vitals</h3>
-          <div className="space-y-10">
-            <div>
-              <div className="flex justify-between items-end mb-4">
-                <div>
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Registry Expansion</div>
-                  <div className="text-2xl font-serif font-black text-careermap-navy dark:text-white">User Growth</div>
-                </div>
-                <span className="text-lg font-serif font-black text-emerald-500">+12.4%</span>
-              </div>
-              <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full" style={{ width: '75%' }} />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between items-end mb-4">
-                <div>
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Moderation Velocity</div>
-                  <div className="text-2xl font-serif font-black text-careermap-navy dark:text-white">Approval Rating</div>
-                </div>
-                <span className="text-lg font-serif font-black text-careermap-teal">
-                  {analytics.total_resources > 0 
-                    ? Math.round((analytics.approved_resources / analytics.total_resources) * 100)
-                    : 0}%
-                </span>
-              </div>
-              <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-careermap-teal rounded-full" style={{ 
-                  width: `${analytics.total_resources > 0 
-                    ? (analytics.approved_resources / analytics.total_resources) * 100
-                    : 0}%` 
-                }} />
-              </div>
-            </div>
-
-            <div className="pt-6 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between">
-               <div className="flex items-center gap-3">
-                 <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
-                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">System Integrity: High</span>
-               </div>
-               <span className="text-[10px] font-black uppercase tracking-widest text-careermap-teal">Operational</span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

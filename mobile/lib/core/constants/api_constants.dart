@@ -83,11 +83,14 @@ class ApiConstants {
   static const String teacherProfile = '/teacher/profile';
   static const String teacherSettings = '/teacher/settings';
   static const String teacherAnalytics = '/teacher/analytics';
+  static const String teacherActivity = '/teacher/activity';
 
   // ── Course Assignments ─────────────────────────────────────────────────────
   static const String courseAssignments = '/course-assignments';
   static const String myAssignment = '/course-assignments/my';
   static const String availableCourses = '/course-assignments/available';
+  static const String availableBitCourses = '/course-assignments/available-bit';
+  static const String requestMultipleCourses = '/course-assignments/request-multiple';
 
   // ── Admin ──────────────────────────────────────────────────────────────────
   static const String adminAnalytics = '/admin/analytics';

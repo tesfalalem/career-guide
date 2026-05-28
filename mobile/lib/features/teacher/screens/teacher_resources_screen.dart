@@ -65,8 +65,10 @@ class _TeacherResourcesScreenState
                       padding: const EdgeInsets.all(16),
                       itemCount: resources.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 10),
-                      itemBuilder: (context, i) =>
-                          _ResourceTile(resource: resources[i]),
+                      itemBuilder: (context, i) => _ResourceTile(
+                        resource: resources[i],
+                        onChanged: () => ref.invalidate(_myResourcesProvider),
+                      ),
                     ),
             ),
           ),
@@ -76,9 +78,10 @@ class _TeacherResourcesScreenState
   }
 }
 
-class _ResourceTile extends StatelessWidget {
+class _ResourceTile extends ConsumerWidget {
   final Map<String, dynamic> resource;
-  const _ResourceTile({required this.resource});
+  final VoidCallback onChanged;
+  const _ResourceTile({required this.resource, required this.onChanged});
 
   Color get _statusColor {
     switch (resource['status']) {
@@ -91,8 +94,181 @@ class _ResourceTile extends StatelessWidget {
     }
   }
 
+  void _showDeleteConfirm(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Resource', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Text('Are you sure you want to delete "${resource['title']}"? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.slate500)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              try {
+                final api = ref.read(apiClientProvider);
+                final id = resource['id'];
+                final isCourseMaterial = resource['course_id'] != null;
+                
+                final url = isCourseMaterial 
+                    ? '${ApiConstants.baseUrl}/teacher/materials/$id'
+                    : '${ApiConstants.baseUrl}/teacher/resources/$id';
+                    
+                await api.delete(url);
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(content: Text('Resource deleted successfully')),
+                );
+                onChanged();
+              } catch (e) {
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(content: Text('Failed to delete resource: $e'), backgroundColor: AppColors.error),
+                );
+              }
+            },
+            child: const Text('Delete', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditDialog(BuildContext context, WidgetRef ref) {
+    final titleCtrl = TextEditingController(text: resource['title'] ?? '');
+    final descCtrl = TextEditingController(text: resource['description'] ?? '');
+    final urlCtrl = TextEditingController(text: resource['external_url'] ?? '');
+    final notesCtrl = TextEditingController(text: resource['notes'] ?? '');
+    final categoryCtrl = TextEditingController(text: resource['category'] ?? '');
+    
+    List<dynamic> tagsList = resource['tags'] is List ? resource['tags'] : [];
+    final tagsCtrl = TextEditingController(text: tagsList.join(', '));
+    
+    final isCourseMaterial = resource['course_id'] != null;
+    final type = resource['resource_type'] ?? 'document';
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        bool loading = false;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Edit Resource', style: TextStyle(fontWeight: FontWeight.bold)),
+              content: SingleChildScrollView(
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.9,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppTextField(controller: titleCtrl, label: 'Title'),
+                      const SizedBox(height: 12),
+                      AppTextField(controller: descCtrl, label: 'Description', maxLines: 2),
+                      const SizedBox(height: 12),
+                      if (type != 'note') ...[
+                        AppTextField(
+                          controller: urlCtrl,
+                          label: 'External URL',
+                          hint: 'https://...',
+                        ),
+                        const SizedBox(height: 12),
+                      ] else ...[
+                        AppTextField(
+                          controller: notesCtrl,
+                          label: 'Note Content',
+                          maxLines: 4,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      if (!isCourseMaterial) ...[
+                        AppTextField(controller: categoryCtrl, label: 'Category'),
+                        const SizedBox(height: 12),
+                      ],
+                      AppTextField(
+                        controller: tagsCtrl,
+                        label: 'Tags (comma-separated)',
+                        hint: 'react, javascript',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: loading ? null : () => Navigator.pop(context),
+                  child: const Text('Cancel', style: TextStyle(color: AppColors.slate500)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.teacherTeal),
+                  onPressed: loading ? null : () async {
+                    if (titleCtrl.text.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Title is required')),
+                      );
+                      return;
+                    }
+                    
+                    setState(() => loading = true);
+                    final scaffoldMessenger = ScaffoldMessenger.of(context);
+                    final navigator = Navigator.of(context);
+                    
+                    try {
+                      final api = ref.read(apiClientProvider);
+                      final id = resource['id'];
+                      
+                      final Map<String, dynamic> updateData = {
+                        'title': titleCtrl.text,
+                        'description': descCtrl.text,
+                        'resource_type': type,
+                        'tags': tagsCtrl.text,
+                      };
+                      
+                      if (type == 'note') {
+                        updateData['notes'] = notesCtrl.text;
+                      } else {
+                        updateData['external_url'] = urlCtrl.text;
+                      }
+                      
+                      if (!isCourseMaterial) {
+                        updateData['category'] = categoryCtrl.text;
+                      }
+
+                      final url = isCourseMaterial 
+                          ? '${ApiConstants.baseUrl}/teacher/materials/$id'
+                          : '${ApiConstants.baseUrl}/teacher/resources/$id';
+                          
+                      await api.put(url, data: updateData);
+                      
+                      scaffoldMessenger.showSnackBar(
+                        const SnackBar(content: Text('Resource updated successfully')),
+                      );
+                      navigator.pop();
+                      onChanged();
+                    } catch (e) {
+                      scaffoldMessenger.showSnackBar(
+                        SnackBar(content: Text('Failed to update resource: $e'), backgroundColor: AppColors.error),
+                      );
+                    } finally {
+                      setState(() => loading = false);
+                    }
+                  },
+                  child: loading 
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('Save Changes', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          }
+        );
+      },
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Container(
@@ -129,6 +305,7 @@ class _ResourceTile extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
@@ -142,6 +319,39 @@ class _ResourceTile extends StatelessWidget {
                   fontSize: 11,
                   fontWeight: FontWeight.w700),
             ),
+          ),
+          const SizedBox(width: 4),
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert_rounded, color: isDark ? Colors.white70 : AppColors.slate600, size: 20),
+            onSelected: (val) {
+              if (val == 'edit') {
+                _showEditDialog(context, ref);
+              } else if (val == 'delete') {
+                _showDeleteConfirm(context, ref);
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_rounded, size: 18),
+                    SizedBox(width: 8),
+                    Text('Edit'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_rounded, size: 18, color: AppColors.error),
+                    SizedBox(width: 8),
+                    Text('Delete', style: TextStyle(color: AppColors.error)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

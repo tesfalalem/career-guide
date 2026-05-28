@@ -31,11 +31,23 @@ class Course {
         return false;
     }
 
-    public function getAll() {
-        $query = "SELECT * FROM " . $this->table . " ORDER BY created_at DESC";
-        $stmt = $this->conn->prepare($query);
+    public function getAll($userId = null) {
+        // Exclude AI-generated courses that belong to OTHER users.
+        // AI courses have author = 'AI Architect'. They are private to their creator.
+        if ($userId) {
+            $query = "SELECT * FROM " . $this->table . "
+                      WHERE NOT (author = 'AI Architect' AND created_by != :user_id)
+                      ORDER BY created_at DESC";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':user_id', $userId);
+        } else {
+            // Unauthenticated: hide all AI-generated courses
+            $query = "SELECT * FROM " . $this->table . "
+                      WHERE author != 'AI Architect'
+                      ORDER BY created_at DESC";
+            $stmt = $this->conn->prepare($query);
+        }
         $stmt->execute();
-
         return $stmt->fetchAll();
     }
 
@@ -70,7 +82,8 @@ class Course {
 
     public function enroll($courseId, $userId) {
         $query = "INSERT INTO course_enrollments (course_id, user_id, enrolled_at) 
-                  VALUES (:course_id, :user_id, NOW())";
+                  VALUES (:course_id, :user_id, NOW())
+                  ON DUPLICATE KEY UPDATE enrolled_at = enrolled_at";
         
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':course_id', $courseId);

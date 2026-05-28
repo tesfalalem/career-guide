@@ -129,19 +129,17 @@ class _BrowseCourses extends ConsumerStatefulWidget {
 }
 
 class _BrowseCoursesState extends ConsumerState<_BrowseCourses> {
-  // Track which course IDs are currently being enrolled
   final Set<String> _enrolling = {};
-  // Track which course IDs have been enrolled this session
+  // Persists enrolled IDs — seeded from server on build, updated on enroll
   final Set<String> _enrolled = {};
 
   Future<void> _enroll(String courseId) async {
     if (_enrolling.contains(courseId)) return;
     setState(() => _enrolling.add(courseId));
     try {
-      final success = await enrollInCourse(ref, courseId);
-      if (success && mounted) {
+      await enrollInCourse(ref, courseId);
+      if (mounted) {
         setState(() => _enrolled.add(courseId));
-        // Refresh My Courses tab
         ref.invalidate(enrolledCoursesProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -153,17 +151,23 @@ class _BrowseCoursesState extends ConsumerState<_BrowseCourses> {
           ),
         );
       }
-    } catch (_) {
+    } catch (err) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Enrollment failed. Please try again.'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
+        final msg = err.toString().toLowerCase();
+        // 409 / already enrolled → still mark as enrolled
+        if (msg.contains('already') || msg.contains('409')) {
+          setState(() => _enrolled.add(courseId));
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Enrollment failed. Please try again.'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _enrolling.remove(courseId));
@@ -172,6 +176,17 @@ class _BrowseCoursesState extends ConsumerState<_BrowseCourses> {
 
   @override
   Widget build(BuildContext context) {
+    // Seed _enrolled from server data every time enrolledCoursesProvider updates
+    final enrolledAsync = ref.watch(enrolledCoursesProvider);
+    enrolledAsync.whenData((enrolled) {
+      final ids = enrolled.map((c) => c.id).toSet();
+      if (!ids.every(_enrolled.contains)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _enrolled.addAll(ids));
+        });
+      }
+    });
+
     final coursesAsync = ref.watch(allCoursesProvider);
     return coursesAsync.when(
       loading: () =>
@@ -187,7 +202,10 @@ class _BrowseCoursesState extends ConsumerState<_BrowseCourses> {
               subtitle: 'Check back later')
           : RefreshIndicator(
               color: AppColors.teal,
-              onRefresh: () => ref.refresh(allCoursesProvider.future),
+              onRefresh: () async {
+                ref.invalidate(allCoursesProvider);
+                ref.invalidate(enrolledCoursesProvider);
+              },
               child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 itemCount: courses.length,

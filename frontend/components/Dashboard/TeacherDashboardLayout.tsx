@@ -75,7 +75,7 @@ const TeacherDashboardLayout: React.FC<TeacherDashboardLayoutProps> = ({
   const checkAssignment = async () => {
     try {
       const token = localStorage.getItem('auth_token');
-      const res = await fetch('http://localhost/backup/careerguide/backend/api/course-assignments/my', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch('http://localhost/careerguide/backend/api/course-assignments/my', { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       if (!data) { setCourseSelected(false); setAssignmentStatus('none'); }
       else { setCourseSelected(true); setAssignmentStatus(data.status); }

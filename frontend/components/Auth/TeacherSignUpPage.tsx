@@ -120,7 +120,7 @@ const TeacherSignUpPage: React.FC<TeacherSignUpPageProps> = ({ onNavigate, onSig
     try {
       const qualificationsArray = qualifications.split(',').map(q => q.trim()).filter(q => q);
       
-      const response = await fetch('http://localhost/backup/careerguide/backend/api/auth/register', {
+      const response = await fetch('http://localhost/careerguide/backend/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

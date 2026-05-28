@@ -8,6 +8,7 @@ import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/auth/screens/onboarding_screen.dart';
 import '../../features/auth/screens/pending_approval_screen.dart';
+import '../../features/auth/screens/forgot_password_screen.dart';
 
 // Student
 import '../../features/student/screens/student_shell.dart';
@@ -19,6 +20,7 @@ import '../../features/student/screens/course_detail_screen.dart';
 import '../../features/student/screens/assessments_screen.dart';
 import '../../features/student/screens/assessment_quiz_screen.dart';
 import '../../features/student/screens/student_profile_screen.dart';
+import '../../features/student/screens/progress_screen.dart';
 import '../../features/student/screens/careers_screen.dart';
 import '../../features/student/screens/ai_roadmap_generator_screen.dart';
 import '../../features/student/screens/ai_course_generator_screen.dart';
@@ -29,6 +31,8 @@ import '../../features/teacher/screens/teacher_home_screen.dart';
 import '../../features/teacher/screens/teacher_resources_screen.dart';
 import '../../features/teacher/screens/teacher_students_screen.dart';
 import '../../features/teacher/screens/teacher_profile_screen.dart';
+import '../../features/teacher/screens/teacher_analytics_screen.dart';
+import '../../features/teacher/screens/teacher_student_detail_screen.dart';
 
 // Admin
 import '../../features/admin/screens/admin_shell.dart';
@@ -119,7 +123,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
       GoRoute(
           path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
-      GoRoute(path: '/pending', builder: (_, __) => const PendingApprovalScreen()),
+      GoRoute(
+          path: '/pending', builder: (_, __) => const PendingApprovalScreen()),
+      GoRoute(
+          path: '/forgot-password',
+          builder: (_, __) => const ForgotPasswordScreen()),
 
       // ── Student Shell ──────────────────────────────────────────────────────
       ShellRoute(
@@ -184,6 +192,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const StudentProfileScreen(),
           ),
           GoRoute(
+            path: '/student/progress',
+            builder: (_, __) => const ProgressScreen(),
+          ),
+          GoRoute(
             path: '/student/careers',
             builder: (_, __) => const CareersScreen(),
           ),
@@ -205,6 +217,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/teacher/students',
             builder: (_, __) => const TeacherStudentsScreen(),
+            routes: [
+              GoRoute(
+                path: ':id',
+                builder: (_, state) => TeacherStudentDetailScreen(
+                  studentId: state.pathParameters['id']!,
+                ),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: '/teacher/analytics',
+            builder: (_, __) => const TeacherAnalyticsScreen(),
           ),
           GoRoute(
             path: '/teacher/profile',

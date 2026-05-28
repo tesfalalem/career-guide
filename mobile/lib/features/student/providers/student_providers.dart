@@ -53,11 +53,11 @@ final roadmapDetailProvider =
   return CuratedRoadmapModel.fromJson(res.data);
 });
 
-// All available courses (browse tab)
+// All available courses (browse tab) — excludes AI courses from other users (server-side filtered)
 final allCoursesProvider = FutureProvider<List<CourseModel>>((ref) async {
   final api = ref.read(apiClientProvider);
   try {
-    final res = await api.get(ApiConstants.availableCourses);
+    final res = await api.get(ApiConstants.courses);
     final list = res.data as List? ?? [];
     return list.map((c) => CourseModel.fromJson(c)).toList();
   } catch (_) {

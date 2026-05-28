@@ -6,12 +6,35 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../shared/widgets/app_header.dart';
 import '../../../shared/widgets/gradient_card.dart';
 import '../providers/student_providers.dart';
+import '../../../core/cache/connectivity_service.dart';
+import '../../../core/cache/cached_providers.dart';
 
-class StudentHomeScreen extends ConsumerWidget {
+class StudentHomeScreen extends ConsumerStatefulWidget {
   const StudentHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StudentHomeScreen> createState() => _StudentHomeScreenState();
+}
+
+class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Flush any pending offline mutations when the home screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      syncPendingMutations(ref);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Listen for connectivity changes and sync when back online
+    ref.listen(connectivityProvider, (prev, next) {
+      next.whenData((online) {
+        if (online) syncPendingMutations(ref);
+      });
+    });
+
     final user = ref.watch(currentUserProvider);
     final statsAsync = ref.watch(studentStatsProvider);
 
