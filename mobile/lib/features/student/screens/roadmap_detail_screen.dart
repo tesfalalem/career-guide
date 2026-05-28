@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/network/api_client.dart';
-import '../../../core/constants/api_constants.dart';
 import '../providers/student_providers.dart';
 
 /// Strip HTML tags and decode common HTML entities for plain text display
@@ -66,43 +63,7 @@ class RoadmapDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _RoadmapDetailScreenState extends ConsumerState<RoadmapDetailScreen> {
-  bool _enrolling = false;
-  bool _enrolled = false;
-  String? _enrollMsg;
-  bool _enrollError = false;
   final Set<int> _expanded = {0};
-
-  Future<void> _enroll() async {
-    setState(() {
-      _enrolling = true;
-      _enrollMsg = null;
-    });
-    try {
-      final api = ref.read(apiClientProvider);
-      // Accept 409 (already enrolled) as a valid response — don't throw
-      final response = await api.post(
-        '${ApiConstants.curatedRoadmaps}/${widget.id}/enroll',
-        options:
-            Options(validateStatus: (status) => status != null && status < 500),
-      );
-      final alreadyEnrolled = response.statusCode == 409;
-      setState(() {
-        _enrolled = true;
-        _enrollError = false;
-        _enrollMsg = alreadyEnrolled
-            ? 'You are already enrolled in this path.'
-            : 'Successfully enrolled! Start learning now.';
-      });
-    } catch (e) {
-      setState(() {
-        _enrolled = false;
-        _enrollError = true;
-        _enrollMsg = 'Enrollment failed. Please try again.';
-      });
-    } finally {
-      if (mounted) setState(() => _enrolling = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -198,80 +159,9 @@ class _RoadmapDetailScreenState extends ConsumerState<RoadmapDetailScreen> {
                             .bodyLarge
                             ?.copyWith(height: 1.6, color: AppColors.slate600)),
 
-                  // ── Enroll feedback ────────────────────────────────────
-                  if (_enrollMsg != null) ...[
-                    const SizedBox(height: 14),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: (_enrollError
-                                ? AppColors.warning
-                                : AppColors.success)
-                            .withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: (_enrollError
-                                  ? AppColors.warning
-                                  : AppColors.success)
-                              .withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            _enrollError
-                                ? Icons.info_outline_rounded
-                                : Icons.check_circle_rounded,
-                            color: _enrollError
-                                ? AppColors.warning
-                                : AppColors.success,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(_enrollMsg!,
-                                style: TextStyle(
-                                    color: _enrollError
-                                        ? AppColors.warning
-                                        : AppColors.success,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  // ── Enroll feedback removed ────────────────────────────
 
                   const SizedBox(height: 20),
-
-                  // ── Enroll button ──────────────────────────────────────
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _enrolled ? null : _enroll,
-                      icon: _enrolling
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2))
-                          : Icon(_enrolled
-                              ? Icons.check_circle_rounded
-                              : Icons.play_arrow_rounded),
-                      label: Text(_enrolled
-                          ? 'Enrolled'
-                          : _enrolling
-                              ? 'Enrolling...'
-                              : 'Start This Path'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            _enrolled ? AppColors.success : AppColors.navy,
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                      ),
-                    ),
-                  ),
 
                   const SizedBox(height: 28),
 
@@ -380,37 +270,45 @@ class _RoadmapDetailScreenState extends ConsumerState<RoadmapDetailScreen> {
                                                             fontWeight:
                                                                 FontWeight.w700,
                                                             fontSize: 13,
-                                                            color: AppColors.slate700)),
-                                                    if (topic.concepts.isNotEmpty) ...[
+                                                            color: AppColors
+                                                                .slate700)),
+                                                    if (topic.concepts
+                                                        .isNotEmpty) ...[
                                                       const SizedBox(height: 4),
                                                       Padding(
-                                                        padding: const EdgeInsets.only(left: 4),
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .only(left: 4),
                                                         child: Column(
                                                           crossAxisAlignment:
-                                                              CrossAxisAlignment.start,
-                                                          children: topic.concepts.map((concept) => Padding(
-                                                            padding: const EdgeInsets.only(top: 4),
-                                                            child: Row(
-                                                              crossAxisAlignment:
-                                                                  CrossAxisAlignment.start,
-                                                              children: [
-                                                                const Text('• ',
-                                                                    style: TextStyle(
-                                                                        color: AppColors.teal,
-                                                                        fontSize: 12,
-                                                                        fontWeight: FontWeight.bold)),
-                                                                Expanded(
-                                                                  child: Text(
-                                                                    concept,
-                                                                    style: const TextStyle(
-                                                                        fontSize: 12,
-                                                                        color: AppColors.slate500,
-                                                                        height: 1.4),
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          )).toList(),
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: topic
+                                                              .concepts
+                                                              .map(
+                                                                  (concept) =>
+                                                                      Padding(
+                                                                        padding: const EdgeInsets
+                                                                            .only(
+                                                                            top:
+                                                                                4),
+                                                                        child:
+                                                                            Row(
+                                                                          crossAxisAlignment:
+                                                                              CrossAxisAlignment.start,
+                                                                          children: [
+                                                                            const Text('• ',
+                                                                                style: TextStyle(color: AppColors.teal, fontSize: 12, fontWeight: FontWeight.bold)),
+                                                                            Expanded(
+                                                                              child: Text(
+                                                                                concept,
+                                                                                style: const TextStyle(fontSize: 12, color: AppColors.slate500, height: 1.4),
+                                                                              ),
+                                                                            ),
+                                                                          ],
+                                                                        ),
+                                                                      ))
+                                                              .toList(),
                                                         ),
                                                       ),
                                                     ],

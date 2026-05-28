@@ -1,23 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, Building, Award, Globe, Linkedin, Edit2, Save, X, Star, Users, BookOpen, TrendingUp, CheckCircle, Calendar, Shield, Eye, BadgeCheck, RefreshCw } from 'lucide-react';
+import {
+  User, Mail, Phone, Building, Award, Globe, Linkedin,
+  Edit2, Save, X, BookOpen, CheckCircle, BadgeCheck,
+  RefreshCw
+} from 'lucide-react';
 import { teacherService } from '../../../services/teacherService';
 
 const TeacherProfileView: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'edit' | 'public'>('edit');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [stats, setStats] = useState({
-    totalResources: 0,
-    totalStudents: 0,
-    avgRating: 0,
-    totalRatings: 0,
-    completionRate: 0,
-    joinedDate: ''
-  });
-  
+  const [totalResources, setTotalResources] = useState(0);
+
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -31,15 +27,8 @@ const TeacherProfileView: React.FC = () => {
     expertiseAreas: [] as string[],
     qualifications: [] as string[],
     certifications: [] as string[],
-    languages: [] as string[]
+    languages: [] as string[],
   });
-
-  const verificationBadges = [
-    { type: 'email', label: 'Email Verified', verified: true },
-    { type: 'institution', label: 'Institution Verified', verified: true },
-    { type: 'identity', label: 'Identity Verified', verified: true },
-    { type: 'expert', label: 'Expert Educator', verified: true }
-  ];
 
   useEffect(() => {
     loadProfile();
@@ -48,46 +37,35 @@ const TeacherProfileView: React.FC = () => {
 
   const loadStats = async () => {
     try {
-      const response = await teacherService.getStats();
-      if (response.success && response.stats) {
-        setStats({
-          totalResources: response.stats.totalResources || 0,
-          totalStudents: response.stats.activeStudents || 0,
-          avgRating: response.stats.avgRating || 0,
-          totalRatings: response.stats.totalRatings || 0,
-          completionRate: response.stats.completionRate || 0,
-          joinedDate: response.stats.joinedDate || 'Recently'
-        });
-      }
-    } catch (err) {
-      console.error('Failed to load stats:', err);
-    }
+      const r = await teacherService.getStats();
+      if (r.success) setTotalResources(r.stats?.totalResources || 0);
+    } catch {}
   };
 
   const loadProfile = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await teacherService.getProfile();
-      if (response.success && response.profile) {
+      const r = await teacherService.getProfile();
+      if (r.success && r.profile) {
+        const p = r.profile;
         setProfile({
-          name: response.profile.name || '',
-          email: response.profile.email || '',
-          phone: response.profile.phone_number || '',
-          institution: response.profile.institution || '',
-          yearsExperience: response.profile.years_experience || 0,
-          bio: response.profile.bio || '',
-          teachingPhilosophy: response.profile.teaching_philosophy || '',
-          linkedin: response.profile.linkedin_url || '',
-          website: response.profile.website_url || '',
-          expertiseAreas: response.profile.expertise_areas || [],
-          qualifications: response.profile.qualifications || [],
-          certifications: response.profile.certifications || [],
-          languages: response.profile.languages || []
+          name: p.name || '',
+          email: p.email || '',
+          phone: p.phone_number || '',
+          institution: p.institution || '',
+          yearsExperience: p.years_experience || 0,
+          bio: p.bio || '',
+          teachingPhilosophy: p.teaching_philosophy || '',
+          linkedin: p.linkedin_url || '',
+          website: p.website_url || '',
+          expertiseAreas: p.expertise_areas || [],
+          qualifications: p.qualifications || [],
+          certifications: p.certifications || [],
+          languages: p.languages || [],
         });
       }
-    } catch (err) {
-      console.error('Failed to load profile:', err);
+    } catch {
       setError('Failed to load profile data');
     } finally {
       setLoading(false);
@@ -99,7 +77,7 @@ const TeacherProfileView: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      const response = await teacherService.updateProfile({
+      const r = await teacherService.updateProfile({
         name: profile.name,
         phone: profile.phone,
         institution: profile.institution,
@@ -111,16 +89,14 @@ const TeacherProfileView: React.FC = () => {
         expertiseAreas: profile.expertiseAreas,
         languages: profile.languages,
         linkedin: profile.linkedin,
-        website: profile.website
+        website: profile.website,
       });
-      
-      if (response.success) {
+      if (r.success) {
         setSuccess('Profile updated successfully!');
         setIsEditing(false);
         setTimeout(() => setSuccess(null), 3000);
       }
-    } catch (err) {
-      console.error('Failed to update profile:', err);
+    } catch {
       setError('Failed to update profile');
     } finally {
       setSaving(false);
@@ -131,443 +107,275 @@ const TeacherProfileView: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <RefreshCw className="animate-spin mx-auto mb-4 text-careermap-teal" size={48} />
-          <p className="text-slate-600 dark:text-slate-400">Loading profile...</p>
+          <RefreshCw className="animate-spin mx-auto mb-4 text-careermap-teal" size={40} />
+          <p className="text-slate-500 dark:text-slate-400 font-medium">Loading profile…</p>
         </div>
       </div>
     );
   }
 
-
-  // Public Profile View
-  const PublicProfileView = () => (
-    <div className="space-y-6">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-8">
-        <div className="flex items-start gap-6">
-          <div className="w-24 h-24 bg-careermap-navy rounded-full flex items-center justify-center text-white text-4xl font-bold relative">
-            {profile.name.charAt(0)}
-            <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center border-4 border-white dark:border-slate-900">
-              <BadgeCheck size={16} className="text-white" />
-            </div>
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <h1 className="text-2xl font-bold text-primary dark:text-white">{profile.name}</h1>
-              {verificationBadges.filter(b => b.verified).map((badge, i) => (
-                <span key={i} title={badge.label}>
-                  <BadgeCheck size={18} className="text-green-500" />
-                </span>
-              ))}
-            </div>
-            <p className="text-slate-600 dark:text-slate-400 mb-4">{profile.institution}</p>
-            <div className="flex items-center gap-6 text-sm text-slate-500">
-              <div className="flex items-center gap-2">
-                <BookOpen size={16} />
-                <span>{stats.totalResources} Resources</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Users size={16} />
-                <span>{stats.totalStudents} Students</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Star size={16} className="fill-orange-500 text-orange-500" />
-                <span>{stats.avgRating} Rating</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6">
-            <h3 className="text-lg font-bold text-primary dark:text-white mb-4">About</h3>
-            <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{profile.bio}</p>
-          </div>
-
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6">
-            <h3 className="text-lg font-bold text-primary dark:text-white mb-4">Teaching Philosophy</h3>
-            <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{profile.teachingPhilosophy}</p>
-          </div>
-
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6">
-            <h3 className="text-lg font-bold text-primary dark:text-white mb-4 flex items-center gap-2">
-              <Award size={20} />
-              Education & Qualifications
-            </h3>
-            <div className="space-y-3">
-              {profile.qualifications.map((qual, i) => (
-                <div key={i} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                  <CheckCircle size={18} className="text-green-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-slate-700 dark:text-slate-300 text-sm">{qual}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6">
-            <h3 className="text-lg font-bold text-primary dark:text-white mb-4 flex items-center gap-2">
-              <Shield size={20} />
-              Verifications
-            </h3>
-            <div className="space-y-2">
-              {verificationBadges.map((badge, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm">
-                  <BadgeCheck size={16} className={badge.verified ? 'text-green-500' : 'text-slate-400'} />
-                  <span className={badge.verified ? 'text-slate-700 dark:text-slate-300' : 'text-slate-400'}>
-                    {badge.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6">
-            <h3 className="text-lg font-bold text-primary dark:text-white mb-4">Expertise</h3>
-            <div className="flex flex-wrap gap-2">
-              {profile.expertiseAreas.map((area, i) => (
-                <span key={i} className="px-3 py-1 bg-careermap-teal/10 text-careermap-teal rounded-lg text-sm font-medium">
-                  {area}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6">
-            <h3 className="text-lg font-bold text-primary dark:text-white mb-4">Languages</h3>
-            <div className="space-y-2">
-              {profile.languages.map((lang, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-                  <CheckCircle size={14} className="text-green-500" />
-                  {lang}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6">
-            <h3 className="text-lg font-bold text-primary dark:text-white mb-4">Connect</h3>
-            <div className="space-y-2">
-              <a href={profile.linkedin} target="_blank" rel="noopener noreferrer" 
-                className="flex items-center gap-2 p-3 bg-careermap-navy/10 rounded-xl hover:bg-careermap-navy/20 transition-colors">
-                <Linkedin size={18} className="text-careermap-teal" />
-                <span className="text-sm font-medium text-careermap-navy dark:text-careermap-teal">LinkedIn</span>
-              </a>
-              <a href={profile.website} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 p-3 bg-careermap-navy/10 rounded-xl hover:bg-careermap-navy/20 transition-colors">
-                <Globe size={18} className="text-careermap-teal" />
-                <span className="text-sm font-medium text-careermap-navy dark:text-careermap-teal">Website</span>
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  if (viewMode === 'public') {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
-          <div className="flex items-center gap-3">
-            <Eye size={20} className="text-careermap-teal" />
-            <span className="font-semibold text-primary dark:text-white">Public Profile Preview</span>
-          </div>
-          <button onClick={() => setViewMode('edit')}
-            className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-primary dark:text-white rounded-lg font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
-            Back to Edit Mode
-          </button>
-        </div>
-        <PublicProfileView />
-      </div>
-    );
-  }
+  const initials = profile.name
+    ? profile.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+    : '?';
 
   return (
     <div className="space-y-6">
-      {/* Success/Error Messages */}
+
+      {/* ── Feedback banners ─────────────────────────────────────────────── */}
       {success && (
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-6 py-4 rounded-2xl text-sm font-bold flex items-center gap-3">
-          <CheckCircle size={20} />
-          {success}
+        <div className="flex items-center gap-3 px-5 py-3.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-2xl text-sm font-semibold">
+          <CheckCircle size={18} /> {success}
         </div>
       )}
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-6 py-4 rounded-2xl text-sm font-bold flex items-center gap-3">
-          <X size={20} />
-          {error}
+        <div className="flex items-center gap-3 px-5 py-3.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-2xl text-sm font-semibold">
+          <X size={18} /> {error}
         </div>
       )}
 
-      {/* Header */}
+      {/* ── Header row: title + action buttons ───────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-extrabold text-primary dark:text-white flex items-center gap-3">
-            <User size={28} />
+          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+            <User size={24} className="text-careermap-teal" />
             Teacher Profile
           </h2>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Manage your professional profile and credentials
           </p>
         </div>
+
         {!isEditing ? (
-          <div className="flex gap-3">
-            <button onClick={() => setViewMode('public')}
-              className="flex items-center gap-2 px-6 py-3 bg-slate-100 dark:bg-slate-800 text-primary dark:text-white rounded-xl font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
-              <Eye size={20} />
-              View Public Profile
-            </button>
-            <button onClick={() => setIsEditing(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-careermap-navy text-white rounded-xl font-semibold hover:bg-[#023058] transition-all">
-              <Edit2 size={20} />
-              Edit Profile
-            </button>
-          </div>
+          <button
+            onClick={() => setIsEditing(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-careermap-navy text-white rounded-xl font-bold text-sm hover:bg-[#023058] transition-all"
+          >
+            <Edit2 size={16} /> Edit Profile
+          </button>
         ) : (
           <div className="flex gap-3">
-            <button onClick={() => setIsEditing(false)}
-              className="flex items-center gap-2 px-6 py-3 bg-slate-100 dark:bg-slate-800 text-primary dark:text-white rounded-xl font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
-              <X size={20} />
-              Cancel
+            <button
+              onClick={() => setIsEditing(false)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-white rounded-xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+            >
+              <X size={16} /> Cancel
             </button>
-            <button onClick={handleSave} disabled={saving}
-              className="flex items-center gap-2 px-6 py-3 bg-careermap-navy text-white rounded-xl font-semibold hover:bg-[#023058] transition-all disabled:opacity-50">
-              <Save size={20} />
-              {saving ? 'Saving...' : 'Save Changes'}
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-2 px-5 py-2.5 bg-careermap-navy text-white rounded-xl font-bold text-sm hover:bg-[#023058] transition-all disabled:opacity-50"
+            >
+              <Save size={16} /> {saving ? 'Saving…' : 'Save Changes'}
             </button>
           </div>
         )}
       </div>
 
-      {/* Verification Status */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-bold text-primary dark:text-white mb-2 flex items-center gap-2">
-              <Shield size={22} />
-              Verification Status
-            </h3>
-            <p className="text-sm text-slate-500">
-              {verificationBadges.filter(b => b.verified).length} of {verificationBadges.length} verifications completed
-            </p>
-          </div>
-          <div className="flex gap-2">
-            {verificationBadges.map((badge, i) => (
-              <div key={i} className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                badge.verified ? 'bg-green-50 dark:bg-green-900/20' : 'bg-slate-100 dark:bg-slate-800'
-              }`} title={badge.label}>
-                <BadgeCheck size={24} className={badge.verified ? 'text-green-500' : 'text-slate-400'} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* ── Two-column layout ─────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-4">
-          <BookOpen className="text-careermap-teal mb-2" size={24} />
-          <div className="text-2xl font-bold text-primary dark:text-white">{stats.totalResources}</div>
-          <div className="text-xs text-slate-500">Resources</div>
-        </div>
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-4">
-          <Users className="text-careermap-teal mb-2" size={24} />
-          <div className="text-2xl font-bold text-primary dark:text-white">{stats.totalStudents}</div>
-          <div className="text-xs text-slate-500">Students</div>
-        </div>
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-4">
-          <Star className="text-careermap-teal mb-2" size={24} />
-          <div className="text-2xl font-bold text-primary dark:text-white">{stats.avgRating}</div>
-          <div className="text-xs text-slate-500">Avg Rating</div>
-        </div>
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-4">
-          <TrendingUp className="text-careermap-teal mb-2" size={24} />
-          <div className="text-2xl font-bold text-primary dark:text-white">{stats.totalRatings}</div>
-          <div className="text-xs text-slate-500">Reviews</div>
-        </div>
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-4">
-          <CheckCircle className="text-careermap-teal mb-2" size={24} />
-          <div className="text-2xl font-bold text-primary dark:text-white">{stats.completionRate}%</div>
-          <div className="text-xs text-slate-500">Completion</div>
-        </div>
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-4">
-          <Calendar className="text-careermap-teal mb-2" size={24} />
-          <div className="text-sm font-bold text-primary dark:text-white">{stats.joinedDate}</div>
-          <div className="text-xs text-slate-500">Member Since</div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Profile Info */}
+        {/* ── LEFT: main content ─────────────────────────────────────────── */}
         <div className="lg:col-span-2 space-y-6">
+
+          {/* Basic Information */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6">
-            <h3 className="text-lg font-bold text-primary dark:text-white mb-6">Basic Information</h3>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Full Name</label>
-                  {isEditing ? (
-                    <input type="text" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent outline-none text-primary dark:text-white" />
-                  ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                      <User size={18} className="text-slate-400" />
-                      <span className="text-slate-700 dark:text-slate-300">{profile.name}</span>
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Email</label>
-                  <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                    <Mail size={18} className="text-slate-400" />
-                    <span className="text-slate-700 dark:text-slate-300">{profile.email}</span>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Phone</label>
-                  {isEditing ? (
-                    <input type="tel" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent outline-none text-primary dark:text-white" />
-                  ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                      <Phone size={18} className="text-slate-400" />
-                      <span className="text-slate-700 dark:text-slate-300">{profile.phone}</span>
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Institution</label>
-                  {isEditing ? (
-                    <input type="text" value={profile.institution} onChange={(e) => setProfile({ ...profile, institution: e.target.value })}
-                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-transparent outline-none text-primary dark:text-white" />
-                  ) : (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                      <Building size={18} className="text-slate-400" />
-                      <span className="text-slate-700 dark:text-slate-300">{profile.institution}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+            <h3 className="text-base font-extrabold text-slate-900 dark:text-white mb-5">Basic Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              {/* Full Name */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Professional Bio</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Full Name</label>
                 {isEditing ? (
-                  <textarea value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} rows={4}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent outline-none text-primary dark:text-white resize-none" />
+                  <input
+                    type="text"
+                    value={profile.name}
+                    onChange={e => setProfile({ ...profile, name: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-careermap-teal/20 text-slate-900 dark:text-white"
+                  />
                 ) : (
-                  <p className="px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-700 dark:text-slate-300 leading-relaxed">{profile.bio}</p>
+                  <div className="flex items-center gap-2.5 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm text-slate-700 dark:text-slate-300">
+                    <User size={15} className="text-slate-400 shrink-0" /> {profile.name || '—'}
+                  </div>
                 )}
               </div>
+
+              {/* Email (read-only) */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Teaching Philosophy</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email</label>
+                <div className="flex items-center gap-2.5 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm text-slate-700 dark:text-slate-300">
+                  <Mail size={15} className="text-slate-400 shrink-0" /> {profile.email || '—'}
+                </div>
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Phone</label>
                 {isEditing ? (
-                  <textarea value={profile.teachingPhilosophy} onChange={(e) => setProfile({ ...profile, teachingPhilosophy: e.target.value })} rows={4}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-secondary focus:border-transparent outline-none text-primary dark:text-white resize-none" />
+                  <input
+                    type="tel"
+                    value={profile.phone}
+                    onChange={e => setProfile({ ...profile, phone: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-careermap-teal/20 text-slate-900 dark:text-white"
+                  />
                 ) : (
-                  <p className="px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-700 dark:text-slate-300 leading-relaxed">{profile.teachingPhilosophy}</p>
+                  <div className="flex items-center gap-2.5 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm text-slate-700 dark:text-slate-300">
+                    <Phone size={15} className="text-slate-400 shrink-0" /> {profile.phone || '—'}
+                  </div>
+                )}
+              </div>
+
+              {/* Institution */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Institution</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={profile.institution}
+                    onChange={e => setProfile({ ...profile, institution: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-careermap-teal/20 text-slate-900 dark:text-white"
+                  />
+                ) : (
+                  <div className="flex items-center gap-2.5 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm text-slate-700 dark:text-slate-300">
+                    <Building size={15} className="text-slate-400 shrink-0" /> {profile.institution || '—'}
+                  </div>
                 )}
               </div>
             </div>
-          </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6">
-            <h3 className="text-lg font-bold text-primary dark:text-white mb-4 flex items-center gap-2">
-              <Award size={20} />
-              Qualifications & Education
-            </h3>
-            <div className="space-y-3">
-              {profile.qualifications.map((qual, i) => (
-                <div key={i} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                  <CheckCircle size={18} className="text-green-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-slate-700 dark:text-slate-300 text-sm">{qual}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6">
-            <h3 className="text-lg font-bold text-primary dark:text-white mb-4 flex items-center gap-2">
-              <Award size={20} />
-              Professional Certifications
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {profile.certifications.map((cert, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                  <div className="w-10 h-10 bg-careermap-navy/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Award size={18} className="text-careermap-teal" />
-                  </div>
-                  <span className="text-slate-700 dark:text-slate-300 text-sm">{cert}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6">
-            <h3 className="text-lg font-bold text-primary dark:text-white mb-4">Profile Picture</h3>
-            <div className="flex flex-col items-center">
-              <div className="w-32 h-32 bg-careermap-navy rounded-full flex items-center justify-center text-white text-5xl font-bold mb-4 relative">
-                {profile.name.charAt(0)}
-                <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center border-4 border-white dark:border-slate-900">
-                  <BadgeCheck size={20} className="text-white" />
-                </div>
-              </div>
-              {isEditing && (
-                <button className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-primary dark:text-white rounded-lg font-semibold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
-                  Change Photo
-                </button>
+            {/* Bio */}
+            <div className="mt-4">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Professional Bio</label>
+              {isEditing ? (
+                <textarea
+                  value={profile.bio}
+                  onChange={e => setProfile({ ...profile, bio: e.target.value })}
+                  rows={4}
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-careermap-teal/20 text-slate-900 dark:text-white resize-none"
+                />
+              ) : (
+                <p className="px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                  {profile.bio || '—'}
+                </p>
               )}
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6">
-            <h3 className="text-lg font-bold text-primary dark:text-white mb-4">Experience</h3>
-            <div className="text-center">
-              <div className="text-5xl font-extrabold text-careermap-teal mb-2">{profile.yearsExperience}</div>
-              <div className="text-sm text-slate-500">Years of Teaching</div>
+          {/* Certifications */}
+          {profile.certifications.length > 0 && (
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6">
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                <Award size={18} className="text-careermap-teal" /> Professional Certifications
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {profile.certifications.map((c, i) => (
+                  <div key={i} className="flex items-center gap-3 px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                    <div className="w-8 h-8 bg-careermap-teal/10 rounded-lg flex items-center justify-center shrink-0">
+                      <Award size={15} className="text-careermap-teal" />
+                    </div>
+                    <span className="text-sm text-slate-700 dark:text-slate-300">{c}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+        </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6">
-            <h3 className="text-lg font-bold text-primary dark:text-white mb-4">Expertise Areas</h3>
-            <div className="flex flex-wrap gap-2">
-              {profile.expertiseAreas.map((area, i) => (
-                <span key={i} className="px-3 py-1 bg-careermap-teal/10 text-careermap-teal rounded-lg text-sm font-medium">
-                  {area}
-                </span>
-              ))}
-            </div>
-          </div>
+        {/* ── RIGHT: unified sidebar card ────────────────────────────────── */}
+        <div className="space-y-0">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
 
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6">
-            <h3 className="text-lg font-bold text-primary dark:text-white mb-4">Languages</h3>
-            <div className="space-y-2">
-              {profile.languages.map((lang, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-                  <CheckCircle size={14} className="text-green-500" />
-                  {lang}
+            {/* Avatar + name + verified badge */}
+            <div className="bg-gradient-to-br from-careermap-navy to-careermap-teal p-6 text-white text-center">
+              <div className="relative inline-block mb-3">
+                <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center text-3xl font-extrabold border-4 border-white/30 mx-auto">
+                  {initials}
                 </div>
-              ))}
+                <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-emerald-400 rounded-full flex items-center justify-center border-2 border-white">
+                  <BadgeCheck size={14} className="text-white" />
+                </div>
+              </div>
+              <h3 className="font-extrabold text-lg leading-tight">{profile.name || 'Your Name'}</h3>
+              {profile.institution && (
+                <p className="text-white/70 text-xs mt-1">{profile.institution}</p>
+              )}
+              {/* Compact verified badge */}
+              <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 bg-white/15 rounded-full text-[10px] font-black uppercase tracking-wider">
+                <BadgeCheck size={11} /> Verified Educator
+              </div>
             </div>
-          </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6">
-            <h3 className="text-lg font-bold text-primary dark:text-white mb-4">Connect</h3>
-            <div className="space-y-2">
-              <a href={profile.linkedin} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 p-3 bg-careermap-navy/10 rounded-xl hover:bg-careermap-navy/20 transition-colors">
-                <Linkedin size={18} className="text-careermap-teal" />
-                <span className="text-sm font-medium text-careermap-navy dark:text-careermap-teal">LinkedIn</span>
-              </a>
-              <a href={profile.website} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 p-3 bg-careermap-navy/10 rounded-xl hover:bg-careermap-navy/20 transition-colors">
-                <Globe size={18} className="text-careermap-teal" />
-                <span className="text-sm font-medium text-careermap-navy dark:text-careermap-teal">Website</span>
-              </a>
+            {/* Stats row */}
+            <div className="grid grid-cols-2 divide-x divide-slate-100 dark:divide-slate-800 border-b border-slate-100 dark:border-slate-800">
+              <div className="py-4 text-center">
+                <div className="text-xl font-extrabold text-slate-900 dark:text-white">{totalResources}</div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-center gap-1 mt-0.5">
+                  <BookOpen size={10} /> Resources
+                </div>
+              </div>
+              <div className="py-4 text-center">
+                <div className="text-xl font-extrabold text-careermap-teal">{profile.yearsExperience}</div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Yrs Experience</div>
+              </div>
             </div>
+
+            {/* Expertise */}
+            {profile.expertiseAreas.length > 0 && (
+              <div className="p-5 border-b border-slate-100 dark:border-slate-800">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-3">Expertise</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {profile.expertiseAreas.map((area, i) => (
+                    <span key={i} className="px-2.5 py-1 bg-careermap-teal/10 text-careermap-teal rounded-lg text-xs font-semibold">
+                      {area}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Languages */}
+            {profile.languages.length > 0 && (
+              <div className="p-5 border-b border-slate-100 dark:border-slate-800">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-3">Languages</p>
+                <div className="space-y-1.5">
+                  {profile.languages.map((lang, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                      <CheckCircle size={13} className="text-emerald-500 shrink-0" /> {lang}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Connect */}
+            {(profile.linkedin || profile.website) && (
+              <div className="p-5">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-3">Connect</p>
+                <div className="space-y-2">
+                  {profile.linkedin && (
+                    <a
+                      href={profile.linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2.5 px-3 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl hover:bg-careermap-navy/10 transition-colors"
+                    >
+                      <Linkedin size={16} className="text-careermap-teal shrink-0" />
+                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 truncate">LinkedIn</span>
+                    </a>
+                  )}
+                  {profile.website && (
+                    <a
+                      href={profile.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2.5 px-3 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl hover:bg-careermap-navy/10 transition-colors"
+                    >
+                      <Globe size={16} className="text-careermap-teal shrink-0" />
+                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 truncate">Website</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

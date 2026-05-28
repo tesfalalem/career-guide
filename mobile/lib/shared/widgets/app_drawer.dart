@@ -4,7 +4,20 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/theme_provider.dart';
+import '../../core/network/api_client.dart';
+import '../../core/constants/api_constants.dart';
 import '../../features/student/screens/student_shell.dart';
+
+// Unread notification count — drives the badge in the drawer
+final drawerUnreadCountProvider = FutureProvider<int>((ref) async {
+  final api = ref.read(apiClientProvider);
+  try {
+    final res = await api.get(ApiConstants.notificationsUnreadCount);
+    return int.tryParse(res.data['count']?.toString() ?? '0') ?? 0;
+  } catch (_) {
+    return 0;
+  }
+});
 
 void _closeDrawer(BuildContext context) {
   // Use GlobalKey first, then fallback to Navigator.pop
@@ -157,7 +170,9 @@ class AppDrawer extends ConsumerWidget {
                 children: [
                   ...items.map((item) => _DrawerNavItem(
                         item: item,
-                        isActive: item.path == '/student' || item.path == '/teacher' || item.path == '/bit' || item.path == '/admin'
+                        isActive: item.path == '/student' ||
+                                item.path == '/bit' ||
+                                item.path == '/admin'
                             ? currentPath == item.path
                             : currentPath.startsWith(item.path),
                         accentColor: accentColor,
@@ -167,18 +182,29 @@ class AppDrawer extends ConsumerWidget {
                         },
                       )),
                   const Divider(height: 24, indent: 20, endIndent: 20),
-                  _DrawerNavItem(
-                    item: DrawerItem(
-                      icon: Icons.notifications_outlined,
-                      activeIcon: Icons.notifications_rounded,
-                      label: 'Notifications',
-                      path: '/notifications',
-                    ),
-                    isActive: currentPath == '/notifications',
-                    accentColor: accentColor,
-                    onTap: () {
-                      _closeDrawer(context);
-                      context.push('/notifications');
+                  // Notifications with live unread badge
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final unreadAsync = ref.watch(drawerUnreadCountProvider);
+                      final unread = unreadAsync.valueOrNull ?? 0;
+                      return _DrawerNavItem(
+                        item: DrawerItem(
+                          icon: Icons.notifications_outlined,
+                          activeIcon: Icons.notifications_rounded,
+                          label: 'Notifications',
+                          path: '/notifications',
+                          badge: unread > 0 ? unread : null,
+                        ),
+                        isActive: currentPath == '/notifications',
+                        accentColor: accentColor,
+                        onTap: () {
+                          _closeDrawer(context);
+                          context.push('/notifications').then((_) {
+                            // Refresh badge after returning from notifications
+                            ref.invalidate(drawerUnreadCountProvider);
+                          });
+                        },
+                      );
                     },
                   ),
                   _DrawerNavItem(
@@ -279,8 +305,6 @@ class AppDrawer extends ConsumerWidget {
 
   String _roleLabel(String role) {
     switch (role) {
-      case 'teacher':
-        return 'Teacher Portal';
       case 'admin':
         return 'Admin Portal';
       case 'bit':

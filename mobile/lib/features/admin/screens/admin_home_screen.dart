@@ -69,7 +69,7 @@ class AdminHomeScreen extends ConsumerWidget {
                       label: 'Teachers',
                       value: '${data['total_teachers'] ?? 0}',
                       icon: Icons.cast_for_education_rounded,
-                      color: AppColors.teacherTeal),
+                      color: AppColors.teal),
                   InfoCard(
                       label: 'Pending',
                       value: '${data['pending_approvals'] ?? 0}',

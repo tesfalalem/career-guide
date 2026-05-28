@@ -555,9 +555,6 @@ const CuratedRoadmapsView: React.FC<CuratedRoadmapsViewProps> = ({ onGenerateCus
                         <span className="flex items-center gap-1"><Clock size={11} /> {course.duration || 'Self-paced'}</span>
                         <span className="flex items-center gap-1"><BookOpen size={11} /> {course.modules?.length || 0} Modules</span>
                       </div>
-                      <span className="text-[9px] font-black text-careermap-teal uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
-                        Start →
-                      </span>
                     </div>
                   </div>
                 );

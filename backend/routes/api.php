@@ -13,6 +13,7 @@ class Router {
         $this->routes['POST']['/api/auth/login'] = 'AuthController@login';
         $this->routes['POST']['/api/auth/logout'] = 'AuthController@logout';
         $this->routes['POST']['/api/auth/refresh-token'] = 'AuthController@refreshToken';
+        $this->routes['POST']['/api/auth/forgot-password'] = 'AuthController@forgotPassword';
         $this->routes['GET']['/api/auth/oauth/google'] = 'AuthController@googleOAuth';
         $this->routes['GET']['/api/auth/oauth/github'] = 'AuthController@githubOAuth';
 
@@ -113,6 +114,7 @@ class Router {
         
         // Student Monitoring System
         $this->routes['GET']['/api/teacher/students'] = 'StudentMonitoringController@getMyStudents';
+        $this->routes['GET']['/api/teacher/course-students'] = 'TeacherController@getCourseStudents';
         $this->routes['GET']['/api/teacher/students/:id/progress'] = 'StudentMonitoringController@getStudentProgress';
         $this->routes['POST']['/api/teacher/feedback'] = 'StudentMonitoringController@sendFeedback';
         $this->routes['GET']['/api/teacher/feedback/:studentId'] = 'StudentMonitoringController@getFeedbackHistory';

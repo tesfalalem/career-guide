@@ -44,8 +44,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (mounted) {
         if (user.isPending) {
           context.go('/pending');
-        } else if (user.isTeacher) {
-          context.go('/teacher');
         } else if (user.isAdmin) {
           context.go('/admin');
         } else if (user.isBit) {

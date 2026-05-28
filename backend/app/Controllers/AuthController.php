@@ -106,6 +106,27 @@ class AuthController {
             return;
         }
 
+        // ── Phone Number Validations ──
+        if (!isset($data['phone_number']) || empty(trim($data['phone_number']))) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Phone number is required']);
+            return;
+        }
+
+        $phone = trim($data['phone_number']);
+        if (!$this->isValidPhone($phone)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Please provide a valid phone number format']);
+            return;
+        }
+
+        $normalizedPhone = $this->normalizePhone($phone);
+        if ($this->userModel->findByPhone($normalizedPhone)) {
+            http_response_code(409);
+            echo json_encode(['error' => 'This phone number is already registered']);
+            return;
+        }
+
         // Determine role and approval status
         $requestedRole = $data['role_preference'] ?? $data['role_request'] ?? 'student';
         $needsApproval = ($requestedRole === 'teacher');
@@ -114,6 +135,7 @@ class AuthController {
         $userData = [
             'name'             => $name,
             'email'            => $email,
+            'phone_number'     => $normalizedPhone,
             'password'         => password_hash($password, PASSWORD_BCRYPT),
             'role'             => $needsApproval ? 'teacher' : 'student',
             'role_request'     => $requestedRole,
@@ -236,5 +258,119 @@ class AuthController {
     private function formatUser($user) {
         unset($user['password']);
         return $user;
+    }
+
+    public function forgotPassword() {
+        $data = json_decode(file_get_contents("php://input"), true);
+
+        if (!isset($data['name']) || !isset($data['email']) || !isset($data['phone_number']) || !isset($data['password']) || !isset($data['confirm_password'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'All fields (Full Name, Email, Phone Number, New Password, Confirm Password) are required']);
+            return;
+        }
+
+        $name = trim($data['name']);
+        $email = strtolower(trim($data['email']));
+        $phone = trim($data['phone_number']);
+        $password = $data['password'];
+        $confirmPassword = $data['confirm_password'];
+
+        // Validation checks
+        if (empty($name) || empty($email) || empty($phone) || empty($password)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'All fields are required']);
+            return;
+        }
+
+        if ($password !== $confirmPassword) {
+            http_response_code(400);
+            echo json_encode(['error' => 'New password and confirm password do not match']);
+            return;
+        }
+
+        if (strlen($password) < 8) {
+            http_response_code(400);
+            echo json_encode(['error' => 'New password must be at least 8 characters long']);
+            return;
+        }
+
+        // Validate password strength
+        if (!preg_match('/[A-Za-z]/', $password) || !preg_match('/[\d\W]/', $password)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Password must include both letters and numbers/symbols']);
+            return;
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Please provide a valid email address']);
+            return;
+        }
+
+        if (!$this->isValidPhone($phone)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Please provide a valid phone number format']);
+            return;
+        }
+
+        // Retrieve user by email
+        $user = $this->userModel->findByEmail($email);
+
+        if (!$user) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Incorrect name, email, or phone number combination.']);
+            return;
+        }
+
+        // Ensure target is student or teacher
+        if ($user['role'] !== 'student' && $user['role'] !== 'teacher') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Password reset is only available for Student and Teacher accounts.']);
+            return;
+        }
+
+        // Check if name matches (case-insensitive)
+        if (strcasecmp(trim($user['name']), $name) !== 0) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Incorrect name, email, or phone number combination.']);
+            return;
+        }
+
+        // Check if phone matches (normalized comparison)
+        $userPhoneNormalized = $this->normalizePhone($user['phone_number']);
+        $inputPhoneNormalized = $this->normalizePhone($phone);
+        if (empty($userPhoneNormalized) || $userPhoneNormalized !== $inputPhoneNormalized) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Incorrect name, email, or phone number combination.']);
+            return;
+        }
+
+        // Secure password hashing
+        $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+
+        // Save password update to database
+        if ($this->userModel->update($user['id'], ['password' => $hashedPassword])) {
+            echo json_encode(['message' => 'Password has been reset successfully']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to reset password']);
+        }
+    }
+
+    private function isValidPhone($phone) {
+        if (empty($phone)) return false;
+        if (!preg_match('/^\+?[0-9\s\-()]+$/', $phone)) {
+            return false;
+        }
+        $digits = preg_replace('/[^0-9]/', '', $phone);
+        $length = strlen($digits);
+        return $length >= 9 && $length <= 15;
+    }
+
+    private function normalizePhone($phone) {
+        if (empty($phone)) return '';
+        $hasPlus = (strpos(trim($phone), '+') === 0);
+        $digits = preg_replace('/[^0-9]/', '', $phone);
+        return ($hasPlus ? '+' : '') . $digits;
     }
 }

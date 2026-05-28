@@ -53,12 +53,7 @@ const AdminOverview: React.FC<AdminOverviewProps> = ({ analytics: initialAnalyti
         });
       }
       if (analyticsData.pending_resources > 0) {
-        activities.push({
-          id: 2,
-          type: 'resource_pending',
-          description: `${analyticsData.pending_resources} resources awaiting approval`,
-          timestamp: new Date().toISOString()
-        });
+        // Pending resources activity removed
       }
       if (approvalsData.length > 0) {
         activities.push({
@@ -114,12 +109,11 @@ const AdminOverview: React.FC<AdminOverviewProps> = ({ analytics: initialAnalyti
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
           { label: 'Total Registry', value: analytics?.total_users || 0, sub: `${analytics?.total_students || 0} Students`, icon: Users, color: 'bg-careermap-navy' },
           { label: 'Global Roadmaps', value: analytics?.total_roadmaps || 0, sub: 'Active Curriculum', icon: BookOpen, color: 'bg-careermap-teal' },
           { label: 'Indexed Assets', value: analytics?.approved_resources || 0, sub: 'Verified Content', icon: FileText, color: 'bg-[#0369a1]' },
-          { label: 'Pending Review', value: analytics?.pending_resources || 0, sub: 'Approval Queue', icon: Clock, color: 'bg-[#0f172a]' }
         ].map((stat, i) => (
           <div key={i} className={`${stat.color} rounded-[2.5rem] p-8 text-white shadow-xl shadow-navy-500/10 relative overflow-hidden group hover:scale-[1.02] transition-all duration-500`}>
              <div className="absolute -right-6 -top-6 opacity-10 group-hover:scale-125 group-hover:rotate-12 transition-transform duration-700">
@@ -179,24 +173,6 @@ const AdminOverview: React.FC<AdminOverviewProps> = ({ analytics: initialAnalyti
                 <div className="font-black text-[10px] text-slate-400 uppercase tracking-widest">Global Platform Outreach</div>
                 <div className="text-xs text-slate-500 mt-4 flex items-center gap-2 font-medium">Platform-wide engagement matrix <ArrowRight size={14} className="text-careermap-teal" /></div>
               </button>
-           </div>
-
-           {/* Secondary Grid */}
-           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6">
-              {[
-                { label: 'Role Authority', id: 'users', icon: Users, desc: 'Sector Permissions' },
-                { label: 'Intelligence', id: 'analytics', icon: TrendingUp, desc: 'Analytics Terminal' },
-                { label: 'Core Directives', id: 'settings', icon: Settings, desc: 'Infrastructure' }
-              ].map((action, i) => (
-                <button key={i} onClick={() => onNavigate(action.id)} 
-                  className="flex flex-col items-center justify-center p-8 bg-slate-50/50 dark:bg-slate-800/20 rounded-[2rem] border-2 border-transparent hover:border-careermap-teal/20 hover:bg-white dark:hover:bg-slate-800 transition-all text-center group">
-                  <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm mb-4 group-hover:bg-careermap-navy group-hover:text-careermap-teal transition-all">
-                    <action.icon size={24} />
-                  </div>
-                  <div className="font-black text-[10px] uppercase tracking-widest text-careermap-navy dark:text-white">{action.label}</div>
-                  <div className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-tighter opacity-60">{action.desc}</div>
-                </button>
-              ))}
            </div>
         </div>
 

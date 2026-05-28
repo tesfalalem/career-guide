@@ -18,8 +18,8 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate, onSignup }) => {
   const [passwordStrength, setPasswordStrength] = useState(0);
 
   const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+    return emailRegex.test(email.trim());
   };
 
   const calculatePasswordStrength = (password: string): number => {
@@ -44,7 +44,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate, onSignup }) => {
     if (!email.trim()) {
       errors.email = 'Email is required';
     } else if (!validateEmail(email)) {
-      errors.email = 'Please enter a valid email address';
+      errors.email = 'Please enter a valid Gmail address';
     }
 
     if (!password) {
@@ -69,8 +69,28 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate, onSignup }) => {
 
   const handleEmailChange = (value: string) => {
     setEmail(value);
-    if (validationErrors.email) {
-      setValidationErrors(prev => ({ ...prev, email: '' }));
+    if (!value.trim()) {
+      setValidationErrors(prev => {
+        const copy = { ...prev };
+        delete copy.email;
+        return copy;
+      });
+    } else if (validateEmail(value)) {
+      setValidationErrors(prev => {
+        const copy = { ...prev };
+        delete copy.email;
+        return copy;
+      });
+    } else {
+      if (value.includes('@') || validationErrors.email) {
+        setValidationErrors(prev => ({ ...prev, email: 'Please enter a valid Gmail address' }));
+      }
+    }
+  };
+
+  const handleEmailBlur = () => {
+    if (email.trim() && !validateEmail(email)) {
+      setValidationErrors(prev => ({ ...prev, email: 'Please enter a valid Gmail address' }));
     }
   };
 
@@ -191,11 +211,12 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onNavigate, onSignup }) => {
                   type="email" 
                   value={email}
                   onChange={(e) => handleEmailChange(e.target.value)}
+                  onBlur={handleEmailBlur}
                   autoComplete="new-password"
                   className={`w-full bg-slate-50 border-none rounded-2xl py-4 pl-12 pr-4 font-semibold text-slate-700 focus:ring-2 ${
                     validationErrors.email ? 'ring-2 ring-red-300' : 'focus:ring-teal-500/20'
                   } outline-none transition-all placeholder:text-slate-400`}
-                  placeholder="your.email@example.com"
+                  placeholder="your.email@gmail.com"
                   required
                 />
               </div>

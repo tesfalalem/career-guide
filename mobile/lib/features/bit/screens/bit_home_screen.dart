@@ -73,7 +73,7 @@ class BitHomeScreen extends ConsumerWidget {
                       label: 'Students',
                       value: '${data['total_students'] ?? 0}',
                       icon: Icons.people_rounded,
-                      color: AppColors.teacherTeal),
+                      color: AppColors.teal),
                 ],
               ),
             ),

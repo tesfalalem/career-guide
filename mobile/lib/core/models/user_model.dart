@@ -12,6 +12,7 @@ class UserModel {
   final String? department;
   final String? studentId;
   final String? institution;
+  final String? phoneNumber;
 
   const UserModel({
     required this.id,
@@ -27,6 +28,7 @@ class UserModel {
     this.department,
     this.studentId,
     this.institution,
+    this.phoneNumber,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -46,6 +48,7 @@ class UserModel {
       department: json['department'],
       studentId: json['student_id'],
       institution: json['institution'],
+      phoneNumber: json['phone_number'],
     );
   }
 
@@ -63,6 +66,7 @@ class UserModel {
         'department': department,
         'student_id': studentId,
         'institution': institution,
+        'phone_number': phoneNumber,
       };
 
   UserModel copyWith({
@@ -72,6 +76,7 @@ class UserModel {
     int? xp,
     int? streak,
     String? profileImage,
+    String? phoneNumber,
   }) {
     return UserModel(
       id: id,
@@ -84,6 +89,7 @@ class UserModel {
       streak: streak ?? this.streak,
       accountStatus: accountStatus,
       profileImage: profileImage ?? this.profileImage,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
       department: department,
       studentId: studentId,
       institution: institution,
@@ -102,7 +108,6 @@ class UserModel {
 
   bool get isPending => accountStatus == 'pending';
   bool get isStudent => role == 'student';
-  bool get isTeacher => role == 'teacher';
   bool get isAdmin => role == 'admin';
   bool get isBit => role == 'bit';
 }

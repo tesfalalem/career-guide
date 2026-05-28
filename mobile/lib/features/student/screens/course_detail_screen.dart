@@ -443,11 +443,11 @@ class _CourseOverviewState extends ConsumerState<_CourseOverview> {
                   Builder(
                     builder: (context) {
                       final user = ref.watch(currentUserProvider);
-                      final isTeacherOrAdmin =
-                          user != null && (user.isTeacher || user.isAdmin);
+                      final isAdminOrBit =
+                          user != null && (user.isAdmin || user.isBit);
                       return CourseMaterialsTab(
                         course: course,
-                        isTeacherOrAdmin: isTeacherOrAdmin,
+                        isTeacherOrAdmin: isAdminOrBit,
                       );
                     },
                   ),
@@ -529,7 +529,7 @@ class _CourseOverviewState extends ConsumerState<_CourseOverview> {
                 ),
                 child: Center(
                   child: Text(
-                    'Teacher Resources',
+                    'Resources',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,

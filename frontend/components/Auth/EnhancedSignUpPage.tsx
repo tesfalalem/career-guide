@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GraduationCap, ArrowRight, User, Mail, Lock, Loader2, Briefcase, ChevronLeft, Sparkles } from 'lucide-react';
+import { GraduationCap, ArrowRight, User, Mail, Phone, Lock, Loader2, Briefcase, ChevronLeft, Sparkles } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 
 interface EnhancedSignUpPageProps {
@@ -27,8 +27,11 @@ const EnhancedSignUpPage: React.FC<EnhancedSignUpPageProps> = ({ onNavigate, onS
   const [qualifications, setQualifications] = useState('');
   const [bio, setBio] = useState('');
   
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -70,7 +73,48 @@ const EnhancedSignUpPage: React.FC<EnhancedSignUpPageProps> = ({ onNavigate, onS
   };
 
   const validateEmail = (email: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+    return emailRegex.test(email.trim());
+  };
+
+  const handleEmailChange = (val: string) => {
+    setEmail(val);
+    if (!val.trim()) {
+      setEmailError(null);
+    } else if (validateEmail(val)) {
+      setEmailError(null);
+    } else {
+      if (val.includes('@') || emailError) {
+        setEmailError('Please enter a valid Gmail address');
+      }
+    }
+  };
+
+  const handleEmailBlur = () => {
+    if (email.trim() && !validateEmail(email)) {
+      setEmailError('Please enter a valid Gmail address');
+    }
+  };
+
+  const validatePhone = (phone: string): string | null => {
+    const digits = phone.replace(/\D/g, '');
+    if (!digits) return 'Phone number is required';
+    if (digits.length !== 9) return 'Enter 9 digits after +251';
+    // Ethiotelecom: 9xx | Safaricom Ethiopia: 7xx
+    if (!/^[79]/.test(digits)) return 'Enter a valid Ethiotelecom (9xx) or Safaricom (7xx) number';
+    return null;
+  };
+
+  const handlePhoneChange = (val: string) => {
+    // Allow digits only, max 9
+    const digits = val.replace(/\D/g, '').slice(0, 9);
+    setPhoneNumber(digits);
+    if (digits) setPhoneError(validatePhone(digits));
+    else setPhoneError(null);
+  };
+
+  const handlePhoneBlur = () => {
+    setPhoneError(validatePhone(phoneNumber));
   };
 
   const validateName = (name: string): string | null => {
@@ -102,6 +146,7 @@ const EnhancedSignUpPage: React.FC<EnhancedSignUpPageProps> = ({ onNavigate, onS
   const handleNext = () => {
     if (step === 1) {
       setError(null);
+      setEmailError(null);
 
       const nameError = validateName(fullName);
       if (nameError) {
@@ -110,11 +155,17 @@ const EnhancedSignUpPage: React.FC<EnhancedSignUpPageProps> = ({ onNavigate, onS
       }
       
       if (!email.trim()) {
-        setError('Email address is required');
+        setEmailError('Email address is required');
         return;
       }
       if (!validateEmail(email.trim())) {
-        setError('Please enter a valid email address (example@domain.com)');
+        setEmailError('Please enter a valid Gmail address');
+        return;
+      }
+
+      const phoneErr = validatePhone(phoneNumber);
+      if (phoneErr) {
+        setPhoneError(phoneErr);
         return;
       }
 
@@ -145,6 +196,7 @@ const EnhancedSignUpPage: React.FC<EnhancedSignUpPageProps> = ({ onNavigate, onS
       const registrationData: any = {
         name: fullName,
         email,
+        phone_number: `+251${phoneNumber}`,
         password,
         role_request: rolePreference,
         role_preference: rolePreference,
@@ -358,12 +410,47 @@ const EnhancedSignUpPage: React.FC<EnhancedSignUpPageProps> = ({ onNavigate, onS
                     <input 
                       type="email" 
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => handleEmailChange(e.target.value)}
+                      onBlur={handleEmailBlur}
                       autoComplete="email"
-                      className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl py-5 pl-14 pr-6 font-bold text-slate-900 dark:text-white placeholder:text-slate-400/70 placeholder:font-medium focus:bg-white dark:focus:bg-slate-900 focus:border-teal-500 dark:focus:border-teal-500 outline-none transition-all shadow-sm"
-                      placeholder="your.email@example.com"
+                      className={`w-full bg-slate-50 dark:bg-slate-800/50 border ${
+                        emailError ? 'border-red-300' : 'border-slate-100 dark:border-slate-800'
+                      } rounded-2xl py-5 pl-14 pr-6 font-bold text-slate-900 dark:text-white placeholder:text-slate-400/70 placeholder:font-medium focus:bg-white dark:focus:bg-slate-900 focus:border-teal-500 dark:focus:border-teal-500 outline-none transition-all shadow-sm`}
+                      placeholder="your.email@gmail.com"
                     />
                   </div>
+                  {emailError && <p className="text-[10px] text-red-500 font-bold uppercase ml-1">{emailError}</p>}
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 px-1">
+                    Phone Number
+                  </label>
+                  <div className={`group flex items-center bg-slate-50 dark:bg-slate-800/50 border ${
+                    phoneError ? 'border-red-300' : 'border-slate-100 dark:border-slate-800'
+                  } rounded-2xl overflow-hidden shadow-sm focus-within:border-teal-500 dark:focus-within:border-teal-500 transition-all`}>
+                    {/* Static prefix */}
+                    <div className="flex items-center gap-2 pl-5 pr-3 py-5 border-r border-slate-200 dark:border-slate-700 shrink-0">
+                      <Phone size={18} className="text-careermap-teal" />
+                      <span className="font-bold text-slate-700 dark:text-white text-sm select-none">+251</span>
+                    </div>
+                    {/* Digit input */}
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      value={phoneNumber}
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      onBlur={handlePhoneBlur}
+                      autoComplete="tel"
+                      maxLength={9}
+                      className="flex-1 bg-transparent py-5 px-4 font-bold text-slate-900 dark:text-white placeholder:text-slate-400/70 placeholder:font-medium outline-none"
+                      placeholder="9xxxxxxxx"
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-medium px-1">
+                    Ethiotelecom (9xx) or Safaricom Ethiopia (7xx)
+                  </p>
+                  {phoneError && <p className="text-[10px] text-red-500 font-bold uppercase ml-1">{phoneError}</p>}
                 </div>
 
                 <div className="space-y-3">

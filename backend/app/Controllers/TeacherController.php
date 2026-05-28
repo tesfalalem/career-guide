@@ -210,6 +210,79 @@ class TeacherController {
         }
     }
 
+    // Get students grouped by the teacher's assigned courses
+    public function getCourseStudents() {
+        $teacher = $this->requireAuth(['teacher', 'admin']);
+
+        try {
+            // 1. Get all courses this teacher is approved for
+            $stmt = $this->db->prepare("
+                SELECT tca.course_id, c.title as course_title, c.level, c.description
+                FROM teacher_course_assignments tca
+                JOIN courses c ON tca.course_id = c.id
+                WHERE tca.teacher_id = ? AND tca.status = 'approved'
+                ORDER BY c.title ASC
+            ");
+            $stmt->execute([$teacher['id']]);
+            $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($courses)) {
+                echo json_encode(['success' => true, 'courses' => []]);
+                return;
+            }
+
+            $result = [];
+
+            foreach ($courses as $course) {
+                $courseId = $course['course_id'];
+
+                // 2. Get all students enrolled in this course
+                $stmt2 = $this->db->prepare("
+                    SELECT
+                        u.id            AS student_id,
+                        u.name          AS student_name,
+                        u.email         AS student_email,
+                        u.academic_year,
+                        u.department,
+                        ce.progress,
+                        ce.completed_lessons,
+                        ce.enrolled_at
+                    FROM course_enrollments ce
+                    JOIN users u ON ce.user_id = u.id
+                    WHERE ce.course_id = ?
+                      AND u.role = 'student'
+                    ORDER BY u.name ASC
+                ");
+                $stmt2->execute([$courseId]);
+                $students = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+
+                foreach ($students as &$s) {
+                    $completed = json_decode($s['completed_lessons'] ?? '[]', true);
+                    $s['completed_lesson_count'] = is_array($completed) ? count($completed) : 0;
+                    unset($s['completed_lessons']);
+                    $s['progress']      = (int)($s['progress'] ?? 0);
+                    $s['academic_year'] = $s['academic_year'] ?? '';
+                    $s['department']    = $s['department']    ?? '';
+                }
+                unset($s);
+
+                $result[] = [
+                    'course_id'     => (int)$courseId,
+                    'course_title'  => $course['course_title'],
+                    'level'         => $course['level'],
+                    'description'   => $course['description'],
+                    'student_count' => count($students),
+                    'students'      => $students,
+                ];
+            }
+
+            echo json_encode(['success' => true, 'courses' => $result]);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to fetch course students: ' . $e->getMessage()]);
+        }
+    }
+
     // Get at-risk students
     public function getAtRiskStudents() {
         $teacher = $this->requireAuth(['teacher', 'admin']);

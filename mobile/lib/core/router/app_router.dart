@@ -25,15 +25,6 @@ import '../../features/student/screens/careers_screen.dart';
 import '../../features/student/screens/ai_roadmap_generator_screen.dart';
 import '../../features/student/screens/ai_course_generator_screen.dart';
 
-// Teacher
-import '../../features/teacher/screens/teacher_shell.dart';
-import '../../features/teacher/screens/teacher_home_screen.dart';
-import '../../features/teacher/screens/teacher_resources_screen.dart';
-import '../../features/teacher/screens/teacher_students_screen.dart';
-import '../../features/teacher/screens/teacher_profile_screen.dart';
-import '../../features/teacher/screens/teacher_analytics_screen.dart';
-import '../../features/teacher/screens/teacher_student_detail_screen.dart';
-
 // Admin
 import '../../features/admin/screens/admin_shell.dart';
 import '../../features/admin/screens/admin_home_screen.dart';
@@ -63,7 +54,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (location == '/splash') {
         if (user != null) {
           if (user.isPending) return '/pending';
-          if (user.isTeacher) return '/teacher';
           if (user.isAdmin) return '/admin';
           if (user.isBit) return '/bit';
           return '/student';
@@ -74,7 +64,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Protect routes from unauthenticated access
       if (user == null) {
         if (location.startsWith('/student') ||
-            location.startsWith('/teacher') ||
             location.startsWith('/admin') ||
             location.startsWith('/bit') ||
             location == '/pending') {
@@ -88,7 +77,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return '/pending';
         }
         if (!user.isPending && location == '/pending') {
-          if (user.isTeacher) return '/teacher';
           if (user.isAdmin) return '/admin';
           if (user.isBit) return '/bit';
           return '/student';
@@ -97,16 +85,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         // Avoid showing login/register to authenticated users
         if (location == '/login' || location == '/register') {
           if (user.isPending) return '/pending';
-          if (user.isTeacher) return '/teacher';
           if (user.isAdmin) return '/admin';
           if (user.isBit) return '/bit';
           return '/student';
         }
 
         // Prevent cross-role access
-        if (location.startsWith('/teacher') && !user.isTeacher) {
-          return '/student';
-        }
         if (location.startsWith('/admin') && !user.isAdmin) {
           return '/student';
         }
@@ -202,41 +186,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      // ── Teacher Shell ──────────────────────────────────────────────────────
-      ShellRoute(
-        builder: (context, state, child) => TeacherShell(child: child),
-        routes: [
-          GoRoute(
-            path: '/teacher',
-            builder: (_, __) => const TeacherHomeScreen(),
-          ),
-          GoRoute(
-            path: '/teacher/resources',
-            builder: (_, __) => const TeacherResourcesScreen(),
-          ),
-          GoRoute(
-            path: '/teacher/students',
-            builder: (_, __) => const TeacherStudentsScreen(),
-            routes: [
-              GoRoute(
-                path: ':id',
-                builder: (_, state) => TeacherStudentDetailScreen(
-                  studentId: state.pathParameters['id']!,
-                ),
-              ),
-            ],
-          ),
-          GoRoute(
-            path: '/teacher/analytics',
-            builder: (_, __) => const TeacherAnalyticsScreen(),
-          ),
-          GoRoute(
-            path: '/teacher/profile',
-            builder: (_, __) => const TeacherProfileScreen(),
-          ),
-        ],
-      ),
-
       // ── Admin Shell ────────────────────────────────────────────────────────
       ShellRoute(
         builder: (context, state, child) => AdminShell(child: child),
@@ -260,7 +209,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      // ── Bit Shell ──────────────────────────────────────────────────────────
+      // ── BiT Shell ──────────────────────────────────────────────────────────
       ShellRoute(
         builder: (context, state, child) => BitShell(child: child),
         routes: [

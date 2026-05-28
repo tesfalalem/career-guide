@@ -35,7 +35,7 @@ class PendingApprovalScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Your teacher account is under review. An admin will verify your credentials shortly.',
+                'Your account is pending review. An admin will verify your credentials shortly.',
                 style: Theme.of(context).textTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),
@@ -65,15 +65,14 @@ class PendingApprovalScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 48),
               OutlinedButton.icon(
-                onPressed: () =>
-                    ref.read(authProvider.notifier).logout(),
+                onPressed: () => ref.read(authProvider.notifier).logout(),
                 icon: const Icon(Icons.logout_rounded, size: 18),
                 label: const Text('Logout'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.error,
                   side: const BorderSide(color: AppColors.error),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 32, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                 ),
               ),
             ],

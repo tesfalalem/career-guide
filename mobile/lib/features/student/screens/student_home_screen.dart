@@ -78,7 +78,7 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: 1.5,
+                childAspectRatio: 2.4,
                 children: [
                   InfoCard(
                     label: 'Courses',
@@ -328,13 +328,13 @@ class _StatsShimmer extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
-      childAspectRatio: 1.5,
+      childAspectRatio: 2.4,
       children: List.generate(
         2,
         (_) => Container(
           decoration: BoxDecoration(
             color: AppColors.slate100,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(18),
           ),
         ),
       ),

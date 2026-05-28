@@ -1,602 +1,475 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Search, Filter, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Clock, MessageSquare, Star, Eye, Download, Send, X, Loader2 } from 'lucide-react';
+import {
+  Users, Search, BookOpen, ChevronDown, ChevronRight,
+  GraduationCap, Mail, TrendingUp, CheckCircle, Clock,
+  Loader2, RefreshCw, AlertCircle, BarChart2
+} from 'lucide-react';
 
-interface Student {
+const API = 'http://localhost/careerguide/backend/api';
+const token = () => localStorage.getItem('auth_token') || '';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+interface CourseStudent {
   student_id: number;
   student_name: string;
   student_email: string;
-  total_resources_accessed: number;
-  total_resources_completed: number;
-  total_time_spent: number;
-  average_rating: number;
-  last_activity_at: string;
-  engagement_score: number;
-  risk_level: 'low' | 'medium' | 'high';
-  active_resources: number;
-  unread_feedback_count: number;
+  academic_year: string;
+  department: string;
+  progress: number;
+  completed_lesson_count: number;
+  enrolled_at: string;
 }
 
-interface StudentProgress {
-  resource_id: number;
-  resource_title: string;
-  resource_type: string;
-  category: string;
-  status: string;
-  progress_percentage: number;
-  time_spent_total: number;
-  last_accessed_at: string;
-  rating: number | null;
+interface CourseGroup {
+  course_id: number;
+  course_title: string;
+  level: string;
+  description: string;
+  student_count: number;
+  students: CourseStudent[];
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const levelCls = (level: string) =>
+  level === 'Advanced'
+    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+    : level === 'Intermediate'
+    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
+
+const progressColor = (p: number) =>
+  p >= 75 ? 'bg-emerald-500' : p >= 40 ? 'bg-amber-500' : 'bg-red-400';
+
+const fmtDate = (d: string) => {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
+// ── Main Component ────────────────────────────────────────────────────────────
 const TeacherStudentsView: React.FC = () => {
-  const [students, setStudents] = useState<Student[]>([]);
+  const [courses, setCourses] = useState<CourseGroup[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterRisk, setFilterRisk] = useState<'all' | 'low' | 'medium' | 'high'>('all');
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [studentProgress, setStudentProgress] = useState<StudentProgress[]>([]);
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  const [feedbackSubject, setFeedbackSubject] = useState('');
-  const [feedbackMessage, setFeedbackMessage] = useState('');
-  const [sendingFeedback, setSendingFeedback] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [expandedCourses, setExpandedCourses] = useState<Set<number>>(new Set());
+  const [selectedStudent, setSelectedStudent] = useState<CourseStudent | null>(null);
+  const [selectedCourseTitle, setSelectedCourseTitle] = useState('');
 
-  useEffect(() => {
-    fetchStudents();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
-  const fetchStudents = async () => {
+  const fetchData = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch('http://localhost/careerguide/backend/api/teacher/students', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const res = await fetch(`${API}/teacher/course-students`, {
+        headers: { Authorization: `Bearer ${token()}` }
       });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setStudents(data.students || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch students:', error);
-      // Show error state instead of mock data
-      setStudents([]);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load');
+      const list: CourseGroup[] = data.courses || [];
+      setCourses(list);
+      // Auto-expand all courses that have students
+      setExpandedCourses(new Set(list.filter(c => c.student_count > 0).map(c => c.course_id)));
+    } catch (e: any) {
+      setError(e.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchStudentProgress = async (studentId: number) => {
-    try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost/careerguide/backend/api/teacher/students/${studentId}/progress`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setStudentProgress(data.progress || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch student progress:', error);
-      setStudentProgress([]);
-    }
+  const toggleCourse = (id: number) => {
+    setExpandedCourses(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   };
 
-  const handleViewDetails = (student: Student) => {
-    setSelectedStudent(student);
-    fetchStudentProgress(student.student_id);
-  };
+  // Filter students across all courses by search term
+  const filteredCourses = courses.map(c => ({
+    ...c,
+    students: c.students.filter(
+      s =>
+        s.student_name.toLowerCase().includes(search.toLowerCase()) ||
+        s.student_email.toLowerCase().includes(search.toLowerCase()) ||
+        s.department.toLowerCase().includes(search.toLowerCase())
+    )
+  })).filter(c => search === '' || c.students.length > 0);
 
-  const handleSendFeedback = async () => {
-    if (!selectedStudent || !feedbackSubject || !feedbackMessage) return;
+  const totalStudents = courses.reduce((acc, c) => acc + c.student_count, 0);
+  const totalCourses = courses.length;
 
-    setSendingFeedback(true);
-    try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch('http://localhost/careerguide/backend/api/teacher/feedback', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          to_user_id: selectedStudent.student_id,
-          subject: feedbackSubject,
-          message: feedbackMessage
-        })
-      });
+  // ── Loading ────────────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <Loader2 className="animate-spin text-careermap-teal" size={48} />
+        <p className="text-slate-500 font-medium">Loading your course students…</p>
+      </div>
+    );
+  }
 
-      if (response.ok) {
-        setShowFeedbackModal(false);
-        setFeedbackSubject('');
-        setFeedbackMessage('');
-        alert('Feedback sent successfully!');
-      }
-    } catch (error) {
-      console.error('Failed to send feedback:', error);
-      alert('Failed to send feedback. Please try again.');
-    } finally {
-      setSendingFeedback(false);
-    }
-  };
-
-  const filteredStudents = students.filter(student => {
-    const matchesSearch = student.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         student.student_email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterRisk === 'all' || student.risk_level === filterRisk;
-    return matchesSearch && matchesFilter;
-  });
-
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `${hours}h ${minutes}m`;
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    return date.toLocaleDateString();
-  };
-
-  const getRiskColor = (risk: string) => {
-    switch (risk) {
-      case 'low': return 'text-green-600 bg-green-100 dark:bg-green-900/20 dark:text-green-400';
-      case 'medium': return 'text-orange-600 bg-orange-100 dark:bg-orange-900/20 dark:text-orange-400';
-      case 'high': return 'text-red-600 bg-red-100 dark:bg-red-900/20 dark:text-red-400';
-      default: return 'text-slate-600 bg-slate-100';
-    }
-  };
-
-  const getRiskIcon = (risk: string) => {
-    switch (risk) {
-      case 'low': return <CheckCircle size={16} />;
-      case 'medium': return <Clock size={16} />;
-      case 'high': return <AlertTriangle size={16} />;
-      default: return null;
-    }
-  };
+  // ── Error ──────────────────────────────────────────────────────────────────
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <AlertCircle className="text-red-400" size={48} />
+        <p className="text-red-500 font-semibold">{error}</p>
+        <button
+          onClick={fetchData}
+          className="flex items-center gap-2 px-5 py-2.5 bg-careermap-navy text-white rounded-xl font-bold text-sm hover:bg-[#023058] transition-all"
+        >
+          <RefreshCw size={16} /> Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-extrabold text-primary dark:text-white flex items-center gap-3">
-            <Users size={28} />
-            Student Monitoring
+          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white flex items-center gap-3">
+            <Users size={26} className="text-careermap-teal" />
+            My Course Students
           </h2>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
-            Track student engagement, progress, and provide feedback
+          <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
+            Students enrolled in your assigned courses
           </p>
         </div>
         <button
-          onClick={fetchStudents}
-          className="px-4 py-2 bg-careermap-navy text-white rounded-xl font-semibold hover:bg-[#023058] transition-all"
+          onClick={fetchData}
+          className="flex items-center gap-2 px-4 py-2.5 bg-careermap-navy text-white rounded-xl font-bold text-sm hover:bg-[#023058] transition-all self-start"
         >
-          Refresh
+          <RefreshCw size={15} /> Refresh
         </button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-2xl font-bold text-primary dark:text-white">{students.length}</div>
-              <div className="text-sm text-slate-500">Total Students</div>
-            </div>
-            <Users className="text-careermap-teal" size={32} />
+      {/* ── Summary cards ──────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 flex items-center gap-4">
+          <div className="w-12 h-12 bg-careermap-teal/10 rounded-xl flex items-center justify-center">
+            <BookOpen size={22} className="text-careermap-teal" />
+          </div>
+          <div>
+            <div className="text-2xl font-extrabold text-slate-900 dark:text-white">{totalCourses}</div>
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Assigned Courses</div>
           </div>
         </div>
-
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {students.filter(s => s.risk_level === 'low').length}
-              </div>
-              <div className="text-sm text-slate-500">High Engagement</div>
-            </div>
-            <TrendingUp className="text-green-500" size={32} />
+        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 flex items-center gap-4">
+          <div className="w-12 h-12 bg-careermap-navy/10 rounded-xl flex items-center justify-center">
+            <Users size={22} className="text-careermap-navy" />
           </div>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                {students.filter(s => s.risk_level === 'medium').length}
-              </div>
-              <div className="text-sm text-slate-500">Medium Engagement</div>
-            </div>
-            <Clock className="text-orange-500" size={32} />
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                {students.filter(s => s.risk_level === 'high').length}
-              </div>
-              <div className="text-sm text-slate-500">At Risk</div>
-            </div>
-            <AlertTriangle className="text-red-500" size={32} />
+          <div>
+            <div className="text-2xl font-extrabold text-slate-900 dark:text-white">{totalStudents}</div>
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Students</div>
           </div>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search students by name or email..."
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-transparent outline-none transition-all text-primary dark:text-white"
-            />
-          </div>
-
-          <div className="flex gap-2">
-            {['all', 'low', 'medium', 'high'].map((risk) => (
-              <button
-                key={risk}
-                onClick={() => setFilterRisk(risk as any)}
-                className={`px-4 py-3 rounded-xl font-semibold transition-all capitalize ${
-                  filterRisk === risk
-                    ? 'bg-careermap-navy text-white'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-                }`}
-              >
-                {risk === 'all' ? 'All' : `${risk} Risk`}
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* ── Search ─────────────────────────────────────────────────────────── */}
+      <div className="relative">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search by name, email or department…"
+          className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm outline-none focus:ring-2 focus:ring-careermap-teal/20 transition-all"
+        />
       </div>
 
-      {/* Students List */}
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="animate-spin text-careermap-teal" size={48} />
-        </div>
-      ) : filteredStudents.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center">
-          <Users className="mx-auto text-slate-300 dark:text-slate-700 mb-4" size={64} />
-          <h3 className="text-xl font-bold text-primary dark:text-white mb-2">No Students Found</h3>
-          <p className="text-slate-500">
-            {searchTerm || filterRisk !== 'all' 
-              ? 'Try adjusting your filters' 
-              : 'Students will appear here once they start using your resources'}
+      {/* ── No courses ─────────────────────────────────────────────────────── */}
+      {courses.length === 0 && (
+        <div className="bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-16 text-center">
+          <BookOpen size={48} className="mx-auto text-slate-300 mb-4" />
+          <h3 className="text-lg font-bold text-slate-700 dark:text-white mb-2">No Assigned Courses</h3>
+          <p className="text-slate-400 text-sm max-w-sm mx-auto">
+            You don't have any approved course assignments yet. Contact an admin to get assigned to a course.
           </p>
-        </div>
-      ) : (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                    Student
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                    Engagement
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                    Progress
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                    Time Spent
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                    Rating
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                    Last Active
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                {filteredStudents.map((student) => (
-                  <tr key={student.student_id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-careermap-navy/10 rounded-full flex items-center justify-center">
-                          <span className="text-careermap-teal font-bold">{student.student_name.charAt(0)}</span>
-                        </div>
-                        <div>
-                          <div className="font-semibold text-primary dark:text-white">{student.student_name}</div>
-                          <div className="text-sm text-slate-500">{student.student_email}</div>
-                          {(student as any).course_title && (
-                            <div className="text-xs font-black text-careermap-teal uppercase tracking-wider mt-1 flex items-center gap-1.5">
-                              <span className="inline-block w-1.5 h-1.5 bg-careermap-teal rounded-full animate-pulse" />
-                              {(student as any).course_title}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-semibold text-primary dark:text-white">
-                              {student.engagement_score}%
-                            </span>
-                            <span className={`text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 ${getRiskColor(student.risk_level)}`}>
-                              {getRiskIcon(student.risk_level)}
-                              {student.risk_level}
-                            </span>
-                          </div>
-                          <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                            <div
-                              className={`h-2 rounded-full transition-all ${
-                                student.risk_level === 'low' ? 'bg-green-500' :
-                                student.risk_level === 'medium' ? 'bg-orange-500' :
-                                'bg-red-500'
-                              }`}
-                              style={{ width: `${student.engagement_score}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm">
-                        <div className="font-semibold text-primary dark:text-white">
-                          {student.total_resources_completed}/{student.total_resources_accessed}
-                        </div>
-                        <div className="text-slate-500">completed</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-semibold text-primary dark:text-white">
-                        {formatTime(student.total_time_spent)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1">
-                        <Star className="text-orange-500 fill-orange-500" size={16} />
-                        <span className="text-sm font-semibold text-primary dark:text-white">
-                          {student.average_rating > 0 ? student.average_rating.toFixed(1) : 'N/A'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-slate-500">
-                        {formatDate(student.last_activity_at)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleViewDetails(student)}
-                        className="px-4 py-2 bg-careermap-navy text-white rounded-lg font-semibold text-sm hover:bg-[#023058] transition-all"
-                      >
-                        View Details
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
       )}
 
-      {/* Student Detail Modal */}
-      {selectedStudent && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-careermap-navy/10 rounded-full flex items-center justify-center">
-                  <span className="text-careermap-teal font-bold text-xl">{selectedStudent.student_name.charAt(0)}</span>
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-primary dark:text-white">{selectedStudent.student_name}</h3>
-                  <p className="text-sm text-slate-500">{selectedStudent.student_email}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedStudent(null)}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-              >
-                <X size={24} />
-              </button>
-            </div>
+      {/* ── Course groups ───────────────────────────────────────────────────── */}
+      {filteredCourses.map(course => {
+        const isExpanded = expandedCourses.has(course.course_id);
+        const avgProgress = course.students.length > 0
+          ? Math.round(course.students.reduce((a, s) => a + s.progress, 0) / course.students.length)
+          : 0;
 
-            {/* Modal Content */}
-            <div className="p-6 space-y-6">
-              {/* Stats Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4">
-                  <div className="text-2xl font-bold text-primary dark:text-white">{selectedStudent.engagement_score}%</div>
-                  <div className="text-sm text-slate-500">Engagement</div>
+        return (
+          <div
+            key={course.course_id}
+            className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm"
+          >
+            {/* Course header — click to expand/collapse */}
+            <button
+              onClick={() => toggleCourse(course.course_id)}
+              className="w-full flex items-center justify-between p-6 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left"
+            >
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="w-11 h-11 bg-careermap-navy/10 rounded-xl flex items-center justify-center shrink-0">
+                  <BookOpen size={20} className="text-careermap-navy" />
                 </div>
-                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4">
-                  <div className="text-2xl font-bold text-primary dark:text-white">
-                    {selectedStudent.total_resources_completed}/{selectedStudent.total_resources_accessed}
-                  </div>
-                  <div className="text-sm text-slate-500">Completed</div>
-                </div>
-                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4">
-                  <div className="text-2xl font-bold text-primary dark:text-white">
-                    {formatTime(selectedStudent.total_time_spent)}
-                  </div>
-                  <div className="text-sm text-slate-500">Time Spent</div>
-                </div>
-                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4">
-                  <div className="flex items-center gap-1">
-                    <Star className="text-orange-500 fill-orange-500" size={20} />
-                    <span className="text-2xl font-bold text-primary dark:text-white">
-                      {selectedStudent.average_rating > 0 ? selectedStudent.average_rating.toFixed(1) : 'N/A'}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-extrabold text-slate-900 dark:text-white text-base truncate">
+                      {course.course_title}
+                    </h3>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${levelCls(course.level)}`}>
+                      {course.level}
                     </span>
                   </div>
-                  <div className="text-sm text-slate-500">Avg Rating</div>
+                  <div className="flex items-center gap-4 mt-1 text-xs text-slate-400 font-medium">
+                    <span className="flex items-center gap-1">
+                      <Users size={12} /> {course.student_count} student{course.student_count !== 1 ? 's' : ''}
+                    </span>
+                    {course.student_count > 0 && (
+                      <span className="flex items-center gap-1">
+                        <BarChart2 size={12} /> Avg progress: {avgProgress}%
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowFeedbackModal(true)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-careermap-navy text-white rounded-xl font-semibold hover:bg-[#023058] transition-all"
-                >
-                  <MessageSquare size={20} />
-                  Send Feedback
-                </button>
-                <button className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 dark:bg-slate-800 text-primary dark:text-white rounded-xl font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
-                  <Eye size={20} />
-                  View History
-                </button>
+              <div className="flex items-center gap-3 shrink-0 ml-4">
+                {/* Mini progress bar */}
+                {course.student_count > 0 && (
+                  <div className="hidden md:flex items-center gap-2">
+                    <div className="w-24 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${progressColor(avgProgress)}`}
+                        style={{ width: `${avgProgress}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-bold text-slate-500">{avgProgress}%</span>
+                  </div>
+                )}
+                {isExpanded
+                  ? <ChevronDown size={18} className="text-slate-400" />
+                  : <ChevronRight size={18} className="text-slate-400" />}
               </div>
+            </button>
 
-              {/* Progress List */}
-              <div>
-                <h4 className="text-lg font-bold text-primary dark:text-white mb-4">Resource Progress</h4>
-                {studentProgress.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500">
-                    No progress data available
+            {/* Student list */}
+            {isExpanded && (
+              <div className="border-t border-slate-100 dark:border-slate-800">
+                {course.students.length === 0 ? (
+                  <div className="py-10 text-center">
+                    <Users size={36} className="mx-auto text-slate-200 dark:text-slate-700 mb-3" />
+                    <p className="text-sm font-semibold text-slate-400">No students enrolled yet</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {studentProgress.map((progress) => (
-                      <div key={progress.resource_id} className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <div className="font-semibold text-primary dark:text-white">{progress.resource_title}</div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-full">
-                                {progress.resource_type}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800">
+                          <th className="px-6 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">Student</th>
+                          <th className="px-6 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">Academic Info</th>
+                          <th className="px-6 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">Progress</th>
+                          <th className="px-6 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">Lessons Done</th>
+                          <th className="px-6 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">Enrolled</th>
+                          <th className="px-6 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                        {course.students.map(student => (
+                          <tr
+                            key={student.student_id}
+                            className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
+                            onClick={() => { setSelectedStudent(student); setSelectedCourseTitle(course.course_title); }}
+                          >
+                            {/* Name + email */}
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-careermap-navy to-careermap-teal flex items-center justify-center shrink-0">
+                                  <span className="text-white font-black text-sm">
+                                    {student.student_name.charAt(0).toUpperCase()}
+                                  </span>
+                                </div>
+                                <div>
+                                  <div className="font-bold text-slate-900 dark:text-white">{student.student_name}</div>
+                                  <div className="text-xs text-slate-400 flex items-center gap-1">
+                                    <Mail size={10} /> {student.student_email}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Academic info */}
+                            <td className="px-6 py-4">
+                              <div className="flex flex-col gap-0.5">
+                                {student.academic_year && (
+                                  <span className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-300 font-semibold">
+                                    <GraduationCap size={11} className="text-careermap-teal" />
+                                    {student.academic_year}
+                                  </span>
+                                )}
+                                {student.department && (
+                                  <span className="text-xs text-slate-400">{student.department}</span>
+                                )}
+                                {!student.academic_year && !student.department && (
+                                  <span className="text-xs text-slate-300">—</span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Progress bar */}
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-2 min-w-[100px]">
+                                <div className="flex-1 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all ${progressColor(student.progress)}`}
+                                    style={{ width: `${student.progress}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs font-bold text-slate-600 dark:text-slate-300 w-8 text-right">
+                                  {student.progress}%
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Lessons done */}
+                            <td className="px-6 py-4">
+                              <span className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-300">
+                                <CheckCircle size={13} className="text-emerald-500" />
+                                {student.completed_lesson_count}
                               </span>
-                              <span className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 rounded-full">
-                                {progress.category}
+                            </td>
+
+                            {/* Enrolled date */}
+                            <td className="px-6 py-4">
+                              <span className="flex items-center gap-1 text-xs text-slate-400">
+                                <Clock size={11} /> {fmtDate(student.enrolled_at)}
                               </span>
-                              <span className={`text-xs px-2 py-1 rounded-full capitalize ${
-                                progress.status === 'completed' ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400' :
-                                progress.status === 'in_progress' ? 'bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400' :
-                                'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-400'
-                              }`}>
-                                {progress.status.replace('_', ' ')}
-                              </span>
-                            </div>
-                          </div>
-                          {progress.rating && (
-                            <div className="flex items-center gap-1 bg-orange-100 dark:bg-orange-900/20 px-3 py-1 rounded-lg">
-                              <Star className="text-orange-500 fill-orange-500" size={14} />
-                              <span className="text-sm font-bold text-orange-700 dark:text-orange-400">{progress.rating}</span>
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-500">Progress</span>
-                            <span className="font-semibold text-primary dark:text-white">{progress.progress_percentage}%</span>
-                          </div>
-                          <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                            <div
-                              className="bg-careermap-teal h-2 rounded-full transition-all"
-                              style={{ width: `${progress.progress_percentage}%` }}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between text-xs text-slate-500">
-                            <span>Time: {formatTime(progress.time_spent_total)}</span>
-                            <span>Last accessed: {formatDate(progress.last_accessed_at)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                            </td>
+
+                            {/* Status badge */}
+                            <td className="px-6 py-4">
+                              {student.progress === 100 ? (
+                                <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 rounded-full text-[10px] font-black uppercase tracking-wider">
+                                  Completed
+                                </span>
+                              ) : student.progress > 0 ? (
+                                <span className="px-2.5 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 rounded-full text-[10px] font-black uppercase tracking-wider">
+                                  In Progress
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-1 bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 rounded-full text-[10px] font-black uppercase tracking-wider">
+                                  Not Started
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
-            </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })}
 
-      {/* Feedback Modal */}
-      {showFeedbackModal && selectedStudent && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-2xl w-full">
-            <div className="p-6 border-b border-slate-200 dark:border-slate-800">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-primary dark:text-white">Send Feedback</h3>
-                <button
-                  onClick={() => setShowFeedbackModal(false)}
-                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                >
-                  <X size={24} />
-                </button>
+      {/* ── Student detail modal ────────────────────────────────────────────── */}
+      {selectedStudent && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedStudent(null)}
+        >
+          <div
+            className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full p-8 space-y-6"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Avatar + name */}
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-careermap-navy to-careermap-teal flex items-center justify-center shrink-0">
+                <span className="text-white font-black text-xl">
+                  {selectedStudent.student_name.charAt(0).toUpperCase()}
+                </span>
               </div>
-              <p className="text-sm text-slate-500 mt-1">To: {selectedStudent.student_name}</p>
+              <div>
+                <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">
+                  {selectedStudent.student_name}
+                </h3>
+                <p className="text-sm text-slate-400 flex items-center gap-1">
+                  <Mail size={12} /> {selectedStudent.student_email}
+                </p>
+              </div>
             </div>
 
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  Subject
-                </label>
-                <input
-                  type="text"
-                  value={feedbackSubject}
-                  onChange={(e) => setFeedbackSubject(e.target.value)}
-                  placeholder="Enter feedback subject..."
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-transparent outline-none transition-all text-primary dark:text-white"
-                />
-              </div>
+            {/* Course badge */}
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-careermap-teal/10 rounded-xl border border-careermap-teal/20">
+              <BookOpen size={15} className="text-careermap-teal shrink-0" />
+              <span className="text-sm font-bold text-careermap-teal truncate">{selectedCourseTitle}</span>
+            </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  Message
-                </label>
-                <textarea
-                  value={feedbackMessage}
-                  onChange={(e) => setFeedbackMessage(e.target.value)}
-                  rows={6}
-                  placeholder="Write your feedback message..."
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-transparent outline-none transition-all text-primary dark:text-white resize-none"
-                />
+            {/* Info grid */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Academic Year</div>
+                <div className="font-bold text-slate-900 dark:text-white text-sm">
+                  {selectedStudent.academic_year || '—'}
+                </div>
               </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowFeedbackModal(false)}
-                  className="flex-1 px-4 py-3 bg-slate-100 dark:bg-slate-800 text-primary dark:text-white rounded-xl font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSendFeedback}
-                  disabled={sendingFeedback || !feedbackSubject || !feedbackMessage}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-careermap-navy text-white rounded-xl font-semibold hover:bg-[#023058] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {sendingFeedback ? (
-                    <><Loader2 className="animate-spin" size={20} /> Sending...</>
-                  ) : (
-                    <><Send size={20} /> Send Feedback</>
-                  )}
-                </button>
+              <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Department</div>
+                <div className="font-bold text-slate-900 dark:text-white text-sm">
+                  {selectedStudent.department || '—'}
+                </div>
+              </div>
+              <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Lessons Done</div>
+                <div className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
+                  <CheckCircle size={14} className="text-emerald-500" />
+                  {selectedStudent.completed_lesson_count}
+                </div>
+              </div>
+              <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Enrolled</div>
+                <div className="font-bold text-slate-900 dark:text-white text-sm">
+                  {fmtDate(selectedStudent.enrolled_at)}
+                </div>
               </div>
             </div>
+
+            {/* Progress */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Course Progress</span>
+                <span className="text-sm font-extrabold text-careermap-teal">{selectedStudent.progress}%</span>
+              </div>
+              <div className="h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${progressColor(selectedStudent.progress)}`}
+                  style={{ width: `${selectedStudent.progress}%` }}
+                />
+              </div>
+              <div className="mt-2 flex justify-end">
+                {selectedStudent.progress === 100 ? (
+                  <span className="text-xs font-black text-emerald-600 flex items-center gap-1">
+                    <CheckCircle size={12} /> Completed
+                  </span>
+                ) : selectedStudent.progress > 0 ? (
+                  <span className="text-xs font-black text-amber-600 flex items-center gap-1">
+                    <TrendingUp size={12} /> In Progress
+                  </span>
+                ) : (
+                  <span className="text-xs font-black text-slate-400">Not started yet</span>
+                )}
+              </div>
+            </div>
+
+            {/* Close */}
+            <button
+              onClick={() => setSelectedStudent(null)}
+              className="w-full py-3 bg-careermap-navy text-white rounded-xl font-bold text-sm hover:bg-[#023058] transition-all"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}

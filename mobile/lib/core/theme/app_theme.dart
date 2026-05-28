@@ -8,7 +8,6 @@ class AppColors {
 
   // Portal identity colors
   static const studentBlue = Color(0xFF2563EB);
-  static const teacherTeal = Color(0xFF0D9488);
   static const adminIndigo = Color(0xFF4F46E5);
   static const bitSky = Color(0xFF0284C7);
 

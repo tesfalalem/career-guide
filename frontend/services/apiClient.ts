@@ -20,6 +20,7 @@ const normalizeUser = (raw: any) => {
     streak: Number(raw.streak ?? 0),
     // Keep as null (not undefined) so components can distinguish "no photo" from "not loaded"
     profile_image: raw.profile_image || null,
+    phone_number: raw.phone_number ?? undefined,
     account_status: raw.account_status ?? 'active',
     created_at: raw.created_at ?? undefined,
   };
@@ -96,6 +97,29 @@ export const apiClient = {
     }
 
     return { ...data, user: normalizeUser(data.user) };
+  },
+
+  async forgotPassword(name: string, email: string, phone: string, password: string, confirmPassword: string) {
+    const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name,
+        email,
+        phone_number: phone,
+        password,
+        confirm_password: confirmPassword,
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Password reset failed');
+    }
+
+    return data;
   },
 
   async logout() {

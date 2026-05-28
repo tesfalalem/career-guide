@@ -43,13 +43,29 @@ const TeacherSignUpPage: React.FC<TeacherSignUpPageProps> = ({ onNavigate, onSig
     );
   };
 
+  const handleEmailChange = (val: string) => {
+    setEmail(val);
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+    if (error === 'Please enter a valid Gmail address' && emailRegex.test(val.trim())) {
+      setError(null);
+    }
+  };
+
+  const handleEmailBlur = () => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+    if (email.trim() && !emailRegex.test(email.trim())) {
+      setError('Please enter a valid Gmail address');
+    }
+  };
+
   const validateStep1 = () => {
     if (!fullName.trim() || fullName.length < 3) {
       setError('Please enter your full name (at least 3 characters)');
       return false;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email address');
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+    if (!emailRegex.test(email.trim())) {
+      setError('Please enter a valid Gmail address');
       return false;
     }
     if (password.length < 8) {
@@ -228,9 +244,10 @@ const TeacherSignUpPage: React.FC<TeacherSignUpPageProps> = ({ onNavigate, onSig
                     <input
                       type="email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => handleEmailChange(e.target.value)}
+                      onBlur={handleEmailBlur}
                       className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all text-primary dark:text-white"
-                      placeholder="john.smith@university.edu"
+                      placeholder="john.smith@gmail.com"
                     />
                   </div>
                 </div>

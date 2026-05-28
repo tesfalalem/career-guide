@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/network/api_client.dart';
-import '../../../core/constants/api_constants.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_text_field.dart';
 
@@ -16,14 +15,14 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
-  // Steps: 0 = enter email, 1 = enter code + new password, 2 = success
+  // Steps: 0 = reset form, 1 = success
   int _step = 0;
 
-  final _emailFormKey = GlobalKey<FormState>();
-  final _resetFormKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
 
+  final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _codeCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
 
@@ -34,71 +33,46 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   void dispose() {
+    _nameCtrl.dispose();
     _emailCtrl.dispose();
-    _codeCtrl.dispose();
+    _phoneCtrl.dispose();
     _passwordCtrl.dispose();
     _confirmCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _sendCode() async {
-    if (!_emailFormKey.currentState!.validate()) return;
+  Future<void> _resetPassword() async {
+    if (!_formKey.currentState!.validate()) return;
+    
+    // Check password strength
+    final pwd = _passwordCtrl.text;
+    final hasLetter = RegExp(r'[A-Za-z]').hasMatch(pwd);
+    final hasNumOrSymbol = RegExp(r'[\d\W]').hasMatch(pwd);
+    if (!hasLetter || !hasNumOrSymbol) {
+      setState(() => _error = 'Password must include both letters and numbers/symbols');
+      return;
+    }
+
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final api = ref.read(apiClientProvider);
-      await api.post(
-        ApiConstants.forgotPassword,
-        data: {'email': _emailCtrl.text.trim()},
+      await ref.read(authProvider.notifier).forgotPassword(
+        name: _nameCtrl.text.trim(),
+        email: _emailCtrl.text.trim().toLowerCase(),
+        phone: _phoneCtrl.text.trim(),
+        password: _passwordCtrl.text,
+        confirmPassword: _confirmCtrl.text,
       );
       if (mounted) setState(() => _step = 1);
     } catch (e) {
       if (mounted) {
-        setState(() => _error = _parseError(e));
+        setState(() => _error = e.toString().replaceAll('Exception: ', ''));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
-  }
-
-  Future<void> _resetPassword() async {
-    if (!_resetFormKey.currentState!.validate()) return;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final api = ref.read(apiClientProvider);
-      await api.post(
-        ApiConstants.resetPassword,
-        data: {
-          'email': _emailCtrl.text.trim(),
-          'token': _codeCtrl.text.trim(),
-          'password': _passwordCtrl.text,
-          'password_confirmation': _confirmCtrl.text,
-        },
-      );
-      if (mounted) setState(() => _step = 2);
-    } catch (e) {
-      if (mounted) {
-        setState(() => _error = _parseError(e));
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  String _parseError(dynamic e) {
-    final msg = e.toString();
-    if (msg.contains('Invalid') || msg.contains('invalid')) {
-      return 'Invalid or expired reset code. Please try again.';
-    }
-    if (msg.contains('not found') || msg.contains('404')) {
-      return 'No account found with that email address.';
-    }
-    return msg.replaceAll('Exception: ', '');
   }
 
   @override
@@ -117,167 +91,176 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: _step == 2 ? _buildSuccess() : _buildForm(),
+          child: _step == 1 ? _buildSuccess() : _buildForm(),
         ),
       ),
     );
   }
 
   Widget _buildForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Icon
-        Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            color: AppColors.teal.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: const Icon(Icons.lock_reset_rounded,
-              color: AppColors.teal, size: 28),
-        ),
-        const SizedBox(height: 24),
-
-        Text(
-          _step == 0 ? 'Forgot Password?' : 'Reset Password',
-          style: Theme.of(context).textTheme.displaySmall,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          _step == 0
-              ? 'Enter your email and we\'ll send you a reset code.'
-              : 'Enter the code sent to ${_emailCtrl.text.trim()} and choose a new password.',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-
-        const SizedBox(height: 32),
-
-        // Error banner
-        if (_error != null) ...[
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Icon
           Container(
-            padding: const EdgeInsets.all(14),
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
-              color: AppColors.error.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.error.withOpacity(0.3)),
+              color: AppColors.teal.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: Row(
-              children: [
-                const Icon(Icons.error_outline,
-                    color: AppColors.error, size: 18),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    _error!,
-                    style: const TextStyle(
-                      color: AppColors.error,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            child: const Icon(Icons.security_rounded,
+                color: AppColors.teal, size: 28),
           ),
-          const SizedBox(height: 20),
-        ],
+          const SizedBox(height: 24),
 
-        if (_step == 0) ...[
-          Form(
-            key: _emailFormKey,
-            child: AppTextField(
-              controller: _emailCtrl,
-              label: 'Email Address',
-              hint: 'your.email@bit.bdu.edu.et',
-              keyboardType: TextInputType.emailAddress,
-              prefixIcon: Icons.email_outlined,
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Email is required';
-                if (!v.contains('@')) return 'Enter a valid email';
-                return null;
-              },
-            ),
+          Text(
+            'Reset Password',
+            style: Theme.of(context).textTheme.displaySmall,
           ),
+          const SizedBox(height: 8),
+          Text(
+            'Verify your identity fields to reset your password.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+
+          const SizedBox(height: 24),
+
+          // Error banner
+          if (_error != null) ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.error.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.error.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline,
+                      color: AppColors.error, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(
+                        color: AppColors.error,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+
+          // Full Name
+          AppTextField(
+            controller: _nameCtrl,
+            label: 'Full Name',
+            hint: 'Enter your full name',
+            prefixIcon: Icons.person_outline,
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Full name is required';
+              if (v.trim().length < 5) return 'At least 5 characters';
+              if (!v.trim().contains(' ')) return 'Enter first and father name';
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+
+          // Email
+          AppTextField(
+            controller: _emailCtrl,
+            label: 'Email Address',
+            hint: 'your.email@bit.bdu.edu.et',
+            keyboardType: TextInputType.emailAddress,
+            prefixIcon: Icons.email_outlined,
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Email is required';
+              if (!v.contains('@')) return 'Enter a valid email';
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+
+          // Phone Number
+          AppTextField(
+            controller: _phoneCtrl,
+            label: 'Phone Number',
+            hint: '+251912345678',
+            keyboardType: TextInputType.phone,
+            prefixIcon: Icons.phone_outlined,
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Phone number is required';
+              final phoneRegex = RegExp(r'^\+?[0-9\s\-()]+$');
+              if (!phoneRegex.hasMatch(v.trim())) {
+                return 'Only digits, spaces, dashes, parentheses';
+              }
+              final digits = v.trim().replaceAll(RegExp(r'[^0-9]'), '');
+              if (digits.length < 9) return 'Must be at least 9 digits';
+              if (digits.length > 15) return 'Must be at most 15 digits';
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+
+          // New Password
+          AppTextField(
+            controller: _passwordCtrl,
+            label: 'New Password',
+            hint: 'At least 8 characters',
+            obscureText: _obscureNew,
+            prefixIcon: Icons.lock_outline,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureNew
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+                color: AppColors.slate400,
+                size: 20,
+              ),
+              onPressed: () => setState(() => _obscureNew = !_obscureNew),
+            ),
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Password is required';
+              if (v.length < 8) return 'At least 8 characters';
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+
+          // Confirm Password
+          AppTextField(
+            controller: _confirmCtrl,
+            label: 'Confirm New Password',
+            hint: 'Confirm new password',
+            obscureText: _obscureConfirm,
+            prefixIcon: Icons.lock_outline,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureConfirm
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+                color: AppColors.slate400,
+                size: 20,
+              ),
+              onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+            ),
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Please confirm password';
+              if (v != _passwordCtrl.text) return 'Passwords do not match';
+              return null;
+            },
+          ),
+
           const SizedBox(height: 32),
           AppButton(
-            label: 'Send Reset Code',
-            onPressed: _sendCode,
-            loading: _loading,
-            fullWidth: true,
-          ),
-        ] else ...[
-          Form(
-            key: _resetFormKey,
-            child: Column(
-              children: [
-                AppTextField(
-                  controller: _codeCtrl,
-                  label: 'Reset Code',
-                  hint: 'Enter the 6-digit code',
-                  keyboardType: TextInputType.number,
-                  prefixIcon: Icons.pin_outlined,
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Code is required';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                AppTextField(
-                  controller: _passwordCtrl,
-                  label: 'New Password',
-                  hint: '••••••••',
-                  obscureText: _obscureNew,
-                  prefixIcon: Icons.lock_outline,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureNew
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                      color: AppColors.slate400,
-                      size: 20,
-                    ),
-                    onPressed: () => setState(() => _obscureNew = !_obscureNew),
-                  ),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Password is required';
-                    if (v.length < 6) return 'At least 6 characters';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                AppTextField(
-                  controller: _confirmCtrl,
-                  label: 'Confirm Password',
-                  hint: '••••••••',
-                  obscureText: _obscureConfirm,
-                  prefixIcon: Icons.lock_outline,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureConfirm
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                      color: AppColors.slate400,
-                      size: 20,
-                    ),
-                    onPressed: () =>
-                        setState(() => _obscureConfirm = !_obscureConfirm),
-                  ),
-                  validator: (v) {
-                    if (v == null || v.isEmpty)
-                      return 'Please confirm password';
-                    if (v != _passwordCtrl.text)
-                      return 'Passwords do not match';
-                    return null;
-                  },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-          AppButton(
-            label: 'Reset Password',
+            label: 'Verify & Reset Password',
             onPressed: _resetPassword,
             loading: _loading,
             fullWidth: true,
@@ -285,12 +268,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           const SizedBox(height: 16),
           Center(
             child: TextButton(
-              onPressed: () => setState(() {
-                _step = 0;
-                _error = null;
-              }),
+              onPressed: () => context.pop(),
               child: const Text(
-                'Resend Code',
+                'Back to Login',
                 style: TextStyle(
                   color: AppColors.teal,
                   fontWeight: FontWeight.w700,
@@ -299,7 +279,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             ),
           ),
         ],
-      ],
+      ),
     );
   }
 

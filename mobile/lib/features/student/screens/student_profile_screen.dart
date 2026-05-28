@@ -1,9 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/theme_provider.dart';
+import '../../../core/network/api_client.dart';
+import '../../../core/constants/api_constants.dart';
 import '../../../shared/widgets/app_header.dart';
+
+// Unread notification count provider — used for badge
+final _unreadCountProvider = FutureProvider<int>((ref) async {
+  final api = ref.read(apiClientProvider);
+  try {
+    final res = await api.get(ApiConstants.notificationsUnreadCount);
+    return int.tryParse(res.data['count']?.toString() ?? '0') ?? 0;
+  } catch (_) {
+    return 0;
+  }
+});
 
 class StudentProfileScreen extends ConsumerWidget {
   const StudentProfileScreen({super.key});
@@ -89,10 +103,6 @@ class StudentProfileScreen extends ConsumerWidget {
               label: 'Academic Year',
               value: user?.academicYear ?? 'Not set'),
           _InfoTile(
-              icon: Icons.badge_outlined,
-              label: 'Student ID',
-              value: user?.studentId ?? 'Not set'),
-          _InfoTile(
               icon: Icons.business_outlined,
               label: 'Department',
               value: user?.department ?? 'Not set'),
@@ -122,8 +132,40 @@ class StudentProfileScreen extends ConsumerWidget {
           _SettingsTile(
             icon: Icons.notifications_outlined,
             label: 'Notifications',
-            trailing: const Icon(Icons.arrow_forward_ios_rounded,
-                size: 14, color: AppColors.slate400),
+            onTap: () => context.push('/notifications'),
+            trailing: ref.watch(_unreadCountProvider).when(
+                  data: (count) => count > 0
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: AppColors.error,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                count > 99 ? '99+' : '$count',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            const Icon(Icons.arrow_forward_ios_rounded,
+                                size: 14, color: AppColors.slate400),
+                          ],
+                        )
+                      : const Icon(Icons.arrow_forward_ios_rounded,
+                          size: 14, color: AppColors.slate400),
+                  loading: () => const Icon(Icons.arrow_forward_ios_rounded,
+                      size: 14, color: AppColors.slate400),
+                  error: (_, __) => const Icon(Icons.arrow_forward_ios_rounded,
+                      size: 14, color: AppColors.slate400),
+                ),
           ),
 
           const SizedBox(height: 24),
@@ -215,32 +257,39 @@ class _SettingsTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final Widget trailing;
+  final VoidCallback? onTap;
   const _SettingsTile(
-      {required this.icon, required this.label, required this.trailing});
+      {required this.icon,
+      required this.label,
+      required this.trailing,
+      this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.slate900 : Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border:
-            Border.all(color: isDark ? AppColors.slate800 : AppColors.slate100),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.teal, size: 20),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(label,
-                style:
-                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-          ),
-          trailing,
-        ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.slate900 : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+              color: isDark ? AppColors.slate800 : AppColors.slate100),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.teal, size: 20),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(label,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 14)),
+            ),
+            trailing,
+          ],
+        ),
       ),
     );
   }

@@ -416,7 +416,7 @@ const TeacherResourcesView: React.FC = () => {
 
       {/* Statistics Dashboard */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
             <div className="text-slate-500 dark:text-slate-400 text-sm mb-1">Total</div>
             <div className="text-2xl font-bold text-primary dark:text-white">{stats.total}</div>
@@ -424,26 +424,6 @@ const TeacherResourcesView: React.FC = () => {
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
             <div className="text-slate-500 dark:text-slate-400 text-sm mb-1">Approved</div>
             <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
-          </div>
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
-            <div className="text-slate-500 dark:text-slate-400 text-sm mb-1">Pending</div>
-            <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
-          </div>
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
-            <div className="text-slate-500 dark:text-slate-400 text-sm mb-1">Rejected</div>
-            <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
-          </div>
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
-            <div className="text-slate-500 dark:text-slate-400 text-sm mb-1 flex items-center gap-1">
-              <Eye size={14} /> Views
-            </div>
-            <div className="text-2xl font-bold text-careermap-teal">{stats.total_views}</div>
-          </div>
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
-            <div className="text-slate-500 dark:text-slate-400 text-sm mb-1 flex items-center gap-1">
-              <Download size={14} /> Downloads
-            </div>
-            <div className="text-2xl font-bold text-careermap-teal">{stats.total_downloads}</div>
           </div>
         </div>
       )}

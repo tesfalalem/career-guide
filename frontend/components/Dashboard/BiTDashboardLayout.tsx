@@ -57,7 +57,7 @@ const BiTDashboardLayout: React.FC<BiTDashboardLayoutProps> = ({
   }, [isResizing, resize, stopResizing]);
 
   const menuItems = [
-    { id: 'overview', label: 'Overview',  icon: LayoutDashboard },
+    { id: 'overview', label: 'Dashboard',  icon: LayoutDashboard },
     { id: 'roadmaps', label: 'Roadmaps',  icon: Map },
     { id: 'courses',  label: 'Courses',   icon: BookOpen },
     { id: 'careers',  label: 'Careers',   icon: Briefcase },

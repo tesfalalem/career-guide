@@ -19,7 +19,7 @@ class User {
             'role_request', 'account_status', 'requested_at',
             'academic_year', 'student_id', 'department', 'graduation_year',
             'institution', 'years_experience', 'expertise_areas', 'qualifications', 'bio',
-            'role_preference', 'profile_completed'
+            'role_preference', 'profile_completed', 'phone_number'
         ];
         
         foreach ($optionalColumns as $col) {
@@ -69,6 +69,15 @@ class User {
         $query = "SELECT * FROM " . $this->table . " WHERE email = :email LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':email', $email);
+        $stmt->execute();
+
+        return $stmt->fetch();
+    }
+
+    public function findByPhone($phone) {
+        $query = "SELECT * FROM " . $this->table . " WHERE phone_number = :phone_number LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':phone_number', $phone);
         $stmt->execute();
 
         return $stmt->fetch();

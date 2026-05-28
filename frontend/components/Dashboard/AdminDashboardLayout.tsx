@@ -116,7 +116,7 @@ const AdminDashboardLayout: React.FC<AdminDashboardLayoutProps & { initialTab?: 
   };
 
   const menuItems = [
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'users', label: 'Users', icon: Users },
     { id: 'approvals', label: 'Pending Approvals', icon: CheckCircle },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },

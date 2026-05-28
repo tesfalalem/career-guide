@@ -76,6 +76,30 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserModel?>> {
     }
   }
 
+  Future<void> forgotPassword({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+    required String confirmPassword,
+  }) async {
+    try {
+      await _api.post(
+        ApiConstants.forgotPassword,
+        data: {
+          'name': name,
+          'email': email,
+          'phone_number': phone,
+          'password': password,
+          'confirm_password': confirmPassword,
+        },
+      );
+    } on DioException catch (e) {
+      String msg = e.response?.data?['error'] ?? e.message ?? 'Password reset failed';
+      throw Exception(msg);
+    }
+  }
+
   Future<void> logout() async {
     // Remove token immediately for instant logout
     await ApiClient.removeToken();

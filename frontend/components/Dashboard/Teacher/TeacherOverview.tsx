@@ -114,7 +114,7 @@ const TeacherOverview: React.FC<TeacherOverviewProps> = ({ stats: propStats, onN
   return (
     <div className="space-y-6">
       {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white">
           <div className="flex items-center justify-between mb-4">
             <Upload size={32} className="opacity-80" />
@@ -131,67 +131,6 @@ const TeacherOverview: React.FC<TeacherOverviewProps> = ({ stats: propStats, onN
           </div>
           <div className="text-sm font-bold opacity-90">Active Students</div>
           <div className="text-xs opacity-70 mt-2">Using your resources</div>
-        </div>
-
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white">
-          <div className="flex items-center justify-between mb-4">
-            <Star size={32} className="opacity-80" />
-            <span className="text-4xl font-extrabold">{quickStats.avgRating}</span>
-          </div>
-          <div className="text-sm font-bold opacity-90">Average Rating</div>
-          <div className="text-xs opacity-70 mt-2">Out of 5.0</div>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white">
-          <div className="flex items-center justify-between mb-4">
-            <MessageSquare size={32} className="opacity-80" />
-            <span className="text-4xl font-extrabold">{quickStats.unreadFeedback}</span>
-          </div>
-          <div className="text-sm font-bold opacity-90">Unread Feedback</div>
-          <div className="text-xs opacity-70 mt-2">From students</div>
-        </div>
-      </div>
-
-      {/* Secondary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
-          <div className="flex items-center gap-3">
-            <Eye className="text-blue-500" size={20} />
-            <div>
-              <div className="text-2xl font-bold text-primary dark:text-white">{quickStats.totalViews}</div>
-              <div className="text-xs text-slate-500">Total Views</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
-          <div className="flex items-center gap-3">
-            <Download className="text-green-500" size={20} />
-            <div>
-              <div className="text-2xl font-bold text-primary dark:text-white">{quickStats.totalDownloads}</div>
-              <div className="text-xs text-slate-500">Downloads</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
-          <div className="flex items-center gap-3">
-            <Clock className="text-orange-500" size={20} />
-            <div>
-              <div className="text-2xl font-bold text-primary dark:text-white">{stats.pendingResources}</div>
-              <div className="text-xs text-slate-500">Pending Review</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="text-red-500" size={20} />
-            <div>
-              <div className="text-2xl font-bold text-primary dark:text-white">{quickStats.atRiskStudents}</div>
-              <div className="text-xs text-slate-500">At-Risk Students</div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -221,23 +160,8 @@ const TeacherOverview: React.FC<TeacherOverviewProps> = ({ stats: propStats, onN
               <Users className="text-accent" size={24} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-primary dark:text-white">Monitor Students</h3>
+              <h3 className="text-lg font-bold text-primary dark:text-white">Observe Students</h3>
               <p className="text-sm text-slate-500">Track progress</p>
-            </div>
-          </div>
-        </button>
-
-        <button
-          onClick={() => onNavigate('analytics')}
-          className="bg-white dark:bg-slate-900 border-2 border-purple-500 hover:border-purple-400 rounded-2xl p-6 text-left transition-all hover:shadow-lg group"
-        >
-          <div className="flex items-center gap-4 mb-3">
-            <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center group-hover:bg-purple-500/20 transition-colors">
-              <TrendingUp className="text-purple-500" size={24} />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-primary dark:text-white">View Analytics</h3>
-              <p className="text-sm text-slate-500">Performance insights</p>
             </div>
           </div>
         </button>
@@ -303,75 +227,6 @@ const TeacherOverview: React.FC<TeacherOverviewProps> = ({ stats: propStats, onN
         </div>
       </div>
 
-      {/* Performance Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Award className="text-green-500" size={24} />
-            <h4 className="font-bold text-primary dark:text-white">Top Performing Resources</h4>
-          </div>
-          {recentActivity.filter(a => a.type === 'resource' && a.rating).length > 0 ? (
-            <div className="space-y-3">
-              {recentActivity
-                .filter(a => a.type === 'resource' && a.rating)
-                .slice(0, 3)
-                .map((activity, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                    <div className="flex-1">
-                      <div className="font-semibold text-sm text-primary dark:text-white">{activity.title}</div>
-                      <div className="text-xs text-slate-500 mt-1">{activity.details || 'Resource'}</div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Star size={16} className="text-orange-500 fill-orange-500" />
-                      <span className="font-bold text-sm">{activity.rating}</span>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-slate-500">
-              <Award size={48} className="mx-auto mb-3 opacity-30" />
-              <p className="text-sm">No rated resources yet</p>
-            </div>
-          )}
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <AlertTriangle className="text-red-500" size={24} />
-            <h4 className="font-bold text-primary dark:text-white">Students Needing Attention</h4>
-          </div>
-          {atRiskStudents.length > 0 ? (
-            <div className="space-y-3">
-              {atRiskStudents.slice(0, 3).map((student) => (
-                <div key={student.id} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-200 dark:border-red-900/30">
-                  <div className="flex-1">
-                    <div className="font-semibold text-sm text-primary dark:text-white">{student.name}</div>
-                    <div className="text-xs text-slate-500 mt-1">Last active: {formatTimeAgo(student.last_active_at)}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-bold text-red-600 dark:text-red-400">{Math.round(student.engagement_score)}%</div>
-                    <div className="text-xs text-slate-500">engagement</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-slate-500">
-              <Users size={48} className="mx-auto mb-3 opacity-30" />
-              <p className="text-sm">No at-risk students at the moment</p>
-            </div>
-          )}
-          {atRiskStudents.length > 0 && (
-            <button
-              onClick={() => onNavigate('students')}
-              className="w-full mt-4 py-2 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg font-semibold text-sm hover:bg-red-200 dark:hover:bg-red-900/30 transition-colors"
-            >
-              View All At-Risk Students
-            </button>
-          )}
-        </div>
-      </div>
     </div>
   );
 };

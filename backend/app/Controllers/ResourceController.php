@@ -27,6 +27,18 @@ class ResourceController {
         }
     }
 
+    /**
+     * Build the correct serve URL for a resource file.
+     * Always uses /careerguide/backend/api/uploads/serve so it works
+     * on both localhost (web) and physical devices (mobile via LAN IP).
+     */
+    private function buildFileUrl(string $filePath): string {
+        $scheme   = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host     = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $filename = basename($filePath);
+        return $scheme . '://' . $host . '/careerguide/backend/api/uploads/serve?file=' . urlencode($filename) . '&type=resource';
+    }
+
     private function getCurrentUser() {
         $headers = \getallheaders();
         error_log("All headers: " . json_encode($headers));
@@ -99,7 +111,7 @@ class ResourceController {
                 $r['tags'] = json_decode($r['tags'] ?? '[]', true);
                 // Build accessible URL for files
                 if (!empty($r['file_path'])) {
-                    $r['file_url'] = ($_ENV['APP_URL'] ?? 'http://localhost:8000') . '/uploads/resources/' . $r['file_path'];
+                    $r['file_url'] = $this->buildFileUrl($r['file_path']);
                 }
             }
             echo json_encode($resources);
@@ -557,7 +569,7 @@ class ResourceController {
         foreach ($resources as &$r) {
             $r['tags'] = json_decode($r['tags'] ?? '[]', true);
             if (!empty($r['file_path'])) {
-                $r['file_url'] = ($_ENV['APP_URL'] ?? 'http://localhost:8000') . '/api/uploads/serve?file=' . urlencode(basename($r['file_path'])) . '&type=resource';
+                $r['file_url'] = $this->buildFileUrl($r['file_path']);
             }
         }
         echo json_encode($resources);

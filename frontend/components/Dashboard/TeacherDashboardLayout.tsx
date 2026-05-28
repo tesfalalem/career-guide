@@ -1,21 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  LayoutDashboard, Upload, BookOpen, Users,
-  Settings as SettingsIcon, LogOut, UserCircle,
-  Sun, Moon, BarChart3, GraduationCap, Clock,
-  ChevronsLeft, Menu
+  LayoutDashboard, Upload, Users,
+  LogOut, UserCircle,
+  Sun, Moon, GraduationCap, Clock,
+  ChevronsLeft, Menu, MessageSquare
 } from 'lucide-react';
 import TeacherOverview from './Teacher/TeacherOverview';
 import TeacherResourcesView from './TeacherResourcesView';
 import TeacherStudentsView from './Teacher/TeacherStudentsView';
 import TeacherCourseSelection from './Teacher/TeacherCourseSelection';
-import TeacherAnalyticsView from './Teacher/TeacherAnalyticsView';
 import TeacherProfileView from './Teacher/TeacherProfileView';
+import SupportChatView from './common/SupportChatView';
 import NotificationBell from '../common/NotificationBell';
 import UserAvatar from '../common/UserAvatar';
 import { TeacherDashboardLayoutProps, TeacherStats } from '../../types';
 
-export type TeacherTab = 'overview' | 'resources' | 'students' | 'analytics' | 'profile';
+export type TeacherTab = 'overview' | 'resources' | 'students' | 'support' | 'profile';
 
 const TeacherDashboardLayout: React.FC<TeacherDashboardLayoutProps> = ({ 
   user, 
@@ -83,11 +83,11 @@ const TeacherDashboardLayout: React.FC<TeacherDashboardLayoutProps> = ({
   };
 
   const menuItems = [
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'resources', label: 'My Resources', icon: Upload },
-    { id: 'students', label: 'Students', icon: Users },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'profile', label: 'Profile', icon: UserCircle },
+    { id: 'overview',   label: 'Dashboard',    icon: LayoutDashboard },
+    { id: 'resources',  label: 'My Resources', icon: Upload },
+    { id: 'students',   label: 'Students',     icon: Users },
+    { id: 'support',    label: 'Support',      icon: MessageSquare },
+    { id: 'profile',    label: 'Profile',      icon: UserCircle },
   ];
 
   const renderContent = () => {
@@ -98,8 +98,21 @@ const TeacherDashboardLayout: React.FC<TeacherDashboardLayoutProps> = ({
         return <TeacherResourcesView />;
       case 'students':
         return <TeacherStudentsView />;
-      case 'analytics':
-        return <TeacherAnalyticsView />;
+      case 'support':
+        return (
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <MessageSquare size={22} className="text-careermap-teal" />
+                Support Chat
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Chat with students or contact the admin for assistance
+              </p>
+            </div>
+            <SupportChatView currentUser={user} />
+          </div>
+        );
       case 'profile':
         return <TeacherProfileView />;
       default:
@@ -148,11 +161,11 @@ const TeacherDashboardLayout: React.FC<TeacherDashboardLayoutProps> = ({
   }
 
   return (
-    <div data-testid="teacher-dashboard" className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 flex font-sans">
-      {/* Sidebar */}
+    <div data-testid="teacher-dashboard" className="h-screen overflow-hidden bg-[#f8fafc] dark:bg-slate-950 flex font-sans">
+      {/* Sidebar — fixed height, never scrolls with content */}
       <aside 
         style={{ width: sidebarOpen ? `${sidebarWidth}px` : '64px' }}
-        className={`bg-careermap-navy text-white flex flex-col h-screen ${isResizing ? '' : 'transition-all duration-300'} shrink-0 shadow-2xl z-40 relative group`}>
+        className={`bg-careermap-navy text-white flex flex-col h-screen sticky top-0 ${isResizing ? '' : 'transition-all duration-300'} shrink-0 shadow-2xl z-40 relative group`}>
         {/* Resize Handle */}
         {sidebarOpen && (
           <div
@@ -241,7 +254,7 @@ const TeacherDashboardLayout: React.FC<TeacherDashboardLayoutProps> = ({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
         {/* Top Bar */}
         <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 py-4">
           <div className="flex items-center justify-between">

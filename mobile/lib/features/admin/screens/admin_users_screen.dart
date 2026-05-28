@@ -17,8 +17,6 @@ class AdminUsersScreen extends ConsumerWidget {
 
   Color _roleColor(String role) {
     switch (role) {
-      case 'teacher':
-        return AppColors.teacherTeal;
       case 'admin':
         return AppColors.adminIndigo;
       case 'bit':
